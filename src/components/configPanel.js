@@ -622,61 +622,43 @@ async function populateHistoryTab() {
     
     historyList.innerHTML = '';
     if (history.length === 0) {
-        historyList.innerHTML = '<li class="nig-history-empty">No history entries found</li>';
+        historyList.innerHTML = '<li>No history yet.</li>';
         return;
     }
 
-    history.slice(0, 50).forEach(entry => {
+    history.forEach(item => {
         const li = document.createElement('li');
         li.className = 'nig-history-item';
-        const date = new Date(entry.date).toLocaleString();
-        li.innerHTML = `
-            <div class="nig-history-content">
-                <div class="nig-history-image">
-                    <img src="${entry.url}" alt="Generated image" loading="lazy">
-                </div>
-                <div class="nig-history-details">
-                    <div class="nig-history-prompt">${entry.prompt}</div>
-                    <div class="nig-history-meta">
-                        <span class="nig-history-provider">${entry.provider}</span>
-                        <span class="nig-history-date">${date}</span>
-                    </div>
-                </div>
-                <div class="nig-history-actions">
-                    <button class="nig-history-download" data-url="${entry.url}" data-prompt="${entry.prompt}">
-                        <span class="material-symbols-outlined">download</span>
-                    </button>
-                    <button class="nig-history-delete" data-url="${entry.url}">
-                        <span class="material-symbols-outlined">delete</span>
-                    </button>
-                </div>
-            </div>
-        `;
-        historyList.appendChild(li);
-    });
 
-    // Add event listeners for history actions
-    historyList.querySelectorAll('.nig-history-download').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const url = e.target.closest('button').dataset.url;
-            const prompt = e.target.closest('button').dataset.prompt;
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `wtr-lab-${prompt.substring(0, 20).replace(/\s/g, '_')}.png`;
-            a.click();
-        });
-    });
+        const providerInfo = item.provider ? `<strong>${item.provider}</strong>` : '';
+        const modelInfo = item.model ? `(${item.model})` : '';
 
-    historyList.querySelectorAll('.nig-history-delete').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const url = e.target.closest('button').dataset.url;
-            if (confirm('Delete this history entry?')) {
-                const history = await storage.getHistory();
-                const updatedHistory = history.filter(item => item.url !== url);
-                await storage.setConfigValue('generationHistory', updatedHistory);
-                await populateHistoryTab();
+        // Set the static part of the HTML
+        li.innerHTML = `<small>${new Date(item.date).toLocaleString()} - ${providerInfo} ${modelInfo}</small>
+                      <small><em>${item.prompt.substring(0, 70)}...</em></small>`;
+
+        // Create the link element separately to add the event listener
+        const viewLink = document.createElement('a');
+        viewLink.href = '#'; // Use a non-navigating href
+        viewLink.textContent = 'View Generated Image';
+
+        viewLink.addEventListener('click', e => {
+            e.preventDefault();
+            if (item.url && item.url.startsWith('data:image')) {
+                // For base64 images, use the internal viewer to avoid browser issues
+                import('./imageViewer.js').then(module => {
+                    if (typeof module.showImageViewer === 'function') {
+                        module.showImageViewer([item.url], item.prompt, item.provider);
+                    }
+                });
+            } else {
+                // For regular URLs, open in a new tab
+                window.open(item.url, '_blank');
             }
         });
+
+        li.appendChild(viewLink);
+        historyList.appendChild(li);
     });
 }
 
