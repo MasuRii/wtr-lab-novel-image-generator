@@ -5,6 +5,7 @@ import './styles/main.css';
 import * as logger from './utils/logger.js';
 import * as storage from './utils/storage.js';
 import { parseErrorMessage } from './utils/error.js';
+import { getApiReadyPrompt, getDisplayReadyPrompt } from './utils/promptUtils.js';
 
 // Import API modules
 import * as apiGemini from './api/gemini.js';
@@ -54,9 +55,23 @@ import * as configPanel from './components/configPanel.js';
         processQueue();
     }
 
-    function handleGenerationFailure(errorMessage, prompt = 'Unknown', provider, providerProfileUrl = null) {
-        logger.logError('GENERATION', `Generation Failed`, { prompt, provider, errorMessage });
-        const friendlyError = parseErrorMessage(errorMessage, provider, providerProfileUrl);
+    function handleGenerationFailure(errorMessage, prompt = 'Unknown', provider, providerProfileUrl = null, errorMetadata = null) {
+        logger.logError('GENERATION', `Generation Failed`, { prompt, provider, errorMessage, errorMetadata });
+        
+        // If error metadata is provided (e.g., from OpenAI provider), use it to enhance error parsing
+        let friendlyError = parseErrorMessage(errorMessage, provider, providerProfileUrl);
+        
+        // If metadata provides explicit error type and retryability, use that
+        if (errorMetadata) {
+            if (errorMetadata.errorType) {
+                friendlyError.errorType = errorMetadata.errorType;
+            }
+            if (typeof errorMetadata.isNonRetryable === 'boolean') {
+                friendlyError.retryable = !errorMetadata.isNonRetryable;
+                friendlyError.isNonRetryable = errorMetadata.isNonRetryable;
+            }
+        }
+        
         errorQueue.push({ reason: friendlyError, prompt, provider, providerProfileUrl });
         showNextError();
         
@@ -70,7 +85,9 @@ import * as configPanel from './components/configPanel.js';
         logger.logInfo('GENERATION', 'Generation failed - waiting for user action', {
             errorQueueLength: errorQueue.length,
             generationQueueLength: generationQueue.length,
-            willWaitForUser: true
+            willWaitForUser: true,
+            errorType: friendlyError.errorType || 'unknown',
+            isNonRetryable: friendlyError.isNonRetryable || false
         });
     }
 
@@ -109,16 +126,25 @@ import * as configPanel from './components/configPanel.js';
     }
 
     function retryGeneration(prompt, provider, providerProfileUrl = null) {
+        // Store both display and API versions of the prompt for retries
+        const displayPrompt = getDisplayReadyPrompt(prompt);
+        const apiPrompt = getApiReadyPrompt(prompt, 'retry');
+        
         // Add to the front of the queue (LIFO - Last In, First Out) to give priority to retries
-        const queueEntry = { prompt, provider, providerProfileUrl };
+        const queueEntry = { 
+            displayPrompt, 
+            apiPrompt, 
+            provider, 
+            providerProfileUrl 
+        };
         generationQueue.unshift(queueEntry);
         
         logger.logInfo('GENERATION', 'Added retry generation to queue (LIFO - Priority)', {
             provider,
-            promptLength: prompt.length,
+            promptLength: displayPrompt.length,
             queueLength: generationQueue.length,
             queuePosition: 1, // Will be processed next
-            promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
+            promptPreview: displayPrompt.substring(0, 100) + (displayPrompt.length > 100 ? '...' : '')
         });
         
         isGenerating = false;
@@ -130,16 +156,25 @@ import * as configPanel from './components/configPanel.js';
     }
 
     function addToGenerationQueue(prompt, provider, providerProfileUrl = null) {
+        // Store both display and API versions of the prompt
+        const displayPrompt = getDisplayReadyPrompt(prompt);
+        const apiPrompt = getApiReadyPrompt(prompt, 'queue_add');
+        
         // Add to the end of the queue (FIFO - First In, First Out) for normal requests
-        const queueEntry = { prompt, provider, providerProfileUrl };
+        const queueEntry = {
+            displayPrompt,
+            apiPrompt,
+            provider,
+            providerProfileUrl
+        };
         generationQueue.push(queueEntry);
         
         logger.logInfo('GENERATION', 'Added generation to queue (FIFO)', {
             provider,
-            promptLength: prompt.length,
+            promptLength: displayPrompt.length,
             queueLength: generationQueue.length,
             queuePosition: generationQueue.length, // Position in queue (1-based)
-            promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
+            promptPreview: displayPrompt.substring(0, 100) + (displayPrompt.length > 100 ? '...' : '')
         });
         
         // Update system status to show the queue length
@@ -194,8 +229,8 @@ import * as configPanel from './components/configPanel.js';
         
         logger.logInfo('QUEUE', 'Starting queue processing', {
             provider: request.provider,
-            promptLength: request.prompt.length,
-            promptPreview: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+            promptLength: request.displayPrompt.length,
+            promptPreview: request.displayPrompt.substring(0, 100) + (request.displayPrompt.length > 100 ? '...' : ''),
             remainingQueueLength: generationQueue.length,
             currentStatus: currentGenerationStatusText
         });
@@ -230,28 +265,29 @@ import * as configPanel from './components/configPanel.js';
             }
         };
 
+        // Use the API-ready prompt for the actual API call
         switch (request.provider) {
             case 'Google':
-                logger.logDebug('QUEUE', 'Dispatching to Google provider', { prompt: request.prompt.substring(0, 50) + '...' });
-                apiGoogle.generate(request.prompt, callbacks);
+                logger.logDebug('QUEUE', 'Dispatching to Google provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
+                apiGoogle.generate(request.apiPrompt, callbacks);
                 break;
             case 'AIHorde':
-                logger.logDebug('QUEUE', 'Dispatching to AIHorde provider', { prompt: request.prompt.substring(0, 50) + '...' });
-                apiAIHorde.generate(request.prompt, callbacks);
+                logger.logDebug('QUEUE', 'Dispatching to AIHorde provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
+                apiAIHorde.generate(request.apiPrompt, callbacks);
                 break;
             case 'Pollinations':
-                logger.logDebug('QUEUE', 'Dispatching to Pollinations provider', { prompt: request.prompt.substring(0, 50) + '...' });
-                apiPollinations.generate(request.prompt, callbacks);
+                logger.logDebug('QUEUE', 'Dispatching to Pollinations provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
+                apiPollinations.generate(request.apiPrompt, callbacks);
                 break;
             case 'OpenAICompat':
                 logger.logDebug('QUEUE', 'Dispatching to OpenAICompat provider', {
-                    prompt: request.prompt.substring(0, 50) + '...',
+                    prompt: request.apiPrompt.substring(0, 50) + '...',
                     providerProfileUrl: request.providerProfileUrl
                 });
-                apiOpenAI.generate(request.prompt, request.providerProfileUrl, callbacks);
+                apiOpenAI.generate(request.apiPrompt, request.providerProfileUrl, callbacks);
                 break;
             default:
-                handleGenerationFailure(`Unknown provider: ${request.provider}`, request.prompt, 'System');
+                handleGenerationFailure(`Unknown provider: ${request.provider}`, request.displayPrompt, 'System');
         }
     }
 
@@ -299,7 +335,9 @@ import * as configPanel from './components/configPanel.js';
             if (shouldUseExternalEnhancement) {
                 statusWidget.update('loading', 'Enhancing prompt...');
                 try {
-                    finalPrompt = await apiGemini.enhancePromptWithGemini(finalPrompt, config);
+                    // Clean prompt for enhancement API call
+                    const cleanPromptForEnhancement = getApiReadyPrompt(finalPrompt, 'enhancement');
+                    finalPrompt = await apiGemini.enhancePromptWithGemini(cleanPromptForEnhancement, config);
                     statusWidget.update('success', 'Prompt enhanced!');
                     setTimeout(() => updateSystemStatus(), 2000);
                 } catch (error) {
@@ -363,6 +401,16 @@ import * as configPanel from './components/configPanel.js';
     // --- INITIALIZATION ---
     async function init() {
         await logger.updateLoggingStatus();
+
+        // Clean old history entries on startup to maintain data integrity
+        try {
+            const removedCount = await storage.cleanOldHistory();
+            if (removedCount > 0) {
+                logger.logInfo('INIT', `Cleaned ${removedCount} old history entries on startup`);
+            }
+        } catch (error) {
+            logger.logError('INIT', 'Failed to clean old history entries on startup', { error: error.message });
+        }
 
         // Create the main UI button
         const materialSymbolsLink = document.createElement('link');

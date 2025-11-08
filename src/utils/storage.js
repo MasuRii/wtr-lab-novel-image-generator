@@ -66,3 +66,93 @@ export async function addToHistory(item) {
     }
     await GM_setValue('history', JSON.stringify(history));
 }
+
+/**
+ * Retrieves the history days setting from storage.
+ * @returns {Promise<number>} The number of days for history retention.
+ */
+export async function getHistoryDays() {
+    try {
+        const days = await GM_getValue('historyDays', DEFAULTS.historyDays);
+        // Validate and ensure the value is a positive number
+        const parsedDays = parseInt(days);
+        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+            console.warn('Invalid historyDays value, using default:', days);
+            await setHistoryDays(DEFAULTS.historyDays);
+            return DEFAULTS.historyDays;
+        }
+        return parsedDays;
+    } catch (error) {
+        console.error('Failed to get historyDays setting:', error);
+        return DEFAULTS.historyDays;
+    }
+}
+
+/**
+ * Sets the history days setting in storage.
+ * @param {number} days - The number of days to retain history.
+ */
+export async function setHistoryDays(days) {
+    try {
+        // Validate the input
+        const parsedDays = parseInt(days);
+        if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+            throw new Error(`Invalid historyDays value: ${days}. Must be between 1 and 365.`);
+        }
+        await GM_setValue('historyDays', parsedDays);
+        return true;
+    } catch (error) {
+        console.error('Failed to set historyDays:', error);
+        throw error;
+    }
+}
+
+/**
+ * Gets filtered history based on the configured days setting.
+ * @returns {Promise<Array<object>>} The filtered history array.
+ */
+export async function getFilteredHistory() {
+    try {
+        const history = await getHistory();
+        const historyDays = await getHistoryDays();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - historyDays);
+        
+        return history.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate > cutoffDate;
+        });
+    } catch (error) {
+        console.error('Failed to get filtered history:', error);
+        return await getHistory(); // Fallback to unfiltered history
+    }
+}
+
+/**
+ * Cleans old history entries based on the configured days setting.
+ * @returns {Promise<number>} The number of entries removed.
+ */
+export async function cleanOldHistory() {
+    try {
+        const history = await getHistory();
+        const historyDays = await getHistoryDays();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - historyDays);
+        
+        const filteredHistory = history.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate > cutoffDate;
+        });
+        
+        const removedCount = history.length - filteredHistory.length;
+        
+        if (removedCount > 0) {
+            await GM_setValue('history', JSON.stringify(filteredHistory));
+        }
+        
+        return removedCount;
+    } catch (error) {
+        console.error('Failed to clean old history:', error);
+        throw error;
+    }
+}

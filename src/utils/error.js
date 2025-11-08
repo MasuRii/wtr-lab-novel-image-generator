@@ -36,6 +36,73 @@ export function parseErrorMessage(errorString, provider = null, providerProfileU
         };
     }
 
+    // Check for OpenAI Compatible provider specific errors
+    if (provider === 'OpenAICompat') {
+        // Check for authentication errors (non-retryable)
+        if (lowerCaseContent.includes('invalid api key') || lowerCaseContent.includes('authentication failed') || lowerCaseContent.includes('unauthorized')) {
+            return {
+                message: 'Authentication failed. Please check your API key configuration and ensure it is valid for this OpenAI-compatible provider.',
+                retryable: false,
+                errorType: 'authentication',
+                isNonRetryable: true
+            };
+        }
+        
+        // Check for IP address mismatch errors (retryable)
+        if (lowerCaseContent.includes('ip address mismatch')) {
+            return {
+                message: 'IP Address Mismatch: Your current IP doesn\'t match your account. Try the /user resetip command in the Discord server or upgrade to premium for multi-IP support.',
+                retryable: true,
+                errorType: 'ip_mismatch',
+                isNonRetryable: false,
+                discordLink: 'https://discord.gg/zukijourney',
+                resetipCommand: '/user resetip'
+            };
+        }
+        
+        // Check for image conversion errors
+        if (lowerCaseContent.includes('failed to convert image to base64') || lowerCaseContent.includes('base64') || lowerCaseContent.includes('image conversion')) {
+            return {
+                message: 'Image conversion failed. The provider returned image data that could not be properly converted. This may be a temporary issue with the provider.',
+                retryable: true,
+                errorType: 'image_conversion',
+                isNonRetryable: false
+            };
+        }
+        
+        // Check for JSON parsing errors
+        if (lowerCaseContent.includes('html response instead of json') || lowerCaseContent.includes('unexpected token \'<\'') || lowerCaseContent.includes('received html')) {
+            return {
+                message: 'The API endpoint returned an HTML page instead of JSON data. This usually indicates endpoint configuration issues, authentication problems, or an invalid API endpoint URL. Please check your OpenAI-compatible provider configuration.',
+                retryable: false,
+                errorType: 'html_response',
+                isNonRetryable: true,
+                endpointIssue: true
+            };
+        }
+        
+        // Check for malformed JSON errors
+        if (lowerCaseContent.includes('json parsing failed') || lowerCaseContent.includes('malformed json') || lowerCaseContent.includes('unexpected character at line 1 column 1')) {
+            return {
+                message: 'The API returned malformed or invalid JSON data. This may indicate server issues with the OpenAI-compatible provider. Please try again later or contact the provider support.',
+                retryable: true,
+                errorType: 'malformed_json',
+                isNonRetryable: false,
+                serverIssue: true
+            };
+        }
+        
+        // Check for generic JSON parse errors
+        if (lowerCaseContent.includes('json parse error') || lowerCaseContent.includes('json parsing error') || lowerCaseContent.includes('invalid json')) {
+            return {
+                message: 'JSON parsing failed for the API response. This may indicate server issues or malformed response from the OpenAI-compatible provider.',
+                retryable: true,
+                errorType: 'json_parse_error',
+                isNonRetryable: false
+            };
+        }
+    }
+
     try {
         const errorJson = JSON.parse(messageContent.substring(messageContent.indexOf('{')));
         const message = errorJson.message || (errorJson.error ? errorJson.error.message : null) || JSON.stringify(errorJson);

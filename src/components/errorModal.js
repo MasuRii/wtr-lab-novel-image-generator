@@ -99,6 +99,12 @@ export async function show(errorDetails) {
     const actionsContainer = document.getElementById('nig-error-actions');
     actionsContainer.innerHTML = '';
 
+    // Check if this is a non-retryable error (authentication errors or explicitly marked as non-retryable)
+    const isNonRetryableError = errorDetails.reason.isNonRetryable ||
+                               errorDetails.reason.errorType === 'authentication' ||
+                               (!errorDetails.reason.retryable && !errorDetails.reason.errorType);
+
+    // Create retry button
     const retryBtn = document.createElement('button');
     retryBtn.textContent = 'Retry Generation';
     retryBtn.className = 'nig-retry-btn';
@@ -123,16 +129,76 @@ export async function show(errorDetails) {
         hide();
     };
 
-    if (errorDetails.reason.retryable) {
-        actionsContainer.appendChild(retryBtn);
-    } else {
-        const showRetryButton = () => {
-            if (!actionsContainer.contains(retryBtn)) {
-                actionsContainer.appendChild(retryBtn);
-            }
-        };
-        promptTextarea.oninput = showRetryButton;
-        providerSelect.onchange = showRetryButton;
+    // Handle retry button visibility based on error type
+    if (!isNonRetryableError) {
+        if (errorDetails.reason.retryable) {
+            // Show retry button immediately for retryable errors
+            actionsContainer.appendChild(retryBtn);
+        } else {
+            // For non-retryable errors, only show retry if user modifies prompt or changes provider
+            const showRetryButton = () => {
+                if (!actionsContainer.contains(retryBtn)) {
+                    actionsContainer.appendChild(retryBtn);
+                }
+            };
+            promptTextarea.oninput = showRetryButton;
+            providerSelect.onchange = showRetryButton;
+        }
+    }
+
+    // Add specific messaging for authentication errors
+    if (errorDetails.reason.errorType === 'authentication') {
+        const authWarning = document.createElement('div');
+        authWarning.className = 'nig-auth-warning';
+        authWarning.style.cssText = 'color: #d63384; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        authWarning.innerHTML = '<strong>Authentication Issue:</strong> Please check your API key configuration in the settings before retrying.';
+        actionsContainer.appendChild(authWarning);
+    }
+
+    // Add specific messaging for image conversion errors
+    if (errorDetails.reason.errorType === 'image_conversion') {
+        const conversionInfo = document.createElement('div');
+        conversionInfo.className = 'nig-conversion-info';
+        conversionInfo.style.cssText = 'color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        conversionInfo.innerHTML = '<strong>Image Conversion Issue:</strong> This may be a temporary problem with the provider. You can try again or use a different provider.';
+        actionsContainer.appendChild(conversionInfo);
+    }
+    // Add specific messaging for IP mismatch errors
+    if (errorDetails.reason.errorType === 'ip_mismatch') {
+        const ipWarning = document.createElement('div');
+        ipWarning.className = 'nig-ip-warning';
+        ipWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        const discordLink = errorDetails.reason.discordLink || 'https://discord.gg/zukijourney';
+        const resetipCommand = errorDetails.reason.resetipCommand || '/user resetip';
+        ipWarning.innerHTML = '<strong>IP Address Mismatch:</strong> Your current IP address doesn\'t match the one registered to your account.<br><br><strong>To resolve this:</strong><br>• Join the Discord server: <a href="' + discordLink + '" target="_blank" rel="noopener noreferrer" style="color: #856404; text-decoration: underline;">' + discordLink + '</a><br>• Use the command: <code style="background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-family: monospace;">' + resetipCommand + '</code><br>• Or upgrade to premium for multi-IP support<br><br><em>You can retry this generation after resetting your IP lock.</em>';
+        actionsContainer.appendChild(ipWarning);
+    }
+
+    // Add specific messaging for HTML response errors
+    if (errorDetails.reason.errorType === 'html_response') {
+        const htmlWarning = document.createElement('div');
+        htmlWarning.className = 'nig-html-warning';
+        htmlWarning.style.cssText = 'color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        htmlWarning.innerHTML = '<strong>Endpoint Configuration Issue:</strong> The API endpoint returned HTML instead of JSON, which usually indicates:<br>• Invalid or incorrect endpoint URL<br>• Authentication problems<br>• Endpoint not supporting image generation<br><br>Please check your OpenAI-compatible provider configuration in settings.';
+        actionsContainer.appendChild(htmlWarning);
+    }
+
+    // Add specific messaging for malformed JSON errors
+    if (errorDetails.reason.errorType === 'malformed_json') {
+        const jsonWarning = document.createElement('div');
+        jsonWarning.className = 'nig-json-warning';
+        jsonWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        jsonWarning.innerHTML = '<strong>Server Response Issue:</strong> The API returned malformed JSON data. This is typically a temporary server issue with the provider. You can try again or use a different provider.';
+        actionsContainer.appendChild(jsonWarning);
+    }
+
+    // Add specific messaging for generic JSON parse errors
+    if (errorDetails.reason.errorType === 'json_parse_error') {
+        const parseWarning = document.createElement('div');
+        parseWarning.className = 'nig-parse-warning';
+        parseWarning.style.cssText = 'color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        parseWarning.innerHTML = '<strong>JSON Parsing Error:</strong> Unable to parse the API response. This may be a temporary issue with the provider. You can try again or switch to a different provider.';
+        actionsContainer.appendChild(parseWarning);
     }
 
     modalElement.style.display = 'flex';

@@ -141,6 +141,11 @@
     padding-left: var(--nig-space-xl);
 }
 
+/* History list alignment fix - remove excessive padding for history results */
+#nig-history-list {
+    padding-left: var(--nig-space-sm);
+}
+
 .nig-modal-content li {
     margin-bottom: var(--nig-space-md);
 }
@@ -294,7 +299,7 @@
 
 .nig-fetch-models-btn {
     padding: var(--nig-space-sm) var(--nig-space-md);
-    margin-left: var(--nig-space-md);
+    margin-left: 0;
     border-radius: var(--nig-radius-md);
     border: 1px solid var(--nig-color-border);
     background: var(--nig-color-accent-primary);
@@ -312,7 +317,7 @@
 
 .nig-delete-btn {
     padding: var(--nig-space-sm) var(--nig-space-md);
-    margin-left: var(--nig-space-md);
+    margin-left: 0;
     border-radius: var(--nig-radius-md);
     border: 1px solid var(--nig-color-border);
     background: var(--nig-color-accent-error);
@@ -703,6 +708,48 @@
 .nig-image-actions button:hover {
     background: white;
     transform: scale(1.1);
+}
+
+/* === Image Loading States === */
+.nig-image-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.nig-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: nig-spin 1s linear infinite;
+}
+
+@keyframes nig-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* === URL Link Button Styling === */
+.nig-image-actions button[title="Open Image URL"] {
+    background: rgba(99, 102, 241, 0.9);
+}
+
+.nig-image-actions button[title="Open Image URL"]:hover {
+    background: var(--nig-color-accent-primary);
 }
 
 .material-symbols-outlined {
@@ -1548,7 +1595,7 @@
     }
 
     .nig-style-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
     }
 
     .nig-styling-container {

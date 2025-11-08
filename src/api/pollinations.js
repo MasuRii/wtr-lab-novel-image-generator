@@ -1,5 +1,6 @@
 import { getConfig } from '../utils/storage.js';
 import { clearCachedModels } from '../utils/cache.js';
+import { getApiReadyPrompt } from '../utils/promptUtils.js';
 
 /**
  * Generates an image using the Pollinations.ai API.
@@ -19,6 +20,9 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
         pollinationsNologo,
         pollinationsPrivate,
     } = config;
+
+    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
+    const cleanPrompt = getApiReadyPrompt(prompt, 'pollinations_api');
 
     // Use the configured model (includes kontext which can do text-to-image)
     const finalModel = model || 'flux';
@@ -41,7 +45,7 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
     if (pollinationsPrivate) params.append('private', 'true');
 
     const paramString = params.toString();
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}${paramString ? '?' + paramString : ''}`;
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}${paramString ? '?' + paramString : ''}`;
 
     GM_xmlhttpRequest({
         method: 'GET',

@@ -1,4 +1,5 @@
 import { getConfig } from '../utils/storage.js';
+import { getApiReadyPrompt } from '../utils/promptUtils.js';
 
 /**
  * Generates an image using the Google Imagen API.
@@ -8,6 +9,9 @@ import { getConfig } from '../utils/storage.js';
 export async function generate(prompt, { onSuccess, onFailure }) {
     const config = await getConfig();
     const { model, googleApiKey, numberOfImages, aspectRatio, personGeneration, imageSize } = config;
+
+    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
+    const cleanPrompt = getApiReadyPrompt(prompt, 'google_api');
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
     const parameters = {
@@ -23,7 +27,7 @@ export async function generate(prompt, { onSuccess, onFailure }) {
         method: 'POST',
         url,
         headers: { 'x-goog-api-key': googleApiKey, 'Content-Type': 'application/json' },
-        data: JSON.stringify({ instances: [{ prompt }], parameters }),
+        data: JSON.stringify({ instances: [{ prompt: cleanPrompt }], parameters }),
         onload: (response) => {
             try {
                 const data = JSON.parse(response.responseText);

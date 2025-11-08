@@ -1,3 +1,4 @@
+
 // --- IMPORTS ---
 import { DEFAULTS } from '../config/defaults.js';
 import { PROMPT_CATEGORIES } from '../config/styles.js';
@@ -11,6 +12,8 @@ import * as apiGemini from '../api/gemini.js';
 // --- MODULE STATE ---
 let panelElement = null;
 let initializeCallbacks = {};
+
+// Logo functionality removed - dropdowns now show text only
 
 // --- PRIVATE HELPER FUNCTIONS ---
 
@@ -92,6 +95,38 @@ function updateEnhancementUI(provider, config) {
     }
 }
 
+// Helper function to handle enhancement template selection
+async function handleEnhancementTemplateSelection(config) {
+    const templateSelect = document.getElementById('nig-enhancement-template-select');
+    const templateTextarea = document.getElementById('nig-enhancement-template');
+    
+    // Determine which preset matches the current template
+    let selectedPreset = 'standard'; // default
+    if (config.enhancementTemplateSelected) {
+        selectedPreset = config.enhancementTemplateSelected;
+    } else {
+        // Try to match existing template to a preset
+        for (const [key, preset] of Object.entries(DEFAULTS.enhancementPresets)) {
+            if (config.enhancementTemplate === preset.template) {
+                selectedPreset = key;
+                break;
+            }
+        }
+    }
+    
+    templateSelect.value = selectedPreset;
+    
+    if (selectedPreset === 'custom') {
+        templateTextarea.disabled = false;
+    } else {
+        const preset = DEFAULTS.enhancementPresets[selectedPreset];
+        if (preset) {
+            templateTextarea.value = preset.template;
+            templateTextarea.disabled = true;
+        }
+    }
+}
+
 async function populateConfigForm() {
     const config = await storage.getConfig();
     document.getElementById('nig-provider').value = config.selectedProvider;
@@ -118,7 +153,9 @@ async function populateConfigForm() {
     document.getElementById('nig-enhancement-enabled').checked = config.enhancementEnabled;
     document.getElementById('nig-gemini-api-key').value = config.enhancementApiKey;
     document.getElementById('nig-enhancement-model').value = config.enhancementModel;
-    document.getElementById('nig-enhancement-template').value = config.enhancementTemplate;
+    
+    // Handle enhancement template selection
+    await handleEnhancementTemplateSelection(config);
     toggleEnhancementSettings(config.enhancementEnabled);
     updateEnhancementUI(config.selectedProvider, config);
     if (config.enhancementApiKey.trim().length > 0) {
@@ -166,6 +203,10 @@ async function populateConfigForm() {
         document.getElementById('nig-openai-model-container-manual').style.display = 'none';
     }
 
+    // Load history days setting
+    const historyDays = await storage.getHistoryDays();
+    document.getElementById('nig-history-clean-days').value = historyDays;
+
     updateVisibleSettings();
 }
 
@@ -178,6 +219,7 @@ async function saveConfig() {
     await storage.setConfigValue('enhancementApiKey', document.getElementById('nig-gemini-api-key').value.trim());
     await storage.setConfigValue('enhancementModel', document.getElementById('nig-enhancement-model').value);
     await storage.setConfigValue('enhancementTemplate', document.getElementById('nig-enhancement-template').value.trim());
+    await storage.setConfigValue('enhancementTemplateSelected', document.getElementById('nig-enhancement-template-select').value);
     await storage.setConfigValue('enableNegPrompt', document.getElementById('nig-enable-neg-prompt').checked);
     await storage.setConfigValue('globalNegPrompt', document.getElementById('nig-global-neg-prompt').value.trim());
     await storage.setConfigValue('selectedProvider', document.getElementById('nig-provider').value);
@@ -621,7 +663,8 @@ async function handleImportFile(event) {
 
 async function populateHistoryTab() {
     const historyList = document.getElementById('nig-history-list');
-    const history = await storage.getHistory();
+    // Use the new getFilteredHistory function to respect the configured days setting
+    const history = await storage.getFilteredHistory();
     
     historyList.innerHTML = '';
     if (history.length === 0) {
@@ -647,17 +690,12 @@ async function populateHistoryTab() {
 
         viewLink.addEventListener('click', e => {
             e.preventDefault();
-            if (item.url && item.url.startsWith('data:image')) {
-                // For base64 images, use the internal viewer to avoid browser issues
-                import('./imageViewer.js').then(module => {
-                    if (typeof module.showImageViewer === 'function') {
-                        module.showImageViewer([item.url], item.prompt, item.provider);
-                    }
-                });
-            } else {
-                // For regular URLs, open in a new tab
-                window.open(item.url, '_blank');
-            }
+            // Use unified modal for all image types (both base64 and URL)
+            import('./imageViewer.js').then(module => {
+                if (typeof module.show === 'function') {
+                    module.show([item.url], item.prompt, item.provider);
+                }
+            });
         });
 
         li.appendChild(viewLink);
@@ -666,17 +704,32 @@ async function populateHistoryTab() {
 }
 
 async function cleanHistory() {
-    const days = parseInt(document.getElementById('nig-history-clean-days').value);
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const daysInput = document.getElementById('nig-history-clean-days').value;
+    const days = parseInt(daysInput);
     
-    const history = await storage.getHistory();
-    const updatedHistory = history.filter(entry => new Date(entry.date) > cutoffDate);
+    // Validate the input
+    if (isNaN(days) || days < 1 || days > 365) {
+        alert('Please enter a valid number of days (1-365).');
+        return;
+    }
     
-    if (confirm(`Delete ${history.length - updatedHistory.length} entries older than ${days} days?`)) {
-        await storage.setConfigValue('generationHistory', updatedHistory);
+    try {
+        // Save the days setting
+        await storage.setHistoryDays(days);
+        
+        // Use the new cleanOldHistory function
+        const removedCount = await storage.cleanOldHistory();
+        
+        if (removedCount > 0) {
+            alert(`History cleaned successfully! Removed ${removedCount} old entries.`);
+        } else {
+            alert('History cleaned successfully! No old entries to remove.');
+        }
+        
         await populateHistoryTab();
-        alert('History cleaned successfully!');
+    } catch (error) {
+        console.error('Failed to clean history:', error);
+        alert('Failed to clean history. Please try again.');
     }
 }
 
@@ -720,10 +773,10 @@ export function create() {
                         <div class="nig-form-group">
                             <label for="nig-provider">Image Provider</label>
                             <select id="nig-provider">
-                                <option value="Pollinations">🌱 Pollinations.ai (Free, Simple)</option>
-                                <option value="AIHorde">🤖 AI Horde (Free, Advanced)</option>
-                                <option value="OpenAICompat">🔌 OpenAI Compatible (Custom)</option>
-                                <option value="Google">🖼️ Google Imagen (Requires Billed Account)</option>
+                                <option value="Pollinations">Pollinations.ai (Free, Simple)</option>
+                                <option value="AIHorde">AI Horde (Free, Advanced)</option>
+                                <option value="OpenAICompat">OpenAI Compatible (Custom)</option>
+                                <option value="Google">Google Imagen (Requires Billed Account)</option>
                             </select>
                         </div>
                     </div>
@@ -731,7 +784,7 @@ export function create() {
                     <div class="nig-provider-container">
                         <div id="nig-provider-Pollinations" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>🌱 Pollinations.ai Settings</h3>
+                                <h3>Pollinations.ai Settings</h3>
                                 <p>Fast, simple image generation with advanced model options</p>
                             </div>
                             <div class="nig-form-group">
@@ -772,7 +825,7 @@ export function create() {
 
                         <div id="nig-provider-AIHorde" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>🤖 AI Horde Settings</h3>
+                                <h3>AI Horde Settings</h3>
                                 <p>Community-powered generation with extensive customization</p>
                             </div>
                             <div class="nig-form-group">
@@ -840,7 +893,7 @@ export function create() {
 
                         <div id="nig-provider-Google" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>🖼️ Google Imagen Settings</h3>
+                                <h3>Google Imagen Settings</h3>
                                 <p>High-quality generation powered by Google's advanced AI</p>
                             </div>
                             <div class="nig-form-group">
@@ -889,7 +942,7 @@ export function create() {
 
                         <div id="nig-provider-OpenAICompat" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>🔌 OpenAI Compatible Settings</h3>
+                                <h3>OpenAI Compatible Settings</h3>
                                 <p>Connect to any OpenAI-compatible API endpoint</p>
                             </div>
                             <div class="nig-form-group">
@@ -998,13 +1051,30 @@ export function create() {
                                     </div>
 
                                     <div class="nig-form-group">
-                                        <label for="nig-enhancement-template">Custom Enhancement Template</label>
-                                        <textarea id="nig-enhancement-template" rows="3" placeholder="Enter custom enhancement instructions..."></textarea>
-                                        <div class="nig-form-group-inline">
-                                            <button class="nig-template-btn" id="nig-template-default">Reset to Default</button>
-                                            <button class="nig-template-btn" id="nig-template-example">Load Example</button>
+                                        <label for="nig-enhancement-template">Custom Enhancement Prompt</label>
+                                        <div class="nig-enhancement-template-section">
+                                            <div class="nig-form-group">
+                                                <label for="nig-enhancement-template-select">Enhancement Template</label>
+                                                <select id="nig-enhancement-template-select">
+                                                    <option value="standard">Standard Enhancement - Default enhancement that improves prompt quality</option>
+                                                    <option value="safety">Safety Enhancement - Enhances prompts while removing harmful content</option>
+                                                    <option value="artistic">Artistic Enhancement - Focuses on artistic and creative elements</option>
+                                                    <option value="technical">Technical Enhancement - Emphasizes technical accuracy and detail</option>
+                                                    <option value="character">Character Enhancement - Focuses on character development</option>
+                                                    <option value="environment">Environment Enhancement - Enhances environmental descriptions</option>
+                                                    <option value="composition">Composition Enhancement - Focuses on composition and visual structure</option>
+                                                    <option value="clean">Clean Enhancement - Removes potentially harmful elements</option>
+                                                    <option value="custom">Custom Enhancement Prompt</option>
+                                                </select>
+                                                <small class="nig-hint">Choose a preset enhancement prompt or select 'Custom' to create your own. Preset prompts include safety features to remove harmful content.</small>
+                                            </div>
+                                            <textarea id="nig-enhancement-template" rows="3" placeholder="Enter custom enhancement instructions..."></textarea>
+                                            <div class="nig-form-group-inline">
+                                                <button class="nig-template-btn" id="nig-template-reset">Reset to Preset</button>
+                                                <button class="nig-template-btn" id="nig-template-example">Load Example</button>
+                                            </div>
+                                            <small class="nig-hint">Customize how the AI enhances prompts. Leave empty for intelligent enhancement.</small>
                                         </div>
-                                        <small class="nig-hint">Customize how the AI enhances prompts. Leave empty for intelligent enhancement.</small>
                                     </div>
 
                                     <div class="nig-enhancement-preview" id="nig-enhancement-preview" style="display: none;">
@@ -1169,7 +1239,9 @@ export function create() {
     });
 
     // Provider settings
-    panelElement.querySelector('#nig-provider').addEventListener('change', updateVisibleSettings);
+    panelElement.querySelector('#nig-provider').addEventListener('change', (e) => {
+        updateVisibleSettings();
+    });
 
     // OpenAI Compatible functionality
     panelElement.querySelector('#nig-openai-compat-fetch-models').addEventListener('click', () => fetchOpenAICompatModels());
@@ -1190,6 +1262,24 @@ export function create() {
     panelElement.querySelector('#nig-export-btn').addEventListener('click', exportConfig);
     panelElement.querySelector('#nig-import-file').addEventListener('change', handleImportFile);
     panelElement.querySelector('#nig-history-clean-btn').addEventListener('click', cleanHistory);
+    
+    // Auto-save history days setting when input changes
+    panelElement.querySelector('#nig-history-clean-days').addEventListener('change', async (e) => {
+        const days = parseInt(e.target.value);
+        if (!isNaN(days) && days >= 1 && days <= 365) {
+            try {
+                await storage.setHistoryDays(days);
+                console.log(`History days setting saved: ${days}`);
+                // Refresh the history tab to reflect the new setting
+                if (panelElement.querySelector('.nig-tab[data-tab="history"]').classList.contains('active')) {
+                    await populateHistoryTab();
+                }
+            } catch (error) {
+                console.error('Failed to auto-save history days setting:', error);
+            }
+        }
+    });
+    
     panelElement.querySelector('#nig-clear-cache-btn').addEventListener('click', () => cache.clearCachedModels());
 
     // Logging functionality
@@ -1290,10 +1380,52 @@ export function create() {
     const enhancementEnabled = panelElement.querySelector('#nig-enhancement-enabled');
     const enhancementSettings = panelElement.querySelector('#nig-enhancement-settings');
     const overrideProviderBtn = panelElement.querySelector('#nig-override-provider');
-    const templateDefaultBtn = panelElement.querySelector('#nig-template-default');
+    const templateSelect = panelElement.querySelector('#nig-enhancement-template-select');
+    const templateResetBtn = panelElement.querySelector('#nig-template-reset');
     const templateExampleBtn = panelElement.querySelector('#nig-template-example');
     const testEnhancementBtn = panelElement.querySelector('#nig-test-enhancement');
     const geminiApiKeyInput = panelElement.querySelector('#nig-gemini-api-key');
+
+    // Enhancement Template Selection Handler
+    templateSelect.addEventListener('change', async (e) => {
+        const selectedValue = e.target.value;
+        const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
+        
+        if (selectedValue === 'custom') {
+            // Keep the current template text for custom editing
+            templateTextarea.disabled = false;
+        } else {
+            // Load preset template
+            const preset = DEFAULTS.enhancementPresets[selectedValue];
+            if (preset) {
+                templateTextarea.value = preset.template;
+                templateTextarea.disabled = true;
+                await storage.setConfigValue('enhancementTemplate', preset.template);
+            }
+        }
+        await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
+    });
+
+    // Reset to Preset Button
+    templateResetBtn.addEventListener('click', async () => {
+        const selectedValue = templateSelect.value;
+        const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
+        
+        if (selectedValue !== 'custom') {
+            const preset = DEFAULTS.enhancementPresets[selectedValue];
+            if (preset) {
+                templateTextarea.value = preset.template;
+                await storage.setConfigValue('enhancementTemplate', preset.template);
+            }
+        }
+    });
+
+    // Load Example Button
+    templateExampleBtn.addEventListener('click', async () => {
+        const exampleTemplate = 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:';
+        panelElement.querySelector('#nig-enhancement-template').value = exampleTemplate;
+        await storage.setConfigValue('enhancementTemplate', exampleTemplate);
+    });
 
     enhancementEnabled.addEventListener('change', async (e) => {
         const newState = e.target.checked;
@@ -1310,18 +1442,6 @@ export function create() {
         await storage.setConfigValue('enhancementOverrideProvider', true);
         const config = await storage.getConfig();
         updateEnhancementUI(provider, config);
-    });
-
-    templateDefaultBtn.addEventListener('click', async () => {
-        const defaultTemplate = 'Convert this text into a focused visual description for image generation. Extract key visual elements (characters, setting, mood, style) and describe them as a direct prompt without narrative elements, dialogue, or markdown formatting. Keep it concise and focused on what can be visually rendered. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:';
-        panelElement.querySelector('#nig-enhancement-template').value = defaultTemplate;
-        await storage.setConfigValue('enhancementTemplate', defaultTemplate);
-    });
-
-    templateExampleBtn.addEventListener('click', async () => {
-        const exampleTemplate = 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:';
-        panelElement.querySelector('#nig-enhancement-template').value = exampleTemplate;
-        await storage.setConfigValue('enhancementTemplate', exampleTemplate);
     });
 
     geminiApiKeyInput.addEventListener('input', async (e) => {

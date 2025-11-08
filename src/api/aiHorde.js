@@ -1,5 +1,6 @@
 import { getConfig } from '../utils/storage.js';
 import { clearCachedModels } from '../utils/cache.js';
+import { getApiReadyPrompt } from '../utils/promptUtils.js';
 import { logInfo, logDebug, logError } from '../utils/logger.js';
 
 function checkStatus(id, prompt, startTime, model, { onSuccess, onFailure, updateStatus }) {
@@ -116,9 +117,12 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
     const config = await getConfig();
     const { aiHordeApiKey, aiHordeModel, aiHordeSampler, aiHordeCfgScale, aiHordeSteps, aiHordeWidth, aiHordeHeight, aiHordeSeed, aiHordePostProcessing, enableNegPrompt, globalNegPrompt } = config;
     
+    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
+    const cleanPrompt = getApiReadyPrompt(prompt, 'aihorde_api');
+    
     logInfo('AIHORDE', 'Starting AI Horde generation', {
-        promptLength: prompt.length,
-        promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
+        promptLength: cleanPrompt.length,
+        promptPreview: cleanPrompt.substring(0, 100) + (cleanPrompt.length > 100 ? '...' : ''),
         model: aiHordeModel,
         apiKeyProvided: !!aiHordeApiKey,
         hasNegativePrompt: enableNegPrompt && !!globalNegPrompt
@@ -134,7 +138,7 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
     if (aiHordeSeed) params.seed = aiHordeSeed;
     if (aiHordePostProcessing.length > 0) params.post_processing = aiHordePostProcessing;
 
-    const payload = { prompt, params, models: [aiHordeModel] };
+    const payload = { prompt: cleanPrompt, params, models: [aiHordeModel] };
     if (enableNegPrompt && globalNegPrompt) {
         payload.negative_prompt = globalNegPrompt;
     }
