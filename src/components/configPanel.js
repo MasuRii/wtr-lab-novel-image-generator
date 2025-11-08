@@ -280,12 +280,45 @@ async function fetchAIHordeModels(selectedModel) {
     }
 }
 
-async function fetchOpenAICompatModels() {
+function isModelFree(model) {
+    if (typeof model.is_free === 'boolean') return model.is_free;
+    if (typeof model.premium_model === 'boolean') return !model.premium_model;
+    if (Array.isArray(model.tiers) && model.tiers.includes('Free')) return true;
+    return false;
+}
+
+function populateOpenAICompatSelect(select, models, selectedModel) {
+    select.innerHTML = '';
+    const freeGroup = document.createElement('optgroup');
+    freeGroup.label = 'Free Models';
+    const paidGroup = document.createElement('optgroup');
+    paidGroup.label = 'Paid Models';
+
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = model.id;
+        if (isModelFree(model)) {
+            freeGroup.appendChild(option);
+        } else {
+            paidGroup.appendChild(option);
+        }
+    });
+
+    if (freeGroup.childElementCount > 0) select.appendChild(freeGroup);
+    if (paidGroup.childElementCount > 0) select.appendChild(paidGroup);
+
+    if (models.some(m => m.id === selectedModel)) {
+        select.value = selectedModel;
+    }
+}
+
+async function fetchOpenAICompatModels(selectedModel) {
     const baseUrl = document.getElementById('nig-openai-compat-base-url').value.trim();
     const apiKey = document.getElementById('nig-openai-compat-api-key').value.trim();
     
-    if (!baseUrl || !apiKey) {
-        alert('Please enter both base URL and API key');
+    if (!baseUrl) {
+        alert('Please enter a Base URL first.');
         return;
     }
 
@@ -305,18 +338,53 @@ async function fetchOpenAICompatModels() {
         }
 
         const data = await response.json();
-        const models = data.data.map(model => model.id).sort();
-        
-        select.innerHTML = '';
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model;
-            option.textContent = model;
-            select.appendChild(option);
+        if (!data.data || !Array.isArray(data.data)) {
+            throw new Error('Invalid model list format received.');
+        }
+
+        let imageModels = [];
+        if (data.data.some(m => m.endpoint || m.endpoints)) {
+            imageModels = data.data.filter(model =>
+                model.endpoint === '/v1/images/generations' ||
+                model.endpoints?.includes('/v1/images/generations')
+            );
+        } else if (data.data.some(m => m.type === 'images.generations')) {
+            imageModels = data.data.filter(model => model.type === 'images.generations');
+        } else {
+            // If no explicit image models found, try to identify them by name patterns
+            imageModels = data.data.filter(model => {
+                const modelId = model.id.toLowerCase();
+                return modelId.includes('dall-e') ||
+                       modelId.includes('dalle') ||
+                       modelId.includes('image') ||
+                       modelId.includes('midjourney') ||
+                       modelId.includes('stable diffusion') ||
+                       modelId.includes('flux') ||
+                       modelId.includes('imagen');
+            });
+        }
+
+        imageModels.sort((a, b) => {
+            const aIsFree = isModelFree(a);
+            const bIsFree = isModelFree(b);
+            if (aIsFree && !bIsFree) return -1;
+            if (!aIsFree && bIsFree) return 1;
+            return a.id.localeCompare(b.id);
         });
+
+        if (imageModels.length === 0) {
+            throw new Error('No image generation models found. This provider may not support image generation.');
+        }
+        
+        populateOpenAICompatSelect(select, imageModels, selectedModel);
     } catch (error) {
         select.innerHTML = '<option>Failed to fetch models</option>';
-        alert(`Failed to fetch models: ${error.message}`);
+        console.error('Failed to parse OpenAI Compatible models:', error);
+        alert(`Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`);
+        
+        // Switch to manual input mode
+        document.getElementById('nig-openai-model-container-select').style.display = 'none';
+        document.getElementById('nig-openai-model-container-manual').style.display = 'block';
     }
 }
 
@@ -324,19 +392,28 @@ async function loadOpenAIProfiles() {
     const select = document.getElementById('nig-openai-compat-profile-select');
     const config = await storage.getConfig();
     const profiles = config.openAICompatProfiles || {};
+    const activeUrl = config.openAICompatActiveProfileUrl;
     
     select.innerHTML = '';
+
     Object.keys(profiles).forEach(url => {
         const option = document.createElement('option');
         option.value = url;
-        option.textContent = url.replace('https://', '').split('/')[0];
+        option.textContent = url;
         select.appendChild(option);
     });
 
-    if (config.openAICompatActiveProfileUrl && profiles[config.openAICompatActiveProfileUrl]) {
-        select.value = config.openAICompatActiveProfileUrl;
-        loadSelectedOpenAIProfile();
+    const newOption = document.createElement('option');
+    newOption.value = '__new__';
+    newOption.textContent = '— Add or Edit Profile —';
+    select.appendChild(newOption);
+
+    if (activeUrl && profiles[activeUrl]) {
+        select.value = activeUrl;
+    } else {
+        select.value = '__new__';
     }
+    loadSelectedOpenAIProfile();
 }
 
 async function loadSelectedOpenAIProfile() {
@@ -354,7 +431,14 @@ async function loadSelectedOpenAIProfile() {
             document.getElementById('nig-openai-compat-model-manual').value = profile.model;
         } else {
             document.getElementById('nig-openai-compat-model').value = profile.model;
+            // Call fetchOpenAICompatModels with the saved model to refresh the list
+            fetchOpenAICompatModels(profile.model);
         }
+    } else {
+        // New profile mode - clear the model selection
+        document.getElementById('nig-openai-compat-base-url').value = '';
+        document.getElementById('nig-openai-compat-api-key').value = '';
+        document.getElementById('nig-openai-compat-model').innerHTML = '<option>Enter URL/Key and fetch...</option>';
     }
 }
 
@@ -362,12 +446,12 @@ async function deleteSelectedOpenAIProfile() {
     const select = document.getElementById('nig-openai-compat-profile-select');
     const selectedUrl = select.value;
     
-    if (!selectedUrl) {
-        alert('Please select a profile to delete');
+    if (selectedUrl === '__new__') {
+        alert("You can't delete the 'Add New' option.");
         return;
     }
 
-    if (confirm(`Delete profile for ${selectedUrl}?`)) {
+    if (confirm(`Delete profile for "${selectedUrl}"?`)) {
         const config = await storage.getConfig();
         const profiles = config.openAICompatProfiles || {};
         delete profiles[selectedUrl];
@@ -376,7 +460,7 @@ async function deleteSelectedOpenAIProfile() {
         // Clear form fields
         document.getElementById('nig-openai-compat-base-url').value = '';
         document.getElementById('nig-openai-compat-api-key').value = '';
-        document.getElementById('nig-openai-compat-model').value = '';
+        document.getElementById('nig-openai-compat-model').innerHTML = '<option>Enter URL/Key and fetch...</option>';
         document.getElementById('nig-openai-compat-model-manual').value = '';
         
         await loadOpenAIProfiles();
@@ -986,7 +1070,7 @@ export function create() {
     panelElement.querySelector('#nig-provider').addEventListener('change', updateVisibleSettings);
 
     // OpenAI Compatible functionality
-    panelElement.querySelector('#nig-openai-compat-fetch-models').addEventListener('click', fetchOpenAICompatModels);
+    panelElement.querySelector('#nig-openai-compat-fetch-models').addEventListener('click', () => fetchOpenAICompatModels());
     panelElement.querySelector('#nig-openai-compat-profile-select').addEventListener('change', loadSelectedOpenAIProfile);
     panelElement.querySelector('#nig-openai-compat-delete-profile').addEventListener('click', deleteSelectedOpenAIProfile);
     panelElement.querySelector('#nig-openai-compat-switch-to-manual').addEventListener('click', (e) => {
