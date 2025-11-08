@@ -20,11 +20,20 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
         pollinationsPrivate,
     } = config;
 
+    // Use the configured model (includes kontext which can do text-to-image)
+    const finalModel = model || 'flux';
+    
+    // Debug logging to track model configuration
+    console.log('[NIG-DEBUG] [POLLINATIONS] Model configuration:', {
+        originalModel: model,
+        finalModel: finalModel
+    });
+
     const params = new URLSearchParams();
     if (pollinationsToken) params.append('token', pollinationsToken);
-    if (model && model !== 'flux') params.append('model', model);
-    if (pollinationsWidth && pollinationsWidth != 1024) params.append('width', pollinationsWidth);
-    if (pollinationsHeight && pollinationsHeight != 1024) params.append('height', pollinationsHeight);
+    if (finalModel && finalModel !== 'flux') params.append('model', finalModel);
+    if (pollinationsWidth && pollinationsWidth > 0) params.append('width', pollinationsWidth);
+    if (pollinationsHeight && pollinationsHeight > 0) params.append('height', pollinationsHeight);
     if (pollinationsSeed) params.append('seed', pollinationsSeed);
     if (pollinationsEnhance) params.append('enhance', 'true');
     if (pollinationsSafe) params.append('safe', 'true');
@@ -44,21 +53,34 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
         onload: async (response) => {
             if (response.status >= 200 && response.status < 300) {
                 const blobUrl = URL.createObjectURL(response.response);
-                onSuccess([blobUrl], prompt, 'Pollinations', model, [url]);
+                onSuccess([blobUrl], prompt, 'Pollinations', finalModel, [url]);
             } else {
                 const text = await response.response.text();
                 if (text.toLowerCase().includes('model not found')) {
-                    onFailure(`Model error: ${text}. Refreshing model list.`, prompt, 'Pollinations');
+                    onFailure(`Model error: ${text}. Refreshing model list.`, prompt, 'Pollinations', finalModel);
                     clearCachedModels('pollinations');
                     return;
                 }
-                if (response.status === 403 && text.includes('auth.pollinations.ai')) {
-                    onAuthFailure(JSON.parse(text).message, prompt);
-                    return;
+                
+                // Check for authentication requirements in any status code
+                // kontext model returns 500 status codes when auth is required
+                // gptimage model returns 403 status codes when auth is required
+                if ((response.status === 403 && text.includes('auth.pollinations.ai')) ||
+                    (text.toLowerCase().includes('authentication') && text.toLowerCase().includes('auth.pollinations.ai'))) {
+                    try {
+                        const errorData = JSON.parse(text);
+                        onAuthFailure(errorData.message || errorData.error || text, prompt);
+                        return;
+                    } catch (e) {
+                        // If JSON parsing fails, still trigger auth modal
+                        onAuthFailure(text, prompt);
+                        return;
+                    }
                 }
-                onFailure(`Error ${response.status}: ${text}`, prompt, 'Pollinations');
+                
+                onFailure(`Error ${response.status}: ${text}`, prompt, 'Pollinations', finalModel);
             }
         },
-        onerror: (error) => onFailure(JSON.stringify(error), prompt, 'Pollinations'),
+        onerror: (error) => onFailure(JSON.stringify(error), prompt, 'Pollinations', finalModel),
     });
 }
