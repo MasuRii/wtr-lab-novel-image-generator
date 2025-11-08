@@ -222,6 +222,9 @@ async function saveConfig() {
         await storage.setConfigValue('openAICompatProfiles', profiles);
         await storage.setConfigValue('openAICompatActiveProfileUrl', baseUrl);
         await storage.setConfigValue('openAICompatModelManualInput', isManualMode);
+        
+        // Refresh the OpenAI profiles dropdown to show the newly saved profile
+        await loadOpenAIProfiles();
     }
 
     alert('Configuration saved!');
