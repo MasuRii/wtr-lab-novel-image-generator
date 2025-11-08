@@ -4,6 +4,39 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.3] - 2025-11-08
+
+### 🏗️ MINOR: UI/UX Improvements and Feature Enhancements
+
+This release includes significant UI improvements, better positioning systems, animation enhancements, and improved functionality for a more polished user experience.
+
+#### 🆕 New Features
+
+- **Enhanced Z-Index Hierarchy**: Improved UI element layering with proper z-index hierarchy (Image viewer: 99999, Config panel: 99998, Status widget: 1020, Navigation: 1030)
+- **Flexible Status Widget Positioning**: Removed fixed "right" property for better mobile responsive behavior
+- **Reorganized Download File Naming**: Enhanced filename structure: ScriptName_Provider_Model_PromptSnippet_Index for better file organization
+
+#### 🔧 Bug Fixes
+
+- **Mobile Button Animation Fix**: Fixed mobile button hover movement issue that caused rightward shift
+- **Button Text Corruption**: Fixed Clean button text corruption issue in expired link detection
+- **Model Information Flow**: Fixed model information flow from generation to download functionality
+
+#### 🎯 Improvements
+
+- **Smooth Prompt Container Animation**: Added smooth expand/collapse transitions replacing jarring display toggle with max-height and opacity transitions
+- **Automatic Link Cleaning**: Added expired image link detection and removal functionality
+- **Enhanced Clean Button**: Improved Clean button to remove broken URLs (403, expired, etc.) with detailed user feedback
+- **Mobile Responsive Design**: Improved mobile-specific hover states to prevent visual shifts while maintaining feedback
+
+#### 🧪 Quality Assurance
+
+- **Testing**: Comprehensive testing of all UI components, animations, and positioning systems
+- **Cross-Platform Compatibility**: Verified functionality across desktop and mobile browsers
+- **Performance**: Optimized animations and positioning for better performance
+
+**Status**: Ready for production - all improvements tested and validated
+
 ## [6.0.2] - 2025-11-08
 
 ### 🏗️ MINOR: UI/UX Enhancements and Bug Fixes

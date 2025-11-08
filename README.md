@@ -1,14 +1,10 @@
-# 🚀 WTR LAB Novel Image Generator v6.0.2
+# 🚀 WTR LAB Novel Image Generator v6.0.3
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
 [![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
-## ⚠️ IMPORTANT: Version 6.0.2 - Known Issues
-
-**🔴 WARNING: This version contains known bugs and requires further testing/fixes. Please use with caution and report any issues found.**
-
-## 🌟 Version 6.0.2 - Major Release: Modular Architecture Transformation
+## 🌟 Version 6.0.3 - UI/UX Improvements and Feature Enhancements
 
 ## 🌟 Version 6.0.0 - Major Release: Modular Architecture Transformation
 
@@ -138,7 +134,7 @@ Generate high-quality images from selected text using multiple AI providers:
 
 ### Modular Structure
 
-Our v6.0.2 release introduces a completely modular architecture:
+Our v6.0.3 release introduces a completely modular architecture:
 
 ```
 src/
@@ -311,12 +307,12 @@ This project is MIT licensed. See [LICENSE](LICENSE) for details.
 
 ---
 
-### 🎯 Version 6.0.2 Highlights Summary
+### 🎯 Version 6.0.3 Highlights Summary
 
-**🎨 UI/UX Refinements**: Provider logo integration, retry button fixes, and improved visual consistency
-**🛠️ Enhancement System**: Standardized preset formatting and deduplicated save messages
+**🎨 UI/UX Improvements**: Enhanced z-index hierarchy, flexible positioning, smooth animations, and mobile responsiveness
+**🛠️ Feature Enhancements**: Reorganized download file naming, automatic link cleaning, and improved clean button functionality
+**🔧 Bug Fixes**: Mobile button animation fix, button text corruption resolution, and model information flow fixes
 **🚀 Performance**: Built on v6.0.0 modular architecture for maintainability and scalability
-**🔧 User Experience**: Professional interface improvements with cleaner feedback systems
 
 ### 🎯 Version 6.0.0 Highlights Summary
 

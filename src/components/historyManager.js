@@ -1,5 +1,6 @@
 // --- IMPORTS ---
 import * as storage from '../utils/storage.js';
+import { filterExpiredLinks } from '../utils/linkValidator.js';
 
 // --- PUBLIC FUNCTIONS ---
 
@@ -38,7 +39,7 @@ export async function populateHistoryTab() {
             // Use unified modal for all image types (both base64 and URL)
             import('./imageViewer.js').then(module => {
                 if (typeof module.show === 'function') {
-                    module.show([item.url], item.prompt, item.provider);
+                    module.show([item.url], item.prompt, item.provider, item.model);
                 }
             });
         });
@@ -61,23 +62,60 @@ export async function cleanHistory() {
         return;
     }
     
-    try {
-        // Save the days setting
-        await storage.setHistoryDays(days);
+    // Show loading state
+    const cleanButton = document.getElementById('nig-history-clean-btn');
+    
+    if (cleanButton) {
+        // Store the original innerHTML to preserve the icon structure
+        const originalContent = cleanButton.innerHTML;
+        cleanButton.disabled = true;
+        cleanButton.innerHTML = 'Cleaning...';
         
-        // Use the new cleanOldHistory function
-        const removedCount = await storage.cleanOldHistory();
-        
-        if (removedCount > 0) {
-            alert(`History cleaned successfully! Removed ${removedCount} old entries.`);
-        } else {
-            alert('History cleaned successfully! No old entries to remove.');
+        try {
+            // Save the days setting
+            await storage.setHistoryDays(days);
+            
+            // Create progress callback for link validation
+            const progressCallback = (progress) => {
+                cleanButton.innerHTML = `<span class="material-symbols-outlined">cleaning_services</span> Cleaning... (${progress.completed}/${progress.total} links checked)`;
+            };
+            
+            // Use the enhanced cleanHistoryEnhanced function
+            const result = await storage.cleanHistoryEnhanced(progressCallback);
+            
+            // Show detailed feedback
+            let message = 'History cleaned successfully!\n\n';
+            
+            if (result.expiredLinksRemoved > 0) {
+                message += `• Removed ${result.expiredLinksRemoved} expired/broken image links\n`;
+            }
+            
+            if (result.oldEntriesRemoved > 0) {
+                message += `• Removed ${result.oldEntriesRemoved} old entries\n`;
+            }
+            
+            if (result.expiredLinksRemoved === 0 && result.oldEntriesRemoved === 0) {
+                message += '• No items needed to be removed';
+            }
+            
+            if (result.totalLinksChecked > 0) {
+                message += `\n\nChecked ${result.totalLinksChecked} image links for validity.`;
+            }
+            
+            message += `\n\nTotal removed: ${result.totalRemoved} items`;
+            message += `\nRemaining entries: ${result.finalHistoryCount}`;
+            
+            alert(message);
+            
+            await populateHistoryTab();
+        } catch (error) {
+            console.error('Failed to clean history:', error);
+            alert('Failed to clean history. Please try again.');
+        } finally {
+            // Restore button state - restore the complete original structure
+            cleanButton.disabled = false;
+            cleanButton.innerHTML = originalContent;
         }
-        
-        await populateHistoryTab();
-    } catch (error) {
-        console.error('Failed to clean history:', error);
-        alert('Failed to clean history. Please try again.');
     }
 }
 

@@ -136,7 +136,26 @@ Access via Tampermonkey menu → "Image Generator Settings":
 
 Track all updates and new features in [History](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions).
 
-**Latest: v6.0.2** - Enhanced UI/UX with provider logos, bug fixes, and improved user experience 🎨
+**Latest: v6.0.3** - UI/UX improvements with enhanced z-index hierarchy, mobile positioning fixes, smooth animations, and automatic link cleaning 🎨
+
+### 🆕 New in v6.0.3
+
+**UI/UX Improvements & Feature Enhancements:**
+
+- **🎨 Enhanced Z-Index Hierarchy**: Improved UI element layering with proper z-index hierarchy (Image viewer: 99999, Config panel: 99998, Status widget: 1020, Navigation: 1030)
+- **📱 Flexible Status Widget Positioning**: Removed fixed "right" property for better mobile responsive behavior
+- **✨ Smooth Prompt Container Animation**: Added smooth expand/collapse transitions replacing jarring display toggle with max-height and opacity transitions
+- **🛠️ Reorganized Download File Naming**: Enhanced filename structure: ScriptName_Provider_Model_PromptSnippet_Index for better file organization
+- **🔗 Automatic Link Cleaning**: Added expired image link detection and removal functionality
+- **🧹 Enhanced Clean Button**: Improved Clean button to remove broken URLs (403, expired, etc.) with detailed user feedback
+
+**Bug Fixes:**
+
+- **📱 Mobile Button Animation Fix**: Fixed mobile button hover movement issue that caused rightward shift
+- **🔤 Button Text Corruption**: Fixed Clean button text corruption issue in expired link detection
+- **🔄 Model Information Flow**: Fixed model information flow from generation to download functionality
+
+These updates focus on making your novel reading and image generation experience more polished and user-friendly!
 
 ### 🆕 New in v6.0.2
 

@@ -1,4 +1,5 @@
 import { DEFAULTS } from '../config/defaults.js';
+import { filterExpiredLinks } from './linkValidator.js';
 
 /**
  * Retrieves a single configuration value from storage.
@@ -153,6 +154,51 @@ export async function cleanOldHistory() {
         return removedCount;
     } catch (error) {
         console.error('Failed to clean old history:', error);
+        throw error;
+    }
+}
+
+/**
+ * Enhanced cleaning function that removes both expired links and old entries.
+ * @param {Function} progressCallback - Optional callback for progress updates during link validation
+ * @returns {Promise<Object>} Object containing cleaning statistics.
+ */
+export async function cleanHistoryEnhanced(progressCallback = null) {
+    try {
+        const history = await getHistory();
+        const historyDays = await getHistoryDays();
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - historyDays);
+        
+        // Step 1: Filter out old entries based on age
+        const ageFilteredHistory = history.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate > cutoffDate;
+        });
+        
+        const oldEntriesRemoved = history.length - ageFilteredHistory.length;
+        
+        // Step 2: Filter out entries with broken/expired links
+        const linkValidationResult = await filterExpiredLinks(ageFilteredHistory, progressCallback);
+        const expiredLinksRemoved = linkValidationResult.expiredLinksCount;
+        const finalFilteredHistory = linkValidationResult.filteredHistory;
+        
+        // Step 3: Save the cleaned history
+        const totalRemoved = oldEntriesRemoved + expiredLinksRemoved;
+        if (totalRemoved > 0) {
+            await GM_setValue('history', JSON.stringify(finalFilteredHistory));
+        }
+        
+        return {
+            totalRemoved: totalRemoved,
+            oldEntriesRemoved: oldEntriesRemoved,
+            expiredLinksRemoved: expiredLinksRemoved,
+            totalLinksChecked: linkValidationResult.totalLinksChecked,
+            finalHistoryCount: finalFilteredHistory.length
+        };
+        
+    } catch (error) {
+        console.error('Failed to clean history with enhanced method:', error);
         throw error;
     }
 }

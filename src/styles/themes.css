@@ -26,6 +26,12 @@
         border-radius: var(--nig-radius-lg);
     }
 
+    .nig-button:hover {
+        /* Prevent hover movement on mobile - maintain centering */
+        transform: translateX(-50%);
+        background: var(--nig-color-hover-primary);
+    }
+
     .nig-tabs {
         margin: 0 calc(-1 * var(--nig-space-xl)) var(--nig-space-xl) calc(-1 * var(--nig-space-xl));
         padding: 0 var(--nig-space-xl);
@@ -88,7 +94,6 @@
     .nig-status-widget {
         bottom: var(--nig-space-lg);
         left: var(--nig-space-md);
-        right: var(--nig-space-md);
         padding: var(--nig-space-md);
         font-size: var(--nig-font-size-xs);
     }

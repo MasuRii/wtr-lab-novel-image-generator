@@ -169,7 +169,7 @@
     position: fixed;
     bottom: var(--nig-space-xl);
     left: var(--nig-space-xl);
-    z-index: 100000;
+    z-index: 1020;
     background: var(--nig-color-bg-secondary);
     color: var(--nig-color-text-primary);
     padding: var(--nig-space-md) var(--nig-space-lg);
@@ -304,4 +304,21 @@
     background: var(--nig-color-bg-tertiary);
     color: var(--nig-color-text-muted);
     cursor: not-allowed;
+}
+
+/* === Modal Overlay Z-Index Hierarchy === */
+/* Config Panel - Lower z-index */
+#nig-config-panel.nig-modal-overlay {
+    z-index: 99998;
+}
+
+/* Image Viewer - Higher z-index than config panel */
+#nig-image-viewer.nig-modal-overlay {
+    z-index: 99999;
+}
+
+/* Navigation Tabs - Higher than status widget, lower than modals */
+.nig-tabs {
+    z-index: 1000;
+    position: relative;
 }

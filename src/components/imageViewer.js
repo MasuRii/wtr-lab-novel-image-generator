@@ -56,7 +56,7 @@ export function create() {
 	});
 }
 
-export function show(imageUrls, prompt, provider) {
+export function show(imageUrls, prompt, provider, model = 'Unknown') {
 	if (!document.getElementById('nig-image-viewer')) {
 		create();
 	}
@@ -108,8 +108,10 @@ export function show(imageUrls, prompt, provider) {
 			const a = document.createElement('a');
 			a.href = url;
 			const scriptName = getScriptName();
-			const promptSnippet = prompt.substring(0, 20).replace(/\s/g, '_');
-			a.download = `${scriptName}_${promptSnippet}_${index}.${extension}`;
+			const providerName = provider.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+			const modelName = model.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+			const promptSnippet = prompt.substring(0, 15).replace(/\s/g, '_').replace(/[^\w_]/g, '');
+			a.download = `${scriptName}_${providerName}_${modelName}_${promptSnippet}_${index + 1}.${extension}`;
 			a.click();
 		};
 		

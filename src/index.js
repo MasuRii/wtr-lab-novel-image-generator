@@ -47,7 +47,7 @@ import * as configPanel from './components/configPanel.js';
             hasPersistentUrls: !!persistentUrls
         });
         
-        completedQueue.push({ imageUrls: displayUrls, prompt, provider });
+        completedQueue.push({ imageUrls: displayUrls, prompt, provider, model });
         const historyUrls = persistentUrls || displayUrls;
         historyUrls.forEach(url => storage.addToHistory({ date: new Date().toISOString(), prompt, url, provider, model }));
         isGenerating = false;
@@ -199,7 +199,7 @@ import * as configPanel from './components/configPanel.js';
             statusWidget.update('success', `${text} Click to view.`, () => {
                 const result = completedQueue.shift();
                 if (result) {
-                    imageViewer.show(result.imageUrls, result.prompt, result.provider);
+                    imageViewer.show(result.imageUrls, result.prompt, result.provider, result.model);
                 }
                 updateSystemStatus();
             });
