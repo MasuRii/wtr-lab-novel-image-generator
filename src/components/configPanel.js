@@ -377,6 +377,9 @@ async function fetchOpenAICompatModels(selectedModel) {
         }
         
         populateOpenAICompatSelect(select, imageModels, selectedModel);
+        
+        // Cache the models for this profile
+        await cache.setCachedOpenAICompatModels(baseUrl, imageModels);
     } catch (error) {
         select.innerHTML = '<option>Failed to fetch models</option>';
         console.error('Failed to parse OpenAI Compatible models:', error);
@@ -385,6 +388,18 @@ async function fetchOpenAICompatModels(selectedModel) {
         // Switch to manual input mode
         document.getElementById('nig-openai-model-container-select').style.display = 'none';
         document.getElementById('nig-openai-model-container-manual').style.display = 'block';
+    }
+}
+
+async function loadCachedOpenAICompatModels(profileUrl, selectedModel) {
+    const select = document.getElementById('nig-openai-compat-model');
+    const cachedModels = await cache.getCachedOpenAICompatModels(profileUrl);
+    
+    if (cachedModels && cachedModels.length > 0) {
+        populateOpenAICompatSelect(select, cachedModels, selectedModel);
+    } else {
+        // No cached models, show fetch prompt
+        select.innerHTML = '<option>No cached models. Click Fetch to get models.</option>';
     }
 }
 
@@ -431,8 +446,8 @@ async function loadSelectedOpenAIProfile() {
             document.getElementById('nig-openai-compat-model-manual').value = profile.model;
         } else {
             document.getElementById('nig-openai-compat-model').value = profile.model;
-            // Call fetchOpenAICompatModels with the saved model to refresh the list
-            fetchOpenAICompatModels(profile.model);
+            // Load cached models for this profile, if available
+            loadCachedOpenAICompatModels(selectedUrl, profile.model);
         }
     } else {
         // New profile mode - clear the model selection

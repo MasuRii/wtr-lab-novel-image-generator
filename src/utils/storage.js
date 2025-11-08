@@ -35,7 +35,22 @@ export async function setConfigValue(key, value) {
  * @returns {Promise<Array<object>>} The history array.
  */
 export async function getHistory() {
-    return JSON.parse(await GM_getValue('history', '[]'));
+    try {
+        const historyData = await GM_getValue('history', '[]');
+        if (typeof historyData === 'string' && historyData.trim()) {
+            return JSON.parse(historyData);
+        } else if (Array.isArray(historyData)) {
+            return historyData;
+        } else {
+            // Invalid or empty data, return empty array
+            return [];
+        }
+    } catch (error) {
+        console.error('Failed to parse history data, resetting', error);
+        // Clear the corrupted history and return empty array
+        await GM_setValue('history', '[]');
+        return [];
+    }
 }
 
 /**

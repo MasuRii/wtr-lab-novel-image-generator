@@ -59,11 +59,23 @@ export const logError = (category, message, data) => log('error', category, mess
 export async function loadEnhancementLogHistory() {
     try {
         const stored = await GM_getValue('enhancementLogHistory', '[]');
-        enhancementLogHistory = JSON.parse(stored);
+        if (typeof stored === 'string' && stored.trim()) {
+            enhancementLogHistory = JSON.parse(stored);
+        } else if (Array.isArray(stored)) {
+            enhancementLogHistory = stored;
+        } else {
+            enhancementLogHistory = [];
+        }
         logDebug('LOG', `Loaded ${enhancementLogHistory.length} enhancement log entries from storage`);
     } catch (e) {
         logError('LOG', 'Failed to load enhancement log history', e);
         enhancementLogHistory = [];
+        // Clear corrupted data
+        try {
+            await GM_setValue('enhancementLogHistory', '[]');
+        } catch (clearError) {
+            logError('LOG', 'Failed to clear corrupted enhancement log history', clearError);
+        }
     }
 }
 
