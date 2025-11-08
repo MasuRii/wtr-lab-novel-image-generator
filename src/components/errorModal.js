@@ -155,6 +155,15 @@ export async function show(errorDetails) {
         actionsContainer.appendChild(authWarning);
     }
 
+    // Add specific messaging for API key validation errors
+    if (errorDetails.reason.errorType === 'api_key_validation') {
+        const apiKeyWarning = document.createElement('div');
+        apiKeyWarning.className = 'nig-api-key-warning';
+        apiKeyWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
+        apiKeyWarning.innerHTML = '<strong>API Key Issue:</strong> Please check your API key configuration and ensure you have registered with the provider. You can try a different provider or update your API key in settings.';
+        actionsContainer.appendChild(apiKeyWarning);
+    }
+
     // Add specific messaging for image conversion errors
     if (errorDetails.reason.errorType === 'image_conversion') {
         const conversionInfo = document.createElement('div');

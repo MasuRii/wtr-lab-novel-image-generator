@@ -5,6 +5,38 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [6.0.2] - 2025-11-08
+
+### 🏗️ MINOR: UI/UX Enhancements and Bug Fixes
+
+This release includes several user interface improvements and bug fixes to enhance the overall user experience and resolve display issues.
+
+#### 🆕 New Features
+
+- **Provider Logo Integration**: Added logos to provider header sections for better visual identification and branding consistency
+
+#### 🔧 Bug Fixes
+
+- **Retry Generation Button Display Fix**: Fixed retry button not appearing on API key validation errors, improving error recovery workflow
+- **Prompt Enhancement Preset Formatting**: Standardized all enhancement presets to flowing paragraph format for better readability
+- **Configuration Save Message Deduplication**: Eliminated duplicate save notification messages to reduce visual clutter
+- **History List Padding Removal**: Removed specified padding from CSS selectors to improve layout consistency
+
+#### 🎯 Improvements
+
+- **Visual Consistency**: Enhanced overall UI consistency across all components
+- **User Experience**: Streamlined user interactions and feedback mechanisms
+- **Performance**: Optimized CSS selectors for better rendering performance
+
+#### 🧪 Quality Assurance
+
+- **Testing**: Comprehensive testing of all UI components and interactions
+- **Cross-Browser Compatibility**: Verified functionality across major browsers
+- **Responsive Design**: Ensured proper display on various screen sizes
+
+**Status**: Ready for production - all improvements tested and validated
+
+
 ## [6.0.1] - 2025-11-08
 
 ### 🏗️ MAJOR: JavaScript and CSS Project Modularization Initiative

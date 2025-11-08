@@ -2,7 +2,7 @@
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-5.7.0-blue.svg)](CHANGELOGS.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](CHANGELOGS.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 A professional userscript that transforms your novel reading experience by generating AI-powered images from text descriptions. Seamlessly integrate image generation into your reading workflow on `wtr-lab.com` with support for multiple AI providers and advanced prompt enhancement. Why? Because visual storytelling makes stories come alive! 🎨
 
@@ -136,7 +136,18 @@ Access via Tampermonkey menu → "Image Generator Settings":
 
 Track all updates and new features in [History](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions).
 
-**Latest: v5.7.0** - AI-powered prompt enhancement with Google's Gemini AI 🚀
+**Latest: v6.0.2** - Enhanced UI/UX with provider logos, bug fixes, and improved user experience 🎨
+
+### 🆕 New in v6.0.2
+
+**Visual & User Experience Improvements:**
+- **🎨 Provider Logo Integration**: Added logos to provider header sections for better visual identification and branding consistency
+- **🔧 Enhanced Error Recovery**: Fixed retry button not appearing on API key validation errors, improving error recovery workflow
+- **📝 Improved Readability**: Standardized all enhancement presets to flowing paragraph format for better readability
+- **🔔 Cleaner Notifications**: Eliminated duplicate save notification messages to reduce visual clutter
+- **📐 Better Layout**: Removed specified padding from CSS selectors to improve layout consistency
+
+These updates focus on making your novel reading and image generation experience more intuitive and visually appealing!
 
 ## 🤝 Contributing
 
@@ -166,5 +177,5 @@ This project is MIT licensed. See LICENSE for details.
 
 ---
 
-_Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_ | _Questions? [Open an Issue](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/feedback)_  
-_Last Updated: November 03, 2025_ | _Current Version: 5.7.0_
+_Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_ | _Questions? [Open an Issue](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/feedback)_
+_Last Updated: November 08, 2025_ | _Current Version: 6.0.2_

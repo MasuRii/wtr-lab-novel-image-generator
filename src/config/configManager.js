@@ -133,7 +133,7 @@ export async function saveConfig() {
     // Provider-specific configurations will be saved by their respective modules
     // (models.js for Pollinations, AI Horde, Google, and OpenAI compatible)
     
-    alert('Configuration saved!');
+    // Alert will be handled by the main saveConfig function in configPanel.js
 }
 
 /**

@@ -31,7 +31,7 @@ export function getConfigPanelHTML() {
                     <div class="nig-provider-container">
                         <div id="nig-provider-Pollinations" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>Pollinations.ai Settings</h3>
+                                <h3><img src="https://raw.githubusercontent.com/pollinations/pollinations/eea264f608e9393e69631eea5e00e9ecf6e1836e/shared/assets/logo.svg" alt="Pollinations" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> Pollinations.ai Settings</h3>
                                 <p>Fast, simple image generation with advanced model options</p>
                             </div>
                             <div class="nig-form-group">
@@ -72,7 +72,7 @@ export function getConfigPanelHTML() {
 
                         <div id="nig-provider-AIHorde" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>AI Horde Settings</h3>
+                                <h3><img src="https://stablehorde.net/assets/img/logo.png" alt="AI Horde" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> AI Horde Settings</h3>
                                 <p>Community-powered generation with extensive customization</p>
                             </div>
                             <div class="nig-form-group">
@@ -140,7 +140,7 @@ export function getConfigPanelHTML() {
 
                         <div id="nig-provider-Google" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>Google Imagen Settings</h3>
+                                <h3><img src="https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" alt="Google Imagen" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> Google Imagen Settings</h3>
                                 <p>High-quality generation powered by Google's advanced AI</p>
                             </div>
                             <div class="nig-form-group">
@@ -189,7 +189,7 @@ export function getConfigPanelHTML() {
 
                         <div id="nig-provider-OpenAICompat" class="nig-provider-settings">
                             <div class="nig-provider-header">
-                                <h3>OpenAI Compatible Settings</h3>
+                                <h3><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" alt="OpenAI" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> OpenAI Compatible Settings</h3>
                                 <p>Connect to any OpenAI-compatible API endpoint</p>
                             </div>
                             <div class="nig-form-group">

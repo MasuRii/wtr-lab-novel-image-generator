@@ -71,12 +71,10 @@
 }
 
 .nig-modal-content ul {
-    padding-left: var(--nig-space-xl);
 }
 
 /* History list alignment fix - remove excessive padding for history results */
 #nig-history-list {
-    padding-left: var(--nig-space-sm);
 }
 
 .nig-modal-content li {

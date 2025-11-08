@@ -1,25 +1,6 @@
 export const DEFAULTS = {
     selectedProvider: 'Pollinations',
     loggingEnabled: false,
-    // Provider Logo Configuration (External URLs)
-    providerLogos: {
-        Pollinations: {
-            url: 'https://raw.githubusercontent.com/pollinations/pollinations/eea264f608e9393e69631eea5e00e9ecf6e1836e/shared/assets/logo.svg',
-            alt: 'Pollinations.ai Logo'
-        },
-        AIHorde: {
-            url: 'https://stablehorde.net/assets/img/logo.png',
-            alt: 'AI Horde Logo'
-        },
-        OpenAICompat: {
-            url: 'https://openai.com/favicon.svg',
-            alt: 'OpenAI Compatible Logo'
-        },
-        Google: {
-            url: 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg',
-            alt: 'Google Gemini Logo'
-        }
-    },
     // Prompt Styling
     mainPromptStyle: 'None',
     subPromptStyle: 'none',
@@ -30,7 +11,7 @@ export const DEFAULTS = {
     enhancementProvider: 'gemini', // 'gemini', 'disabled'
     enhancementApiKey: '',
     enhancementModel: 'models/gemini-2.5-pro',
-    enhancementTemplate: 'Convert this text into a focused visual description for image generation. Extract key visual elements (characters, setting, mood, style) and describe them as a direct prompt without narrative elements, dialogue, or markdown formatting. Keep it concise and focused on what can be visually rendered. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:',
+    enhancementTemplate: 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:',
     enhancementTemplateSelected: 'standard',
     enhancementOverrideProvider: false,
     enhancementLastStatus: 'disabled',
@@ -51,42 +32,42 @@ export const DEFAULTS = {
         standard: {
             name: 'Standard Enhancement',
             description: 'Default enhancement that improves prompt quality',
-            template: 'Convert this text into a focused visual description for image generation. Extract key visual elements (characters, setting, mood, style) and describe them as a direct prompt without narrative elements, dialogue, or markdown formatting. Keep it concise and focused on what can be visually rendered. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:'
+            template: 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:'
         },
         safety: {
             name: 'Safety Enhancement',
             description: 'Enhances prompts while removing harmful or inappropriate content',
-            template: 'Enhance this prompt for image generation while ensuring content safety. Remove any harmful, inappropriate, or policy-violating elements. Focus on extracting positive, creative, and suitable visual elements. Transform the text into a clear, detailed visual description that promotes safe and appropriate imagery. Structure: subjects, setting, mood, style with safety-focused quality boosters like "safe content, appropriate, well-composed, detailed, sharp focus, 8K resolution, masterpiece":'
+            template: 'Extract visual elements from this text and craft a safe, concise image generation prompt as a flowing paragraph while removing harmful, inappropriate, or policy-violating elements. Focus on: positive and suitable characters and their appropriate appearances/actions/expressions, safe setting and environment, wholesome lighting/mood/color palette, appropriate artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with safety-focused quality boosters like "appropriate content, family-friendly, positive imagery, safe, well-balanced, detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with safe core subjects, layer in safe scene/mood, then appropriate style/technicals:'
         },
         artistic: {
             name: 'Artistic Enhancement',
             description: 'Focuses on artistic and creative elements',
-            template: 'Transform this text into an artistic prompt for image generation. Emphasize creative elements, artistic techniques, visual aesthetics, and stylistic choices. Focus on artistic expression, color theory, composition, and visual appeal. Extract key artistic elements and describe them with rich, descriptive language that enhances creative vision. End with artistic quality boosters like "artistic masterpiece, creative composition, vibrant colors, detailed artwork, museum quality, fine art":'
+            template: 'Extract visual elements from this text and craft an artistic image generation prompt as a flowing paragraph with emphasis on creative elements and visual aesthetics. Focus on: characters and their creative appearances/actions/expressions with artistic flair, artistic setting and environment, vibrant lighting/mood/color palette, artistic style/composition/framing with emphasis on artistic techniques. Omit narrative, dialogue, text, or non-visual details. Use vivid, artistic descriptors separated by commas or short phrases for clarity. End with artistic quality boosters like "artistic masterpiece, creative composition, vibrant colors, detailed artwork, museum quality, fine art, highly detailed, sharp focus, 8K resolution. Generated Prompt Structure: Start with artistic core subjects, layer in creative scene/mood, then artistic style/technicals:'
         },
         technical: {
             name: 'Technical Enhancement',
             description: 'Emphasizes technical accuracy and detail',
-            template: 'Convert this text into a technically-focused image generation prompt. Emphasize technical accuracy, precise details, realistic elements, and measurable characteristics. Focus on technical specifications, realistic proportions, accurate details, and photographic quality. Structure the prompt with technical precision, ending with technical quality boosters like "photorealistic, technical precision, accurate details, high resolution, professional photography, sharp focus, 8K detail":'
+            template: 'Extract visual elements from this text and craft a technically-precise image generation prompt as a flowing paragraph with emphasis on technical accuracy and realistic elements. Focus on: characters with technically accurate appearances/actions/expressions, realistic setting and environment, precise lighting/mood/color palette, technical artistic style/composition/framing with photorealistic qualities. Omit narrative, dialogue, text, or non-visual details. Use precise, technical descriptors separated by commas or short phrases for clarity. End with technical quality boosters like "photorealistic, technical precision, accurate details, high resolution, professional photography, sharp focus, 8K detail, masterpiece. Generated Prompt Structure: Start with technically accurate core subjects, layer in realistic scene/mood, then technical style/technicals:'
         },
         character: {
             name: 'Character Enhancement',
             description: 'Focuses on character development and description',
-            template: 'Enhance this prompt by focusing on character development and description. Extract and elaborate on character details including appearance, expression, pose, clothing, age, and personality traits visible in the visual. Describe characters with rich detail, appropriate emotions, and engaging presentation. Focus on what makes the character compelling and well-defined. End with character-focused quality boosters like "detailed character, expressive features, well-defined personality, professional portrait, masterpiece character study":'
+            template: 'Extract visual elements from this text and craft a character-focused image generation prompt as a flowing paragraph with emphasis on character details and development. Focus on: detailed character appearances/actions/expressions with rich personality traits, character-centric setting and environment, character-appropriate lighting/mood/color palette, character-driven artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, character-specific descriptors separated by commas or short phrases for clarity. End with character-focused quality boosters like "detailed character, expressive features, well-defined personality, professional portrait, masterpiece character study, highly detailed, sharp focus, 8K resolution. Generated Prompt Structure: Start with compelling core characters, layer in character-appropriate scene/mood, then character-focused style/technicals:'
         },
         environment: {
             name: 'Environment Enhancement',
             description: 'Enhances environmental and setting descriptions',
-            template: 'Transform this prompt by emphasizing environmental and setting details. Focus on the surrounding environment, atmosphere, lighting, weather, architecture, nature, and spatial relationships. Describe the setting with immersive detail, creating a vivid sense of place and mood. Emphasize environmental storytelling and atmospheric elements. End with environmental quality boosters like "immersive environment, detailed background, atmospheric lighting, cinematic composition, 8K environmental detail":'
+            template: 'Extract visual elements from this text and craft an environment-focused image generation prompt as a flowing paragraph with emphasis on immersive setting details. Focus on: characters within richly described environment and setting, atmospheric surrounding environment with detailed lighting/mood/color palette, environmental artistic style/composition/framing with emphasis on spatial relationships. Omit narrative, dialogue, text, or non-visual details. Use vivid, environmental descriptors separated by commas or short phrases for clarity. End with environmental quality boosters like "immersive environment, detailed background, atmospheric lighting, cinematic composition, 8K environmental detail, masterpiece. Generated Prompt Structure: Start with environment-centric subjects, layer in detailed scene/mood, then environmental style/technicals:'
         },
         composition: {
             name: 'Composition Enhancement',
             description: 'Focuses on composition and visual structure',
-            template: 'Enhance this prompt by focusing on visual composition and structure. Emphasize framing, rule of thirds, leading lines, depth of field, visual balance, and photographic techniques. Describe how elements are arranged within the frame and their visual relationships. Focus on creating strong visual impact through careful composition. End with compositional quality boosters like "excellent composition, balanced framing, visual impact, professional photography, cinematic quality, masterpiece composition":'
+            template: 'Extract visual elements from this text and craft a composition-focused image generation prompt as a flowing paragraph with emphasis on visual structure and framing. Focus on: characters with composition-aware appearances/actions/expressions, well-composed setting and environment, strategically lit lighting/mood/color palette, composition-driven artistic style/composition/framing with photographic techniques. Omit narrative, dialogue, text, or non-visual details. Use vivid, compositional descriptors separated by commas or short phrases for clarity. End with compositional quality boosters like "excellent composition, balanced framing, visual impact, professional photography, cinematic quality, masterpiece composition, highly detailed, sharp focus, 8K resolution. Generated Prompt Structure: Start with compositionally strong core subjects, layer in balanced scene/mood, then composition-focused style/technicals:'
         },
         clean: {
             name: 'Clean Enhancement',
             description: 'Removes potentially harmful or inappropriate elements',
-            template: 'Clean and enhance this prompt for appropriate image generation. Remove any potentially harmful, inappropriate, or problematic elements while preserving the core creative intent. Focus on family-friendly, positive, and suitable visual content. Transform the text into a clear, wholesome prompt that promotes appropriate imagery. Structure with positive, safe content and clean quality boosters like "appropriate content, family-friendly, positive imagery, clean composition, well-balanced, detailed, sharp focus":'
+            template: 'Extract visual elements from this text and craft a clean, family-friendly image generation prompt as a flowing paragraph while removing harmful, inappropriate, or problematic elements. Focus on: positive, appropriate characters and their wholesome appearances/actions/expressions, safe, family-friendly setting and environment, positive lighting/mood/color palette, appropriate artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use positive, clean descriptors separated by commas or short phrases for clarity. End with clean quality boosters like "appropriate content, family-friendly, positive imagery, clean composition, well-balanced, detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with clean core subjects, layer in positive scene/mood, then appropriate style/technicals:'
         }
     },
     // Global Negative Prompting

@@ -1,12 +1,12 @@
-# 🚀 WTR LAB Novel Image Generator v6.0.1
+# 🚀 WTR LAB Novel Image Generator v6.0.2
 
-[![Version](https://img.shields.io/badge/version-6.0.1-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
-## ⚠️ IMPORTANT: Version 6.0.1 - Known Issues
+## ⚠️ IMPORTANT: Version 6.0.2 - Known Issues
 
 **🔴 WARNING: This version contains known bugs and requires further testing/fixes. Please use with caution and report any issues found.**
 
-## 🌟 Version 6.0.1 - Major Release: Modular Architecture Transformation
+## 🌟 Version 6.0.2 - Major Release: Modular Architecture Transformation
 
 ## 🌟 Version 6.0.0 - Major Release: Modular Architecture Transformation
 
@@ -35,7 +35,24 @@
 ✅ **Additional Styling Fixes**: Comprehensive UI polish and consistency  
 ✅ **Testing & Stability Validation**: Extensive quality assurance improvements  
 ✅ **Configuration Tab Functionality**: Restored and enhanced settings management  
-✅ **Complete Logo System Simplification**: Streamlined visual branding  
+✅ **Complete Logo System Simplification**: Streamlined visual branding
+
+## ✨ What's New in v6.0.2 - Minor Release: UI/UX Refinements
+
+### 🎨 **User Interface Improvements**
+- **Provider Logo Integration**: Added professional logos to provider header sections for better visual identification
+- **Retry Generation Button Display Fix**: Resolved issue where retry button failed to appear during API key validation errors
+- **History List Padding Removal**: Cleaned up CSS by removing unnecessary padding from history list selectors for improved visual consistency
+
+### 🛠️ **Enhancement System Optimizations**
+- **Prompt Enhancement Preset Formatting**: Standardized all enhancement presets to flowing paragraph format for better readability and consistency
+- **Configuration Save Message Deduplication**: Eliminated duplicate save notification messages to provide cleaner user feedback
+
+### 📈 **User Experience Enhancements**
+- **Improved Visual Identity**: Professional provider logos enhance overall interface recognition
+- **Better Error Handling**: Retry functionality now properly displays during all error scenarios
+- **Streamlined Notifications**: Cleaner, non-repetitive user feedback system
+- **Enhanced Interface Consistency**: Removed visual inconsistencies for more professional appearance
 
 ## 🎯 Key Features
 
@@ -104,7 +121,7 @@ Generate high-quality images from selected text using multiple AI providers:
 ## 🏗️ Architecture Overview
 
 ### Modular Structure
-Our v6.0.1 release introduces a completely modular architecture:
+Our v6.0.2 release introduces a completely modular architecture:
 
 ```
 src/
@@ -236,7 +253,7 @@ npm run build
 
 Track all updates and changes in [Changelog.md](Changelog.md).
 
-**Latest: v6.0.1** - Major modularization release with 14 stability and enhancement fixes (contains bugs - further testing needed) 🏗️
+**Latest: v6.0.2** - Minor UI/UX refinement release with provider logo integration, retry button fixes, preset formatting, and message deduplication. Built on v6.0.0 modular architecture foundation. 🎨
 
 ## 🤝 Contributing
 
@@ -266,17 +283,24 @@ This project is MIT licensed. See [LICENSE](LICENSE) for details.
 
 ---
 
-### 🎯 Version 6.0.1 Highlights Summary
+### 🎯 Version 6.0.2 Highlights Summary
 
-**⚠️ Note: This version is known to contain bugs due to extensive refactoring and requires further testing.**
+**🎨 UI/UX Refinements**: Provider logo integration, retry button fixes, and improved visual consistency
+**🛠️ Enhancement System**: Standardized preset formatting and deduplicated save messages
+**🚀 Performance**: Built on v6.0.0 modular architecture for maintainability and scalability
+**🔧 User Experience**: Professional interface improvements with cleaner feedback systems
 
-**🏗️ Architecture**: Complete modular transformation from monolith to professional structure  
-**🛠️ Stability**: 14 major fixes addressing reliability and user experience  
-**🚀 Performance**: Optimized caching, background processing, and resource management  
-**🎨 UX**: Professional UI improvements with mobile-first responsive design  
-**🔧 Maintainability**: Clean, documented, and extensible codebase for future development  
+### 🎯 Version 6.0.0 Highlights Summary
+
+**⚠️ Note: v6.0.0 was the major architectural transformation release (v6.0.2 builds on this foundation).**
+
+**🏗️ Architecture**: Complete modular transformation from monolith to professional structure
+**🛠️ Stability**: 14 major fixes addressing reliability and user experience
+**🚀 Performance**: Optimized caching, background processing, and resource management
+**🎨 UX**: Professional UI improvements with mobile-first responsive design
+**🔧 Maintainability**: Clean, documented, and extensible codebase for future development
 
 _Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_
 
 _Questions? [Open an Issue](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues)_  
-_Last Updated: November 08, 2025_ | _Current Version: 6.0.1_ (Known Issues)
+_Last Updated: November 08, 2025_ | _Current Version: 6.0.2_ (Known Issues)

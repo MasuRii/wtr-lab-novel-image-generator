@@ -36,6 +36,16 @@ export function parseErrorMessage(errorString, provider = null, providerProfileU
         };
     }
 
+    // Check for AIHorde specific API key validation errors
+    if (provider === 'AIHorde' && lowerCaseContent.includes('no user matching sent api key')) {
+        return {
+            message: 'AIHorde API key validation failed. Please check your API key configuration and ensure you have registered at https://stablehorde.net/register. You can try a different provider or update your API key in settings.',
+            retryable: true,
+            errorType: 'api_key_validation',
+            isNonRetryable: false
+        };
+    }
+
     // Check for OpenAI Compatible provider specific errors
     if (provider === 'OpenAICompat') {
         // Check for authentication errors (non-retryable)
