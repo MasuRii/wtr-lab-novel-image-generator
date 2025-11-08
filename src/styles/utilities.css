@@ -1,0 +1,307 @@
+/* === Modern Utilities Tab === */
+.nig-utilities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--nig-space-xl);
+    margin-top: var(--nig-space-xl);
+}
+
+.nig-utility-card {
+    background: var(--nig-color-bg-tertiary);
+    border: 1px solid var(--nig-color-border);
+    border-radius: var(--nig-radius-lg);
+    padding: var(--nig-space-xl);
+    transition: all var(--nig-transition-normal);
+}
+
+.nig-utility-card:hover {
+    border-color: var(--nig-color-border-light);
+    box-shadow: var(--nig-shadow-md);
+    transform: translateY(-2px);
+}
+
+.nig-utility-card h4 {
+    margin: 0 0 var(--nig-space-md) 0;
+    color: var(--nig-color-text-primary);
+    font-size: var(--nig-font-size-lg);
+    font-weight: 600;
+}
+
+.nig-utility-card p {
+    margin: 0 0 var(--nig-space-lg) 0;
+    color: var(--nig-color-text-secondary);
+    font-size: var(--nig-font-size-sm);
+    line-height: 1.5;
+}
+
+.nig-utility-card .nig-save-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+/* === Enhanced Utility Card Structure === */
+.nig-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--nig-space-md);
+    margin-bottom: var(--nig-space-lg);
+}
+
+.nig-card-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.nig-card-title h4 {
+    margin: 0 0 var(--nig-space-sm) 0;
+    color: var(--nig-color-text-primary);
+    font-size: var(--nig-font-size-lg);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.nig-card-title p {
+    margin: 0;
+    color: var(--nig-color-text-secondary);
+    font-size: var(--nig-font-size-sm);
+    line-height: 1.5;
+}
+
+.nig-card-actions {
+    margin-bottom: var(--nig-space-lg);
+}
+
+.nig-card-secondary-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--nig-space-sm);
+    margin-bottom: var(--nig-space-lg);
+}
+
+.nig-card-footer {
+    padding-top: var(--nig-space-md);
+     border-top: 1px solid var(--nig-color-border);
+    margin-top: auto;
+}
+
+/* === Modern Button Variants === */
+.nig-btn-primary {
+    width: 100%;
+     background: var(--nig-color-accent-warning);
+    color: white;
+    border: none;
+    border-radius: var(--nig-radius-md);
+    padding: var(--nig-space-md) var(--nig-space-lg);
+    font-size: var(--nig-font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nig-space-sm);
+    transition: all var(--nig-transition-normal);
+    box-shadow: var(--nig-shadow-sm);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.nig-btn-primary:hover {
+    background: var(--nig-color-hover-error);
+    transform: translateY(-1px);
+    box-shadow: var(--nig-shadow-md);
+}
+
+.nig-btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--nig-shadow-sm);
+}
+
+.nig-btn-secondary {
+    background: var(--nig-color-accent-primary);
+    color: white;
+    border: none;
+    border-radius: var(--nig-radius-md);
+    padding: var(--nig-space-xs) var(--nig-space-sm);
+    font-size: var(--nig-font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nig-space-xs);
+    transition: all var(--nig-transition-normal);
+    box-shadow: var(--nig-shadow-sm);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 36px;
+}
+
+.nig-btn-secondary:hover {
+    background: var(--nig-color-hover-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--nig-shadow-md);
+}
+
+.nig-btn-secondary:active {
+    transform: translateY(0);
+    box-shadow: var(--nig-shadow-sm);
+}
+
+.nig-btn-secondary.nig-btn-error {
+    background: var(--nig-color-accent-error);
+    color: white;
+}
+
+.nig-btn-secondary.nig-btn-error:hover {
+    background: var(--nig-color-hover-error);
+    transform: translateY(-1px);
+    box-shadow: var(--nig-shadow-md);
+}
+
+.nig-btn-secondary .material-symbols-outlined {
+    font-size: var(--nig-font-size-xs);
+}
+
+.nig-btn-primary .material-symbols-outlined {
+    font-size: var(--nig-font-size-sm);
+}
+
+/* === Status Widget === */
+.nig-status-widget {
+    position: fixed;
+    bottom: var(--nig-space-xl);
+    left: var(--nig-space-xl);
+    z-index: 100000;
+    background: var(--nig-color-bg-secondary);
+    color: var(--nig-color-text-primary);
+    padding: var(--nig-space-md) var(--nig-space-lg);
+    border-radius: var(--nig-radius-lg);
+    box-shadow: var(--nig-shadow-xl);
+    display: none;
+    align-items: center;
+    gap: var(--nig-space-md);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: var(--nig-font-size-sm);
+    font-weight: 500;
+    transition: all var(--nig-transition-normal);
+    border: 1px solid var(--nig-color-border);
+    backdrop-filter: blur(10px);
+}
+
+.nig-status-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nig-status-widget.loading .nig-status-icon {
+    box-sizing: border-box;
+    border: 2px solid var(--nig-color-text-muted);
+    border-top-color: var(--nig-color-accent-primary);
+    border-radius: 50%;
+    animation: nig-spin 1s linear infinite;
+}
+
+.nig-status-widget.success {
+    background: var(--nig-color-accent-success);
+    color: white;
+    cursor: pointer;
+    border-color: var(--nig-color-accent-success);
+}
+
+.nig-status-widget.success:hover {
+    background: var(--nig-color-hover-success);
+    transform: translateY(-2px);
+    box-shadow: var(--nig-shadow-lg);
+}
+
+.nig-status-widget.error {
+    background: var(--nig-color-accent-error);
+    border-color: var(--nig-color-accent-error);
+}
+
+@keyframes nig-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Loading Animations === */
+.nig-image-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.nig-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: nig-spin 1s linear infinite;
+}
+
+/* === Enhancement Status & Priority Utilities === */
+.nig-enhancement-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nig-space-sm);
+    padding: var(--nig-space-xs) var(--nig-space-sm);
+    border-radius: var(--nig-radius-md);
+    font-size: var(--nig-font-size-xs);
+    font-weight: 500;
+    margin-left: var(--nig-space-md);
+}
+
+.nig-enhancement-status.provider-priority {
+    background: var(--nig-color-accent-warning);
+    color: white;
+}
+
+.nig-enhancement-status.external-ai {
+    background: var(--nig-color-accent-primary);
+    color: white;
+}
+
+.nig-enhancement-status.disabled {
+    background: var(--nig-color-bg-tertiary);
+    color: var(--nig-color-text-muted);
+}
+
+.nig-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4af028;
+    opacity: 0.8;
+}
+
+/* === Enhancement Settings States === */
+.nig-enhancement-settings {
+    transition: all var(--nig-transition-normal);
+}
+
+.nig-enhancement-settings.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.nig-enhancement-settings.disabled .nig-form-group input,
+.nig-enhancement-settings.disabled .nig-form-group select,
+.nig-enhancement-settings.disabled .nig-form-group textarea {
+    background: var(--nig-color-bg-tertiary);
+    color: var(--nig-color-text-muted);
+    cursor: not-allowed;
+}

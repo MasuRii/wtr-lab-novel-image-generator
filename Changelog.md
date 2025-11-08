@@ -4,6 +4,64 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [6.0.1] - 2025-11-08
+
+### 🏗️ MAJOR: JavaScript and CSS Project Modularization Initiative
+
+This release represents the completion of the **JavaScript and CSS Project Modularization Initiative**, building upon the v6.0.0 architecture transformation. This is primarily a **refactoring release** with enhanced modularization.
+
+#### ⚠️ Important Notice
+**🔴 WARNING: This version contains potential bugs due to extensive refactoring and requires further testing.**
+
+#### 🆕 New Modularization Features
+
+**JavaScript Modularization (6 New Modules)**:
+- **src/components/configPanel.js**: Configuration panel component
+- **src/components/configPanelEvents.js**: Configuration panel event handlers  
+- **src/components/configPanelTemplate.js**: Configuration panel template system
+- **src/components/enhancementPanel.js**: Enhancement panel component
+- **src/components/historyManager.js**: History management component
+- **src/components/statusWidget.js**: Status widget component
+
+**CSS Modularization (5 New Modules)**:
+- **src/styles/base.css**: Base styling and resets
+- **src/styles/components.css**: Component-specific styles
+- **src/styles/layout.css**: Layout and positioning styles
+- **src/styles/themes.css**: Theme and color scheme definitions
+- **src/styles/utilities.css**: Utility classes and helpers
+
+#### 🔧 Changes Made
+- **Enhanced JavaScript Modularization**: Further decomposed monolithic components into smaller, focused modules
+- **CSS Architecture Restructuring**: Split monolithic CSS into logical, maintainable modules
+- **Build Verification**: Verified webpack bundling and optimization with new modular structure
+- **Component Separation**: Improved separation of concerns between UI components
+- **Style Organization**: Better organization of stylesheets for maintainability
+
+#### 🧪 Testing & Quality Assurance
+- **Build Process Verification**: Confirmed webpack build process works with new modular structure
+- **Module Integration Testing**: Verified inter-module communication and dependencies
+- **Cross-Browser Compatibility**: Basic compatibility testing across major browsers
+- **Performance Validation**: Confirmed no significant performance regressions
+
+#### ⚠️ Known Issues & Limitations
+- **Potential Bugs**: Due to extensive refactoring, some functionality may not work as expected
+- **Testing Required**: This version requires extensive user testing to identify and resolve issues
+- **Feature Parity**: Some advanced features may need validation in the new modular structure
+- **Migration Notes**: Users upgrading from v6.0.0 may experience temporary issues
+
+#### 🔄 Migration Guide
+**For Users**: This is a maintenance update building on v6.0.0. All existing functionality should work, but please report any issues found.
+
+**For Developers**: The new modular structure provides better organization but requires careful attention to module dependencies and imports.
+
+### 🏆 Release Summary
+- **Architecture**: Enhanced JavaScript and CSS modularization
+- **Modules Added**: 11 new modules (6 JS + 5 CSS)  
+- **Focus**: Refactoring and maintainability improvements
+- **Status**: Potential bugs present - further testing required
+
+**⚠️ Recommendation**: Use with caution and report any issues for the next patch release.
 ## [6.0.0] - 2025-11-08
 
 ### 🏗️ MAJOR: Complete Modular Architecture Transformation

@@ -1,6 +1,12 @@
-# 🚀 WTR LAB Novel Image Generator v6.0.0
+# 🚀 WTR LAB Novel Image Generator v6.0.1
 
-[![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.1-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+
+## ⚠️ IMPORTANT: Version 6.0.1 - Known Issues
+
+**🔴 WARNING: This version contains known bugs and requires further testing/fixes. Please use with caution and report any issues found.**
+
+## 🌟 Version 6.0.1 - Major Release: Modular Architecture Transformation
 
 ## 🌟 Version 6.0.0 - Major Release: Modular Architecture Transformation
 
@@ -98,7 +104,7 @@ Generate high-quality images from selected text using multiple AI providers:
 ## 🏗️ Architecture Overview
 
 ### Modular Structure
-Our v6.0.0 release introduces a completely modular architecture:
+Our v6.0.1 release introduces a completely modular architecture:
 
 ```
 src/
@@ -230,7 +236,7 @@ npm run build
 
 Track all updates and changes in [Changelog.md](Changelog.md).
 
-**Latest: v6.0.0** - Major modularization release with 14 stability and enhancement fixes 🏗️
+**Latest: v6.0.1** - Major modularization release with 14 stability and enhancement fixes (contains bugs - further testing needed) 🏗️
 
 ## 🤝 Contributing
 
@@ -260,7 +266,9 @@ This project is MIT licensed. See [LICENSE](LICENSE) for details.
 
 ---
 
-### 🎯 Version 6.0.0 Highlights Summary
+### 🎯 Version 6.0.1 Highlights Summary
+
+**⚠️ Note: This version is known to contain bugs due to extensive refactoring and requires further testing.**
 
 **🏗️ Architecture**: Complete modular transformation from monolith to professional structure  
 **🛠️ Stability**: 14 major fixes addressing reliability and user experience  
@@ -271,4 +279,4 @@ This project is MIT licensed. See [LICENSE](LICENSE) for details.
 _Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_
 
 _Questions? [Open an Issue](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues)_  
-_Last Updated: November 08, 2025_ | _Current Version: 6.0.0_
+_Last Updated: November 08, 2025_ | _Current Version: 6.0.1_ (Known Issues)
