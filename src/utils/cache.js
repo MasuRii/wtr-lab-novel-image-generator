@@ -21,6 +21,21 @@ export async function getCachedModels() {
     }
 }
 
+/**
+ * Gets cached models for a specific provider
+ * @param {string} provider - The provider name (e.g., 'pollinations', 'aiHorde')
+ * @returns {Promise<Array|null>} Array of cached models or null if not found
+ */
+export async function getCachedModelsForProvider(provider) {
+    try {
+        const cache = await getCachedModels();
+        return cache[provider] || null;
+    } catch (error) {
+        log('error', 'CACHE', `Failed to get cached models for ${provider}`, { error: error.message });
+        return null;
+    }
+}
+
 export async function setCachedModels(provider, models) {
     try {
         const cache = await getCachedModels();
@@ -53,6 +68,9 @@ export async function clearCachedModels(provider = null) {
             // The profiles contain important user data like base URLs and API keys
             // that should not be affected by cache clearing
             await clearCachedOpenAICompatModels();
+            
+            // Also clear the main cached models (Pollinations, AI Horde, etc.)
+            await GM_setValue('cachedModels', '{}');
 
             logInfo('CACHE', 'Cleared all cached models and reset OpenAI Compatible model selections.');
             alert('All cached models have been cleared. They will be re-fetched when you next open the settings.');

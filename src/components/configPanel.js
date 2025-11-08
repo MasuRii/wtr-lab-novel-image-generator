@@ -230,24 +230,62 @@ async function saveConfig() {
 async function fetchPollinationsModels(selectedModel) {
     const select = document.getElementById('nig-pollinations-model');
     select.innerHTML = '<option>Loading models...</option>';
+    
     try {
-        const models = await cache.getCachedModels('pollinations');
-        if (!models) {
-            const response = await fetch('https://image.pollinations.ai/models');
-            const data = await response.json();
-            models = data.map(model => model.name).sort();
-            await cache.setCachedModels('pollinations', models);
+        const cachedModels = await cache.getCachedModelsForProvider('pollinations');
+        if (cachedModels && cachedModels.length > 0) {
+            logger.logInfo('CACHE', 'Loading Pollinations models from cache');
+            populatePollinationsSelect(select, cachedModels, selectedModel);
+            return;
         }
-        select.innerHTML = '';
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model;
-            option.textContent = model;
-            select.appendChild(option);
-        });
-        select.value = selectedModel || 'flux';
     } catch (error) {
-        select.innerHTML = '<option>flux</option>';
+        logger.logError('CACHE', 'Failed to get cached Pollinations models', { error: error.message });
+    }
+
+    logger.logInfo('NETWORK', 'Fetching Pollinations models from API');
+    GM_xmlhttpRequest({
+        method: 'GET',
+        url: 'https://image.pollinations.ai/models',
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+        },
+        onload: async (response) => {
+            try {
+                const models = JSON.parse(response.responseText);
+                await cache.setCachedModels('pollinations', models);
+                logger.logInfo('NETWORK', 'Fetched and cached Pollinations models', { count: models.length });
+                populatePollinationsSelect(select, models, selectedModel);
+            } catch (e) {
+                logger.logError('NETWORK', 'Failed to parse Pollinations models', { error: e.message });
+                select.innerHTML = '<option>flux</option>';
+                select.value = 'flux';
+            }
+        },
+        onerror: (error) => {
+            logger.logError('NETWORK', 'Failed to fetch Pollinations models', { error: error });
+            select.innerHTML = '<option>flux</option>';
+            select.value = 'flux';
+        }
+    });
+}
+
+function populatePollinationsSelect(select, models, selectedModel) {
+    select.innerHTML = '';
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        let textContent = model;
+        if (model === 'gptimage') {
+            textContent += ' (Recommended: Quality)';
+        } else if (model === 'flux') {
+            textContent += ' (Default: Speed)';
+        }
+        option.textContent = textContent;
+        select.appendChild(option);
+    });
+    if (models.includes(selectedModel)) {
+        select.value = selectedModel;
+    } else {
         select.value = 'flux';
     }
 }
@@ -255,28 +293,81 @@ async function fetchPollinationsModels(selectedModel) {
 async function fetchAIHordeModels(selectedModel) {
     const select = document.getElementById('nig-horde-model');
     select.innerHTML = '<option>Loading models...</option>';
+    
     try {
-        const models = await cache.getCachedModels('aiHorde');
-        if (!models) {
-            const response = await fetch('https://aihorde.net/api/v2/status/models');
-            const data = await response.json();
-            models = data
-                .filter(model => model.type === 'Image' && model.count > 0)
-                .sort((a, b) => b.count - a.count)
-                .map(model => model.name);
-            await cache.setCachedModels('aiHorde', models);
+        const cachedModels = await cache.getCachedModelsForProvider('aiHorde');
+        if (cachedModels && cachedModels.length > 0) {
+            logger.logInfo('CACHE', 'Loading AI Horde models from cache');
+            populateAIHordeSelect(select, cachedModels, selectedModel);
+            return;
         }
-        select.innerHTML = '';
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model;
-            option.textContent = model;
-            select.appendChild(option);
-        });
-        select.value = selectedModel || models[0];
     } catch (error) {
-        select.innerHTML = '<option>Stable Diffusion</option>';
-        select.value = 'Stable Diffusion';
+        logger.logError('CACHE', 'Failed to get cached AI Horde models', { error: error.message });
+    }
+
+    logger.logInfo('NETWORK', 'Fetching AI Horde models from API');
+    GM_xmlhttpRequest({
+        method: 'GET',
+        url: 'https://aihorde.net/api/v2/status/models?type=image',
+        onload: async (response) => {
+            try {
+                const apiModels = JSON.parse(response.responseText);
+                await cache.setCachedModels('aiHorde', apiModels);
+                logger.logInfo('NETWORK', 'Fetched and cached AI Horde models', { count: apiModels.length });
+                populateAIHordeSelect(select, apiModels, selectedModel);
+            } catch (e) {
+                logger.logError('NETWORK', 'Failed to parse AI Horde models', { error: e.message });
+                select.innerHTML = '<option>Stable Diffusion</option>';
+                select.value = 'Stable Diffusion';
+            }
+        },
+        onerror: (error) => {
+            logger.logError('NETWORK', 'Failed to fetch AI Horde models', { error: error });
+            select.innerHTML = '<option>Stable Diffusion</option>';
+            select.value = 'Stable Diffusion';
+        }
+    });
+}
+
+function populateAIHordeSelect(select, models, selectedModel) {
+    select.innerHTML = '';
+    
+    const apiModelMap = new Map(models.map(m => [m.name, m]));
+    const topModelNames = new Set(TOP_MODELS.map(m => m.name));
+    
+    const topGroup = document.createElement('optgroup');
+    topGroup.label = 'Top 10 Popular Models';
+    
+    const otherGroup = document.createElement('optgroup');
+    otherGroup.label = 'Other Models';
+    
+    // Add top models first
+    TOP_MODELS.forEach(topModel => {
+        if (apiModelMap.has(topModel.name)) {
+            const apiData = apiModelMap.get(topModel.name);
+            const option = document.createElement('option');
+            option.value = topModel.name;
+            option.textContent = `${topModel.name} - ${topModel.desc} (${apiData.count} workers)`;
+            topGroup.appendChild(option);
+        }
+    });
+    
+    // Add other models
+    const otherModels = models.filter(m => !topModelNames.has(m.name)).sort((a, b) => b.count - a.count);
+    otherModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.name;
+        option.textContent = `${model.name} (${model.count} workers)`;
+        otherGroup.appendChild(option);
+    });
+    
+    select.appendChild(topGroup);
+    select.appendChild(otherGroup);
+    
+    if (Array.from(select.options).some(opt => opt.value === selectedModel)) {
+        select.value = selectedModel;
+    } else {
+        select.value = models[0]?.name || 'Stable Diffusion';
     }
 }
 
@@ -325,70 +416,81 @@ async function fetchOpenAICompatModels(selectedModel) {
     const select = document.getElementById('nig-openai-compat-model');
     select.innerHTML = '<option>Fetching models...</option>';
 
-    try {
-        const response = await fetch(`${baseUrl}/models`, {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
+    logger.logInfo('NETWORK', `Fetching OpenAI compatible models from ${baseUrl}`);
+
+    GM_xmlhttpRequest({
+        method: 'GET',
+        url: `${baseUrl}/models`,
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        onload: async (response) => {
+            try {
+                const data = JSON.parse(response.responseText);
+                if (!data.data || !Array.isArray(data.data)) {
+                    throw new Error('Invalid model list format received.');
+                }
+
+                let imageModels = [];
+                if (data.data.some(m => m.endpoint || m.endpoints)) {
+                    imageModels = data.data.filter(model =>
+                        model.endpoint === '/v1/images/generations' ||
+                        model.endpoints?.includes('/v1/images/generations')
+                    );
+                } else if (data.data.some(m => m.type === 'images.generations')) {
+                    imageModels = data.data.filter(model => model.type === 'images.generations');
+                } else {
+                    // If no explicit image models found, try to identify them by name patterns
+                    imageModels = data.data.filter(model => {
+                        const modelId = model.id.toLowerCase();
+                        return modelId.includes('dall-e') ||
+                               modelId.includes('dalle') ||
+                               modelId.includes('image') ||
+                               modelId.includes('midjourney') ||
+                               modelId.includes('stable diffusion') ||
+                               modelId.includes('flux') ||
+                               modelId.includes('imagen');
+                    });
+                }
+
+                imageModels.sort((a, b) => {
+                    const aIsFree = isModelFree(a);
+                    const bIsFree = isModelFree(b);
+                    if (aIsFree && !bIsFree) return -1;
+                    if (!aIsFree && bIsFree) return 1;
+                    return a.id.localeCompare(b.id);
+                });
+
+                if (imageModels.length === 0) {
+                    throw new Error('No image generation models found. This provider may not support image generation.');
+                }
+                
+                populateOpenAICompatSelect(select, imageModels, selectedModel);
+                
+                // Cache the models for this profile
+                await cache.setCachedOpenAICompatModels(baseUrl, imageModels);
+                logger.logInfo('NETWORK', `Successfully fetched and cached ${imageModels.length} models for ${baseUrl}`);
+            } catch (error) {
+                logger.logError('NETWORK', 'Failed to parse OpenAI compatible models', { error: error.message });
+                select.innerHTML = '<option>Failed to fetch models</option>';
+                alert(`Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`);
+                
+                // Switch to manual input mode
+                document.getElementById('nig-openai-model-container-select').style.display = 'none';
+                document.getElementById('nig-openai-model-container-manual').style.display = 'block';
             }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        },
+        onerror: (error) => {
+            logger.logError('NETWORK', 'Failed to fetch OpenAI compatible models', { error });
+            select.innerHTML = '<option>Failed to fetch models</option>';
+            alert('Failed to fetch models. Check your network connection and the Base URL. Switching to manual input.');
+            
+            // Switch to manual input mode
+            document.getElementById('nig-openai-model-container-select').style.display = 'none';
+            document.getElementById('nig-openai-model-container-manual').style.display = 'block';
         }
-
-        const data = await response.json();
-        if (!data.data || !Array.isArray(data.data)) {
-            throw new Error('Invalid model list format received.');
-        }
-
-        let imageModels = [];
-        if (data.data.some(m => m.endpoint || m.endpoints)) {
-            imageModels = data.data.filter(model =>
-                model.endpoint === '/v1/images/generations' ||
-                model.endpoints?.includes('/v1/images/generations')
-            );
-        } else if (data.data.some(m => m.type === 'images.generations')) {
-            imageModels = data.data.filter(model => model.type === 'images.generations');
-        } else {
-            // If no explicit image models found, try to identify them by name patterns
-            imageModels = data.data.filter(model => {
-                const modelId = model.id.toLowerCase();
-                return modelId.includes('dall-e') ||
-                       modelId.includes('dalle') ||
-                       modelId.includes('image') ||
-                       modelId.includes('midjourney') ||
-                       modelId.includes('stable diffusion') ||
-                       modelId.includes('flux') ||
-                       modelId.includes('imagen');
-            });
-        }
-
-        imageModels.sort((a, b) => {
-            const aIsFree = isModelFree(a);
-            const bIsFree = isModelFree(b);
-            if (aIsFree && !bIsFree) return -1;
-            if (!aIsFree && bIsFree) return 1;
-            return a.id.localeCompare(b.id);
-        });
-
-        if (imageModels.length === 0) {
-            throw new Error('No image generation models found. This provider may not support image generation.');
-        }
-        
-        populateOpenAICompatSelect(select, imageModels, selectedModel);
-        
-        // Cache the models for this profile
-        await cache.setCachedOpenAICompatModels(baseUrl, imageModels);
-    } catch (error) {
-        select.innerHTML = '<option>Failed to fetch models</option>';
-        console.error('Failed to parse OpenAI Compatible models:', error);
-        alert(`Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`);
-        
-        // Switch to manual input mode
-        document.getElementById('nig-openai-model-container-select').style.display = 'none';
-        document.getElementById('nig-openai-model-container-manual').style.display = 'block';
-    }
+    });
 }
 
 async function loadCachedOpenAICompatModels(profileUrl, selectedModel) {
