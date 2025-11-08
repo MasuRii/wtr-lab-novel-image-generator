@@ -1,15 +1,19 @@
 import { getConfig } from '../utils/storage.js';
+import * as logger from '../utils/logger.js';
 
 let modalElement = null;
 let retryCallback = () => {};
+let dismissCallback = () => {};
 
 /**
- * Initializes the error modal with a callback for the retry action.
- * @param {object} callbacks - An object containing the retry function.
+ * Initializes the error modal with callbacks for retry and dismiss actions.
+ * @param {object} callbacks - An object containing the retry and dismiss functions.
  * @param {function} callbacks.onRetry - Function to call when the user clicks retry.
+ * @param {function} callbacks.onDismiss - Function to call when the user dismisses the modal.
  */
-export function init({ onRetry }) {
+export function init({ onRetry, onDismiss }) {
     retryCallback = onRetry;
+    dismissCallback = onDismiss;
 }
 
 /**
@@ -43,11 +47,16 @@ export function create() {
 }
 
 /**
- * Hides the error modal.
+ * Hides the error modal and calls the dismiss callback.
  */
 export function hide() {
     if (modalElement) {
         modalElement.style.display = 'none';
+    }
+    
+    // Call the dismiss callback if provided
+    if (typeof dismissCallback === 'function') {
+        dismissCallback();
     }
 }
 
