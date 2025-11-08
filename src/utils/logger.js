@@ -1,0 +1,99 @@
+import { getConfigValue } from './storage.js';
+
+let loggingEnabled = false;
+let enhancementLogHistory = [];
+
+/**
+ * Updates the logging status from storage. Should be called on init.
+ */
+export async function updateLoggingStatus() {
+    loggingEnabled = await getConfigValue('loggingEnabled');
+}
+
+/**
+ * The core logging function.
+ * @param {'info'|'debug'|'warn'|'error'} level - The log level.
+ * @param {string} category - The category of the log (e.g., 'UI', 'API').
+ * @param {string} message - The log message.
+ * @param {any} [data=null] - Optional data to log.
+ */
+export function log(level, category, message, data = null) {
+    if (!loggingEnabled) return;
+
+    const timestamp = new Date().toISOString();
+    const logEntry = { timestamp, level, category, message, data };
+
+    const prefix = `[NIG-${level.toUpperCase()}]`;
+    const categoryPrefix = `[${category}]`;
+    const style = {
+        error: 'color: #ef4444',
+        warn: 'color: #f59e0b',
+        debug: 'color: #8b5cf6',
+        info: 'color: #6366f1',
+    }[level];
+
+    if (data) {
+        console.log(`%c${prefix}`, style, categoryPrefix, message, data);
+    } else {
+        console.log(`%c${prefix}`, style, categoryPrefix, message);
+    }
+
+    if (category === 'ENHANCEMENT') {
+        enhancementLogHistory.unshift(logEntry);
+        if (enhancementLogHistory.length > 50) {
+            enhancementLogHistory = enhancementLogHistory.slice(0, 50);
+        }
+        GM_setValue('enhancementLogHistory', JSON.stringify(enhancementLogHistory.slice(0, 20)));
+    }
+}
+
+// Convenience methods for different log levels
+export const logInfo = (category, message, data) => log('info', category, message, data);
+export const logDebug = (category, message, data) => log('debug', category, message, data);
+export const logWarn = (category, message, data) => log('warn', category, message, data);
+export const logError = (category, message, data) => log('error', category, message, data);
+
+/**
+ * Loads enhancement log history from storage.
+ */
+export async function loadEnhancementLogHistory() {
+    try {
+        const stored = await GM_getValue('enhancementLogHistory', '[]');
+        enhancementLogHistory = JSON.parse(stored);
+        logDebug('LOG', `Loaded ${enhancementLogHistory.length} enhancement log entries from storage`);
+    } catch (e) {
+        logError('LOG', 'Failed to load enhancement log history', e);
+        enhancementLogHistory = [];
+    }
+}
+
+export async function getEnhancementLogHistory() {
+    await loadEnhancementLogHistory();
+    return enhancementLogHistory;
+}
+
+export function clearEnhancementLogs() {
+    enhancementLogHistory = [];
+    GM_setValue('enhancementLogHistory', '[]');
+    logInfo('LOG', 'Enhancement logs cleared by user');
+}
+
+export function formatLogEntry(entry) {
+    const time = new Date(entry.timestamp).toLocaleString();
+    const levelColors = {
+        ERROR: '#ef4444',
+        WARN: '#f59e0b',
+        INFO: '#6366f1',
+        DEBUG: '#8b5cf6',
+    };
+    const color = levelColors[entry.level.toUpperCase()] || '#6366f1';
+
+    return {
+        time,
+        level: entry.level,
+        category: entry.category,
+        message: entry.message,
+        color,
+        data: entry.data,
+    };
+}
