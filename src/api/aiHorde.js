@@ -12,14 +12,6 @@ function checkStatus(id, prompt, startTime, model, { onSuccess, onFailure, updat
         promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
     });
 
-    if (elapsedTime > 300000) { // 5 minute timeout
-        logError('AIHORDE', 'Generation timed out after 5 minutes', {
-            generationId: id,
-            elapsedTimeMs: elapsedTime
-        });
-        onFailure('Timed out after 5 minutes.', prompt, 'AIHorde');
-        return;
-    }
 
     GM_xmlhttpRequest({
         method: 'GET',
