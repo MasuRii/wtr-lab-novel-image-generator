@@ -23,17 +23,17 @@ module.exports = {
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
-    // --- CHANGE #1: ADD THIS LINE ---
-    // This tells webpack-dev-server to run in HTTPS mode and generate a self-signed certificate.
-    server: "https",
+    // --- CHANGE #1: REVERT TO HTTP ---
+    // Run webpack-dev-server in HTTP mode to avoid mixed content issues with proxy script
+    server: "http",
     // Disable hot module replacement for browsers with WebSocket issues
     hot: false,
     // --- END OF CHANGE #1 ---
     client: {
       // --- CHANGE #2: UPDATE THIS LINE ---
-      // We now need to connect to the secure WebSocket server.
+      // Connect to the WebSocket server using HTTP protocol
       // Disable HMR for browsers that have WebSocket connection issues (like LibreWolf)
-      webSocketURL: "wss://localhost:8080/ws",
+      webSocketURL: "ws://localhost:8080/ws",
       overlay: false, // Disable error overlay for WebSocket issues
       logging: "none", // Reduce webpack-dev-server logging noise
       // --- END OF CHANGE #2 ---
@@ -74,7 +74,7 @@ module.exports = {
       // It creates a proxy script that loads the main script from your dev server.
       // This means you get live updates without reinstalling the script.
       proxyScript: {
-        baseUrl: "https://localhost:8080",
+        baseUrl: "http://localhost:8080",
         filename: "[basename].proxy.user.js",
         enable: isDev,
       },
