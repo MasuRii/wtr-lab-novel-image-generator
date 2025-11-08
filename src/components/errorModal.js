@@ -1,5 +1,4 @@
 import { getConfig } from '../utils/storage.js';
-import { parseErrorMessage } from '../utils/error.js';
 
 let modalElement = null;
 let retryCallback = () => {};
@@ -9,10 +8,8 @@ let retryCallback = () => {};
  * @param {object} callbacks - An object containing the retry function.
  * @param {function} callbacks.onRetry - Function to call when the user clicks retry.
  */
-export function initialize(callbacks = {}) {
-    if (callbacks.onRetry) {
-        retryCallback = callbacks.onRetry;
-    }
+export function init({ onRetry }) {
+    retryCallback = onRetry;
 }
 
 /**
@@ -57,9 +54,8 @@ export function hide() {
 /**
  * Shows and populates the error modal with details from a failed generation.
  * @param {object} errorDetails - The details of the error.
- * @returns {Promise} A promise that resolves when the modal is shown.
  */
-export function show(errorDetails) {
+export async function show(errorDetails) {
     if (!modalElement) create();
 
     document.getElementById('nig-error-reason').textContent = errorDetails.reason.message;
@@ -68,7 +64,7 @@ export function show(errorDetails) {
 
     const providerSelect = document.getElementById('nig-retry-provider-select');
     providerSelect.innerHTML = '';
-    const config = getConfigSync();
+    const config = await getConfig();
     const providers = ['Pollinations', 'AIHorde', 'Google'];
     providers.forEach(p => {
         const option = document.createElement('option');
@@ -131,33 +127,4 @@ export function show(errorDetails) {
     }
 
     modalElement.style.display = 'flex';
-    return Promise.resolve();
-}
-
-/**
- * Shows the next error in the queue.
- * @param {Array} errorQueue - The queue of errors to show.
- * @param {Function} onComplete - Callback when error display is complete.
- */
-export function showNextError(errorQueue, onComplete = null) {
-    if (errorQueue.length === 0) {
-        if (onComplete) onComplete();
-        return;
-    }
-
-    const errorToShow = errorQueue.shift();
-    show(errorToShow).finally(() => {
-        if (onComplete) onComplete();
-    });
-}
-
-/**
- * Synchronous version of getConfig for use in show function
- */
-function getConfigSync() {
-    // This is a simplified version - in a real implementation you might want to cache this
-    // or pass it as a parameter to avoid sync/async issues
-    return {
-        openAICompatProfiles: {}
-    };
 }

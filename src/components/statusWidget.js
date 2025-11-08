@@ -1,54 +1,45 @@
-// Status Widget Component
+let widgetElement = null;
+
+/**
+ * Creates the status widget DOM element and appends it to the body.
+ * This should only be called once during initialization.
+ */
 export function create() {
-	if (document.getElementById('nig-status-widget')) return;
+    if (widgetElement) return;
 
-	const statusWidget = document.createElement('div');
-	statusWidget.id = 'nig-status-widget';
-	statusWidget.className = 'nig-status-widget';
-	statusWidget.innerHTML = `<div class="nig-status-icon"></div><span class="nig-status-text"></span>`;
-	document.body.appendChild(statusWidget);
+    widgetElement = document.createElement('div');
+    widgetElement.id = 'nig-status-widget';
+    widgetElement.className = 'nig-status-widget';
+    widgetElement.innerHTML = `<div class="nig-status-icon"></div><span class="nig-status-text"></span>`;
+    document.body.appendChild(widgetElement);
 }
 
-export function updateStatusWidget(state, text, onClickHandler = null) {
-	const statusWidget = document.getElementById('nig-status-widget');
-	if (!statusWidget) return;
-	statusWidget.classList.remove('loading', 'success', 'error');
-	statusWidget.onclick = onClickHandler;
+/**
+ * Updates the state and content of the status widget.
+ * @param {'hidden'|'loading'|'success'|'error'} state - The visual state of the widget.
+ * @param {string} text - The text to display.
+ * @param {function|null} [onClickHandler=null] - An optional click handler for the widget.
+ */
+export function update(state, text, onClickHandler = null) {
+    if (!widgetElement) return;
 
-	if (state === 'hidden') {
-		statusWidget.style.display = 'none';
-		return;
-	}
-	statusWidget.style.display = 'flex';
-	statusWidget.querySelector('.nig-status-text').textContent = text;
-	statusWidget.classList.add(state);
-	const icon = statusWidget.querySelector('.nig-status-icon');
-	icon.innerHTML = '';
-	if (state === 'success') {
-		icon.innerHTML = '✅';
-	} else if (state === 'error') {
-		icon.innerHTML = '❌';
-	}
-}
+    widgetElement.classList.remove('loading', 'success', 'error');
+    widgetElement.onclick = onClickHandler;
 
-export function updateSystemStatus(completedQueue, generationQueue, isGenerating, currentGenerationStatusText, onShowImage = null) {
-	if (completedQueue.length > 0) {
-		const text = completedQueue.length === 1 ? '1 Image Ready! Click to view.' : `${completedQueue.length} Images Ready! Click to view.`;
-		updateStatusWidget('success', text, () => {
-			const result = completedQueue.shift();
-			if (result && onShowImage) {
-				onShowImage(result.imageUrls, result.prompt, result.provider);
-			}
-			updateSystemStatus(completedQueue, generationQueue, isGenerating, currentGenerationStatusText, onShowImage);
-		});
-	} else if (isGenerating || generationQueue.length > 0) {
-		const queueText = generationQueue.length > 0 ? ` (Queue: ${generationQueue.length})` : '';
-		updateStatusWidget('loading', `${currentGenerationStatusText}${queueText}`);
-	} else {
-		updateStatusWidget('hidden', '');
-	}
-}
+    if (state === 'hidden') {
+        widgetElement.style.display = 'none';
+        return;
+    }
 
-export function initialize() {
-	create();
+    widgetElement.style.display = 'flex';
+    widgetElement.querySelector('.nig-status-text').textContent = text;
+    widgetElement.classList.add(state);
+
+    const icon = widgetElement.querySelector('.nig-status-icon');
+    icon.innerHTML = ''; // Clear previous icon
+    if (state === 'success') {
+        icon.innerHTML = '✅';
+    } else if (state === 'error') {
+        icon.innerHTML = '❌';
+    }
 }
