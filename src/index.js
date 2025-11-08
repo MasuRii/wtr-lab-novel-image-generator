@@ -142,8 +142,13 @@ import * as configPanel from './components/configPanel.js';
             promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
         });
         
+        // Update system status to show the queue length
         updateSystemStatus();
-        processQueue();
+        
+        // Only process queue if not currently generating
+        if (!isGenerating) {
+            processQueue();
+        }
     }
 
     function updateSystemStatus() {
@@ -215,6 +220,12 @@ import * as configPanel from './components/configPanel.js';
             },
             updateStatus: (text) => {
                 currentGenerationStatusText = text;
+                logger.logDebug('SYSTEM', 'Status updated by provider', {
+                    provider: request.provider,
+                    newStatusText: text,
+                    isGenerating,
+                    generationQueueLength: generationQueue.length
+                });
                 updateSystemStatus();
             }
         };
