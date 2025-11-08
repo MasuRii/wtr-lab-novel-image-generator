@@ -1,5 +1,7 @@
 # 🚀 WTR LAB Novel Image Generator v6.0.2
 
+[![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
+
 [![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
 ## ⚠️ IMPORTANT: Version 6.0.2 - Known Issues
@@ -15,6 +17,7 @@
 ## ✨ What's New in v6.0.0
 
 ### 🏗️ **Major Modularization Achievement**
+
 - **Complete Architecture Redesign**: Transformed from single-file monolith to professional modular structure
 - **Separation of Concerns**: Cleanly organized into API modules, components, utilities, and configuration
 - **Enhanced Maintainability**: Easy to understand, modify, and extend
@@ -22,6 +25,7 @@
 - **Professional Development Experience**: Follows industry best practices for scalable codebases
 
 ### 🛠️ **14 Stability & Enhancement Fixes**
+
 ✅ **AI Prompt Enhancement Fallback**: Robust fallback mechanism for enhanced prompts  
 ✅ **Persistent History Management**: Improved local storage and history system  
 ✅ **OpenAI Compatible Provider Error Handling**: Better error categorization and recovery  
@@ -40,15 +44,18 @@
 ## ✨ What's New in v6.0.2 - Minor Release: UI/UX Refinements
 
 ### 🎨 **User Interface Improvements**
+
 - **Provider Logo Integration**: Added professional logos to provider header sections for better visual identification
 - **Retry Generation Button Display Fix**: Resolved issue where retry button failed to appear during API key validation errors
 - **History List Padding Removal**: Cleaned up CSS by removing unnecessary padding from history list selectors for improved visual consistency
 
 ### 🛠️ **Enhancement System Optimizations**
+
 - **Prompt Enhancement Preset Formatting**: Standardized all enhancement presets to flowing paragraph format for better readability and consistency
 - **Configuration Save Message Deduplication**: Eliminated duplicate save notification messages to provide cleaner user feedback
 
 ### 📈 **User Experience Enhancements**
+
 - **Improved Visual Identity**: Professional provider logos enhance overall interface recognition
 - **Better Error Handling**: Retry functionality now properly displays during all error scenarios
 - **Streamlined Notifications**: Cleaner, non-repetitive user feedback system
@@ -57,6 +64,7 @@
 ## 🎯 Key Features
 
 ### Multi-Provider AI Image Generation
+
 Generate high-quality images from selected text using multiple AI providers:
 
 - **🔄 Pollinations.ai**: Fast, free generation with multiple model options
@@ -65,12 +73,14 @@ Generate high-quality images from selected text using multiple AI providers:
 - **🎨 Google Imagen**: Premium models with advanced generation controls
 
 ### Advanced Enhancement System
+
 - **🚀 AI Prompt Enhancement**: Powered by Google's Gemini AI for improved prompts
 - **📝 Custom Templates**: Personalized enhancement styles and configurations
 - **⚡ Smart Provider Logic**: Optimizes enhancement for each AI service
 - **🔄 Smart Queue Management**: Background processing without interrupting reading
 
 ### Professional User Experience
+
 - **📱 Mobile-First Design**: Optimized for desktop and mobile reading
 - **🎛️ Advanced Configuration**: Comprehensive settings with provider-specific options
 - **🔒 Privacy-Focused**: Local storage with exportable logs and configuration
@@ -79,17 +89,20 @@ Generate high-quality images from selected text using multiple AI providers:
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Modern browser (Chrome, Firefox, Edge, Safari)
 - Internet connection for AI generation services
 
 ### Installation
 
 1. **Install Tampermonkey**
+
    - [Chrome Extension](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
    - [Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
    - [Edge Add-on](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
 
 2. **Install the Script**
+
    - Download the built userscript from the `dist/` directory
    - Import into Tampermonkey
 
@@ -100,6 +113,7 @@ Generate high-quality images from selected text using multiple AI providers:
 ## 💻 Usage
 
 ### Basic Workflow
+
 1. Read any novel chapter on wtr-lab.com
 2. Highlight descriptive text with your mouse/touch
 3. Click "Generate Image" button (appears automatically)
@@ -109,11 +123,13 @@ Generate high-quality images from selected text using multiple AI providers:
 ### Advanced Configuration
 
 **AI Prompt Enhancement Setup**:
+
 - Configure Google Gemini API key for enhanced prompts
 - Preview original vs enhanced prompts before generation
 - Use custom templates for personalized styles
 
 **Provider Configuration**:
+
 - Set up API keys for preferred services
 - Configure generation parameters and quality settings
 - Switch between providers based on needs and availability
@@ -121,6 +137,7 @@ Generate high-quality images from selected text using multiple AI providers:
 ## 🏗️ Architecture Overview
 
 ### Modular Structure
+
 Our v6.0.2 release introduces a completely modular architecture:
 
 ```
@@ -155,6 +172,7 @@ src/
 ```
 
 ### Benefits of Modular Architecture
+
 - **🎯 Separation of Concerns**: Each module has a specific responsibility
 - **🔄 Easy Maintenance**: Locate and fix issues quickly
 - **📈 Scalability**: Add new features without affecting existing code
@@ -165,18 +183,21 @@ src/
 ## 🔧 Technical Specifications
 
 ### Build System
+
 - **Webpack 5**: Modern bundling and optimization
 - **Modular Code splitting**: Efficient code organization
 - **CSS Processing**: Advanced styling with CSS loaders
 - **Production Optimization**: Minified and optimized builds
 
 ### Error Handling & Recovery
+
 - **Categorized Errors**: Proper error classification and handling
 - **Smart Retry Logic**: Automatic recovery from temporary failures
 - **User-Friendly Messages**: Clear, actionable error communications
 - **Fallback Mechanisms**: Graceful degradation when services are unavailable
 
 ### Performance Optimizations
+
 - **Efficient Caching**: Smart caching strategies for improved response times
 - **Background Processing**: Non-blocking image generation queues
 - **Resource Management**: Optimized memory and network usage
@@ -184,37 +205,42 @@ src/
 
 ## 📊 Provider Comparison
 
-| Provider          | Speed       | Cost    | Quality    | Special Features                | Best For                   |
-| ----------------- | ----------- | ------- | ---------- | ------------------------------- | -------------------------- |
-| Pollinations.ai   | ⚡ Fast     | 💰 Free | ⭐⭐⭐     | Multiple models, Fast results  | Quick testing, Free usage  |
-| AI Horde          | 🐌 Variable | 💰 Free | ⭐⭐⭐⭐   | Community powered, High quality | Quality-focused users      |
-| OpenAI Compatible | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Custom APIs, Premium models    | Professional use cases     |
-| Google Imagen     | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Premium quality, Advanced controls | Best quality results     |
+| Provider          | Speed       | Cost    | Quality    | Special Features                   | Best For                  |
+| ----------------- | ----------- | ------- | ---------- | ---------------------------------- | ------------------------- |
+| Pollinations.ai   | ⚡ Fast     | 💰 Free | ⭐⭐⭐     | Multiple models, Fast results      | Quick testing, Free usage |
+| AI Horde          | 🐌 Variable | 💰 Free | ⭐⭐⭐⭐   | Community powered, High quality    | Quality-focused users     |
+| OpenAI Compatible | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Custom APIs, Premium models        | Professional use cases    |
+| Google Imagen     | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Premium quality, Advanced controls | Best quality results      |
 
 ## 🛠️ Configuration Panel
 
 Access via Tampermonkey menu → "Image Generator Settings":
 
 ### 🎨 Prompt Styling
+
 Choose from comprehensive art style categories:
+
 - **Anime Styles**: 10+ sub-styles for anime aesthetics
 - **Fantasy Styles**: Magical and mythical art approaches
 - **Realism Styles**: Photorealistic and realistic rendering
 - **Custom Templates**: Personalized enhancement styles
 
 ### ⚙️ Provider Settings
+
 - **API Configuration**: Set up keys and endpoints for each provider
 - **Model Selection**: Choose specific models for each service
 - **Generation Parameters**: Fine-tune quality, speed, and style settings
 - **Fallback Logic**: Configure automatic provider switching
 
 ### 🔄 AI Enhancement
+
 - **Gemini Integration**: Set up Google Gemini API for prompt enhancement
 - **Enhancement Templates**: Create and save custom enhancement styles
 - **Preview Mode**: Compare original vs enhanced prompts
 - **Smart Logic**: Optimized enhancement for each provider
 
 ### 📊 History & Analytics
+
 - **Generation History**: View all generated images with metadata
 - **Usage Statistics**: Track provider usage and performance
 - **Export/Import**: Backup and restore settings and history
@@ -234,6 +260,7 @@ Version 6.0.0 underwent extensive testing and validation:
 ## 🚀 Development
 
 ### Build Commands
+
 ```bash
 # Development build with hot reload
 npm run dev
@@ -243,6 +270,7 @@ npm run build
 ```
 
 ### Architecture Principles
+
 - **Modularity First**: Every feature follows modular design principles
 - **Error Resilience**: Robust error handling at every level
 - **Performance Conscious**: Optimized for both speed and resource usage

@@ -141,6 +141,7 @@ Track all updates and new features in [History](https://greasyfork.org/en/script
 ### 🆕 New in v6.0.2
 
 **Visual & User Experience Improvements:**
+
 - **🎨 Provider Logo Integration**: Added logos to provider header sections for better visual identification and branding consistency
 - **🔧 Enhanced Error Recovery**: Fixed retry button not appearing on API key validation errors, improving error recovery workflow
 - **📝 Improved Readability**: Standardized all enhancement presets to flowing paragraph format for better readability

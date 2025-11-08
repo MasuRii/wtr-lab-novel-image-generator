@@ -4,7 +4,6 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [6.0.2] - 2025-11-08
 
 ### 🏗️ MINOR: UI/UX Enhancements and Bug Fixes
@@ -36,7 +35,6 @@ This release includes several user interface improvements and bug fixes to enhan
 
 **Status**: Ready for production - all improvements tested and validated
 
-
 ## [6.0.1] - 2025-11-08
 
 ### 🏗️ MAJOR: JavaScript and CSS Project Modularization Initiative
@@ -44,19 +42,22 @@ This release includes several user interface improvements and bug fixes to enhan
 This release represents the completion of the **JavaScript and CSS Project Modularization Initiative**, building upon the v6.0.0 architecture transformation. This is primarily a **refactoring release** with enhanced modularization.
 
 #### ⚠️ Important Notice
+
 **🔴 WARNING: This version contains potential bugs due to extensive refactoring and requires further testing.**
 
 #### 🆕 New Modularization Features
 
 **JavaScript Modularization (6 New Modules)**:
+
 - **src/components/configPanel.js**: Configuration panel component
-- **src/components/configPanelEvents.js**: Configuration panel event handlers  
+- **src/components/configPanelEvents.js**: Configuration panel event handlers
 - **src/components/configPanelTemplate.js**: Configuration panel template system
 - **src/components/enhancementPanel.js**: Enhancement panel component
 - **src/components/historyManager.js**: History management component
 - **src/components/statusWidget.js**: Status widget component
 
 **CSS Modularization (5 New Modules)**:
+
 - **src/styles/base.css**: Base styling and resets
 - **src/styles/components.css**: Component-specific styles
 - **src/styles/layout.css**: Layout and positioning styles
@@ -64,6 +65,7 @@ This release represents the completion of the **JavaScript and CSS Project Modul
 - **src/styles/utilities.css**: Utility classes and helpers
 
 #### 🔧 Changes Made
+
 - **Enhanced JavaScript Modularization**: Further decomposed monolithic components into smaller, focused modules
 - **CSS Architecture Restructuring**: Split monolithic CSS into logical, maintainable modules
 - **Build Verification**: Verified webpack bundling and optimization with new modular structure
@@ -71,29 +73,34 @@ This release represents the completion of the **JavaScript and CSS Project Modul
 - **Style Organization**: Better organization of stylesheets for maintainability
 
 #### 🧪 Testing & Quality Assurance
+
 - **Build Process Verification**: Confirmed webpack build process works with new modular structure
 - **Module Integration Testing**: Verified inter-module communication and dependencies
 - **Cross-Browser Compatibility**: Basic compatibility testing across major browsers
 - **Performance Validation**: Confirmed no significant performance regressions
 
 #### ⚠️ Known Issues & Limitations
+
 - **Potential Bugs**: Due to extensive refactoring, some functionality may not work as expected
 - **Testing Required**: This version requires extensive user testing to identify and resolve issues
 - **Feature Parity**: Some advanced features may need validation in the new modular structure
 - **Migration Notes**: Users upgrading from v6.0.0 may experience temporary issues
 
 #### 🔄 Migration Guide
+
 **For Users**: This is a maintenance update building on v6.0.0. All existing functionality should work, but please report any issues found.
 
 **For Developers**: The new modular structure provides better organization but requires careful attention to module dependencies and imports.
 
 ### 🏆 Release Summary
+
 - **Architecture**: Enhanced JavaScript and CSS modularization
-- **Modules Added**: 11 new modules (6 JS + 5 CSS)  
+- **Modules Added**: 11 new modules (6 JS + 5 CSS)
 - **Focus**: Refactoring and maintainability improvements
 - **Status**: Potential bugs present - further testing required
 
 **⚠️ Recommendation**: Use with caution and report any issues for the next patch release.
+
 ## [6.0.0] - 2025-11-08
 
 ### 🏗️ MAJOR: Complete Modular Architecture Transformation
@@ -103,6 +110,7 @@ This release represents a **complete architectural overhaul** of the WTR Lab Nov
 #### 🎯 Migration from Monolith to Modular
 
 **Previous Architecture (v5.7.1)**:
+
 - Single JavaScript file: ~5,000 lines of code
 - Tightly coupled functionality
 - Difficult to maintain and debug
@@ -110,6 +118,7 @@ This release represents a **complete architectural overhaul** of the WTR Lab Nov
 - No separation of concerns
 
 **New Architecture (v6.0.0)**:
+
 - **Modular Directory Structure**: Organized into logical modules
 - **Separation of Concerns**: Each module has specific responsibilities
 - **Professional Development Experience**: Industry-standard architecture
@@ -158,31 +167,37 @@ This release includes **14 major stability and enhancement fixes** that signific
 #### ✅ Stability Improvements
 
 1. **AI Prompt Enhancement Fallback Mechanism**
+
    - Implemented robust fallback system for enhanced prompts
    - Ensures users can always generate images even if enhancement fails
    - Graceful degradation with clear user feedback
 
 2. **Persistent History Management System**
+
    - Completely rewritten history management using new storage utils
    - Improved data persistence and reliability
    - Better organization and retrieval of generation history
 
 3. **OpenAI Compatible Provider Error Handling**
+
    - Enhanced error categorization for OpenAI-compatible APIs
    - Better error messages and recovery suggestions
    - Improved handling of network timeouts and rate limits
 
 4. **IP Address Mismatch Retry Functionality**
+
    - Smart retry logic for IP address conflicts
    - Automatic provider switching when issues detected
    - User-friendly error communication during retries
 
 5. **JSON Parsing Error Resolution**
+
    - Enhanced error handling for malformed JSON responses
    - Better data validation and sanitization
    - Graceful handling of API response format changes
 
 6. **Configuration Tab Functionality Restoration**
+
    - Fixed and enhanced configuration panel accessibility
    - Improved settings management and persistence
    - Better provider-specific configuration options
@@ -195,32 +210,38 @@ This release includes **14 major stability and enhancement fixes** that signific
 #### 🎨 User Experience Enhancements
 
 8. **CSS Alignment and Styling Improvements**
+
    - Professional UI design with improved visual hierarchy
    - Better responsive design for mobile and desktop
    - Enhanced button and modal styling
    - Improved accessibility and visual feedback
 
 9. **Enhancement Template Interface Updates**
+
    - Improved template management system
    - Better preview functionality for enhancement styles
    - Enhanced template customization options
 
 10. **Unified Image Modal for Base64 and URL Images**
+
     - Single modal system for all image types
     - Improved image loading and display
     - Better handling of different image formats and sources
 
 11. **Clean Prompt Formatting Before Transmission**
+
     - Enhanced text preprocessing and cleaning
     - Better handling of special characters and formatting
     - Improved prompt quality and consistency
 
 12. **Provider Icons/Logos Updates**
+
     - Modern visual identity improvements
     - Better logo resolution and display
     - Consistent visual branding across all providers
 
 13. **Additional Styling Fixes**
+
     - Comprehensive UI polish and consistency improvements
     - Better spacing, typography, and visual elements
     - Enhanced user interface responsiveness
@@ -234,18 +255,21 @@ This release includes **14 major stability and enhancement fixes** that signific
 ### 🏗️ Technical Improvements
 
 #### Build System Enhancements
+
 - **Webpack 5 Integration**: Modern bundling with improved optimization
 - **Code Splitting**: Efficient modular code organization
 - **CSS Processing**: Advanced styling with CSS loaders
 - **Production Optimization**: Minified and optimized builds
 
 #### Error Handling & Recovery
+
 - **Categorized Error System**: Proper error classification throughout the application
 - **Smart Recovery Logic**: Automatic recovery from temporary failures
 - **User-Friendly Communication**: Clear, actionable error messages
 - **Fallback Mechanisms**: Graceful degradation when services are unavailable
 
 #### Performance Optimizations
+
 - **Enhanced Caching**: Smart caching strategies for improved response times
 - **Background Processing**: Non-blocking image generation queues
 - **Resource Management**: Optimized memory and network usage
@@ -254,6 +278,7 @@ This release includes **14 major stability and enhancement fixes** that signific
 ### 📊 Architecture Benefits
 
 #### For Developers
+
 - **🎯 Clear Separation**: Each module has a specific, well-defined responsibility
 - **🔧 Easy Maintenance**: Issues can be located and resolved quickly
 - **📈 Enhanced Scalability**: New features can be added without affecting existing code
@@ -261,6 +286,7 @@ This release includes **14 major stability and enhancement fixes** that signific
 - **👥 Team Collaboration**: Multiple developers can work on different modules simultaneously
 
 #### For Users
+
 - **🚀 Improved Performance**: Better resource management and optimization
 - **🛡️ Enhanced Reliability**: Robust error handling and recovery systems
 - **📱 Better Mobile Experience**: Improved responsive design and mobile optimization
@@ -270,17 +296,21 @@ This release includes **14 major stability and enhancement fixes** that signific
 ### 🔄 Migration Guide
 
 #### For End Users
+
 No action required! The new modular architecture is completely transparent to end users. All existing functionality remains the same, but with improved performance and reliability.
 
 #### For Developers/Contributors
+
 The codebase has been completely restructured:
 
 **Before (v5.7.1)**:
+
 - Single main file with all functionality
 - Direct DOM manipulation throughout
 - Mixed concerns and responsibilities
 
 **After (v6.0.0)**:
+
 - Modular architecture with clear separation
 - Component-based UI management
 - Dedicated utilities for common operations
@@ -328,9 +358,10 @@ This release represents one of the most significant improvements in the project'
 
 ## [5.7.1] - Previous Release
 
-*Note: Previous versions (5.7.1 and earlier) were implemented as a single monolithic JavaScript file. Detailed changelog information for these versions is available in the GreasyFork version history.*
+_Note: Previous versions (5.7.1 and earlier) were implemented as a single monolithic JavaScript file. Detailed changelog information for these versions is available in the GreasyFork version history._
 
 ### Previous Architecture (Monolith)
+
 - Single JavaScript userscript file
 - ~5,000 lines of code in one file
 - All functionality tightly coupled
@@ -342,6 +373,7 @@ This release represents one of the most significant improvements in the project'
 ## Future Roadmap
 
 ### Planned Features for Future Releases
+
 - 🔄 **Enhanced Provider Support**: Additional AI providers and models
 - 🎨 **Advanced Styling Options**: More art styles and customization
 - 📊 **Analytics Dashboard**: Usage statistics and performance metrics
@@ -349,6 +381,7 @@ This release represents one of the most significant improvements in the project'
 - 🌐 **Multi-Language Support**: Internationalization for global users
 
 ### Architecture Evolution
+
 - 🧪 **Unit Testing Framework**: Comprehensive test coverage
 - 📦 **Plugin System**: Extensible architecture for third-party integrations
 - 🔒 **Enhanced Security**: Advanced privacy and security features
