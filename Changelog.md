@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.0.5] - 2025-11-09
 
-### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, Prompt Routing Consistency, and Enhancement Preset Optimization
+### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, Prompt Routing Consistency, Enhancement Preset Optimization, and Structured Error Guidance
 
-This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript, and optimizing AI Prompt Enhancement presets and behavior while preserving user-intended styling.
+This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript, optimizing AI Prompt Enhancement presets and behavior while preserving user-intended styling, and consolidating structured error handling for OpenAI-compatible and other providers.
 
 #### 🆕 Enhancements
 
@@ -141,25 +141,56 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
   - Guarantees preview failures do not impact real generation or configuration.
 
 - ✅ AI Prompt Enhancement Preview Layout & Responsive Styling:
-  - Introduced a dedicated, consistent layout for the preview block in [`components.css`](src/styles/components.css:370):
-    - `.nig-preview-container`:
-      - Flex layout aligning the Original Prompt, center arrow, and Enhanced Prompt in a single row on desktop.
-    - `.nig-preview-section`:
-      - Shared flex-column structure for headings and prompt areas.
-    - `.nig-preview-arrow`:
-      - Vertically and horizontally centered between the two sections for clear directionality.
-  - Standardized prompt field visuals:
-    - `#nig-original-prompt`, `#nig-enhanced-prompt`, and `.nig-prompt-display` share:
-      - Full-width, consistent padding, border, radius, typography, and min/max heights.
-      - Scrollable content areas for long prompts.
-    - Original prompt:
-      - Editable (resizable vertically) for user experiments.
-    - Enhanced prompt:
-      - Read-only display area, non-resizable, mirroring the enhanced output.
-  - Mobile-friendly behavior:
-    - For small screens, `.nig-preview-container` stacks vertically via media query:
-      - Arrow rotates (90°) and sits between Original and Enhanced sections.
-      - Ensures readability, tap targets, and layout clarity on mobile devices.
+   - Introduced a dedicated, consistent layout for the preview block in [`components.css`](src/styles/components.css:370):
+       - `.nig-preview-container`:
+           - Flex layout aligning the Original Prompt, center arrow, and Enhanced Prompt in a single row on desktop.
+       - `.nig-preview-section`:
+           - Shared flex-column structure for headings and prompt areas.
+       - `.nig-preview-arrow`:
+           - Vertically and horizontally centered between the two sections for clear directionality.
+   - Standardized prompt field visuals:
+       - `#nig-original-prompt`, `#nig-enhanced-prompt`, and `.nig-prompt-display` share:
+           - Full-width, consistent padding, border, radius, typography, and min/max heights.
+           - Scrollable content areas for long prompts.
+       - Original prompt:
+           - Editable (resizable vertically) for user experiments.
+       - Enhanced prompt:
+           - Read-only display area, non-resizable, mirroring the enhanced output.
+   - Mobile-friendly behavior:
+       - For small screens, `.nig-preview-container` stacks vertically via media query:
+           - Arrow rotates (90°) and sits between Original and Enhanced sections.
+           - Ensures readability, tap targets, and layout clarity on mobile devices.
+- ✅ Consolidated Structured Error Modal Reason & Provider-Agnostic Guidance:
+   - Refactored [`errorModal.show()`](src/components/errorModal.js:67) to render a single unified “Reason” section:
+       - All structured, error-type-specific explanations now appear only inside the Reason block, not duplicated in the shared actions area.
+       - The actions area is reserved exclusively for non-redundant controls (e.g., Retry button, provider selection).
+   - Normalized error handling against [`parseErrorMessage()`](src/utils/error.js:8) with robust fallbacks:
+       - Gracefully handles missing `reason`, non-string messages, or malformed payloads without throwing.
+       - Ensures unknown error types still produce a clear generic Reason message.
+   - Added and/or consolidated structured guidance for:
+       - Authentication (`authentication`): invalid/unauthorized API key scenarios with clear “check configuration” messaging.
+       - API key validation (`api_key_validation`): AI Horde and similar flows with actionable registration/credential guidance.
+       - Image conversion issues (`image_conversion`): transient provider conversion problems with safe retry suggestions.
+       - IP mismatch (`ip_mismatch`): explains mismatch and recovery steps using provider-supplied metadata when available.
+       - HTML response / wrong content-type (`html_response`): endpoint configuration issues when HTML is returned instead of JSON.
+       - Malformed JSON (`malformed_json`) and JSON parse errors (`json_parse_error`): server-side/format issues with retry guidance.
+       - Model access / tier restrictions (`model_access`): provider-agnostic handling of “not available for free users”, subscription requirements, 402-style responses, and “plan does not have access to model …” messages:
+           - Uses a single, generic explanation that the selected model is not available for the current plan.
+           - Explicitly recommends switching to a free/supported model or upgrading according to the provider’s documentation.
+   - Ensured non-redundant messaging:
+       - The structured Reason builder de-duplicates overlapping sentences and only appends extra guidance when the base message does not already cover it.
+       - All provider-specific references are removed from core messaging; guidance is generic and suitable for any OpenAI-compatible provider.
+   - Preserved and improved retry behavior:
+       - Non-retryable conditions (e.g., hard authentication failures) continue to hide Retry as before.
+       - Tier/model access restrictions (`model_access`) are now treated as retryable when user action (change model/provider) can resolve the issue:
+           - Retry button remains available so users can switch providers/models and re-attempt without being blocked.
+       - Retry callback execution is wrapped in `try/catch` with [`logger.logError`](src/utils/logger.js:1) to prevent UI breakage if downstream handlers fail.
+   - Added dedicated verification page [`verification-error-modals.html`](src/verification-error-modals.html:1):
+       - Showcases all supported error variants (authentication, API key validation, model access/tier issues, image conversion, IP mismatch, HTML/JSON issues, malformed/parse errors, unknown/missing cases).
+       - Confirms visually that:
+           - Structured guidance appears only once in the Reason section.
+           - The shared actions area remains free of duplicated explanatory text.
+           - Long/multi-line messages and combined conditions render cleanly without layout breaks.
 - ✅ API Key Show/Hide Toggle for Image Provider Credentials:
   - Implemented consistent, accessible show/hide toggles for key/token fields using Material symbols:
     - Pollinations:
@@ -234,7 +265,7 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
 #### 🧪 Quality Assurance
 
 - ✅ Build integrity: `npm run build` completed successfully with no syntax or bundling errors for this branch.
-- ✅ Scope: Changes are constrained to configuration management, history presentation, enhancement preset behavior, and related UI/logic, making this version a safe stabilization baseline for users tracking the `Fixing--Version-6.0.5` branch.
+- ✅ Scope: Changes are constrained to configuration management, history presentation, enhancement preset behavior, consolidated error modal behavior, and related UI/logic, making this version a safe stabilization baseline for users tracking the `Fixing--Version-6.0.5` branch.
 
 
 ## [6.0.4] - 2025-11-09

@@ -36,6 +36,23 @@ export function parseErrorMessage(errorString, provider = null, providerProfileU
         };
     }
 
+    // Check for OpenAI-compatible provider model access / tier restriction errors
+    if (provider === 'OpenAICompat' &&
+        (lowerCaseContent.includes('access denied for model') ||
+         lowerCaseContent.includes('not available for free users') ||
+         lowerCaseContent.includes('premium model requires a subscription') ||
+         lowerCaseContent.includes('"code":402') ||
+         lowerCaseContent.includes('requires a subscription') ||
+         lowerCaseContent.includes('your plan does not have access to model'))) {
+        return {
+            message: 'The selected model is not available for your current plan. You may switch to a free model, choose a supported provider, or upgrade your account according to your provider’s tiers.',
+            // Keep this retryable so the UI allows switching provider/model and retrying.
+            retryable: true,
+            errorType: 'model_access',
+            isNonRetryable: false
+        };
+    }
+
     // Check for AIHorde specific API key validation errors
     if (provider === 'AIHorde' && lowerCaseContent.includes('no user matching sent api key')) {
         return {
