@@ -28,10 +28,11 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
   - Ensures an already-open configuration panel reflects imported changes immediately without requiring close/reopen.
 
 - ✅ History tab prompt display improvements in [`historyManager.populateHistoryTab()`](src/components/historyManager.js:10):
-  - Displays history prompts using the full available width, up to a maximum of two lines.
-  - Applies truncation visually (ellipsis) only when text exceeds two lines, avoiding premature substring cuts.
-  - Introduces defensive `safePrompt` handling to guard against missing or non-string prompt values.
-  - Preserves the "View Generated Image" action, passing a safe fallback label if the original prompt is unavailable.
+    - Displays history prompts using the full available width, up to a maximum of two lines.
+    - Applies truncation visually (ellipsis) only when text exceeds two lines, avoiding premature substring cuts.
+    - Introduces defensive `safePrompt` handling to guard against missing or non-string prompt values.
+    - Preserves the "View Generated Image" action, passing a safe fallback label if the original prompt is unavailable.
+    - Uses a dedicated darker color for history prompts via [`.nig-history-prompt`](src/styles/layout.css:179) to improve readability without impacting other text tokens.
 
 - ✅ Provider-specific prompt and negative prompt handling aligned with the 5.7.0 userscript:
   - Central queue now tracks a positive-only `basePositivePrompt` (style prefix + selection and optional enhancement) and defers provider-specific formatting to the API layer ([`processQueue()`](src/index.js:205) and provider modules).
@@ -47,10 +48,14 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
     - Pass the same FinalPrompt through success callbacks so that history and the viewer reflect exactly what was sent to the API.
 
 - ✅ Accurate "Generated Image Prompt" display in [`imageViewer.show()`](src/components/imageViewer.js:59):
-  - The image viewer now consistently displays the exact prompt string provided by each provider callback:
-    - AI Horde images show only the positive prompt (no inline negative), matching API payload.
-    - Other providers show the full concatenated FinalPrompt including inline negative prompt text when applied.
-  - Ensures visual parity with the actual API request and with the legacy (5.7.0) behavior.
+    - The image viewer now consistently displays the exact prompt string provided by each provider callback:
+        - AI Horde images show only the positive prompt (no inline negative), matching API payload.
+        - Other providers show the full concatenated FinalPrompt including inline negative prompt text when applied.
+    - Ensures visual parity with the actual API request and with the legacy (5.7.0) behavior.
+    - When expanded, the "Generated Image Prompt" section now renders as a scrollable area:
+        - Implemented via [`.nig-prompt-container.expanded .nig-prompt-text`](src/styles/layout.css:498) with `max-height` and `overflow-y: auto`.
+        - Preserves the full, unmodified prompt text in the DOM with `white-space: pre-wrap` on [`#nig-prompt-text.nig-prompt-text`](src/styles/layout.css:510).
+        - Maintains existing toggle/arrow behavior and overall modal layout while ensuring long prompts are fully accessible on desktop and mobile.
 
 - ✅ Detailed logging for prompt construction and routing:
   - Queue-level logs distinguish AI Horde vs non-AI Horde paths, including base positive prompt metrics and dispatch context.
