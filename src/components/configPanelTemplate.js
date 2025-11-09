@@ -304,24 +304,24 @@ export function getConfigPanelHTML() {
                                             <div class="nig-form-group">
                                                 <label for="nig-enhancement-template-select">Enhancement Template</label>
                                                 <select id="nig-enhancement-template-select">
-                                                    <option value="standard">Standard Enhancement - Default enhancement that improves prompt quality</option>
-                                                    <option value="safety">Safety Enhancement - Enhances prompts while removing harmful content</option>
-                                                    <option value="artistic">Artistic Enhancement - Focuses on artistic and creative elements</option>
-                                                    <option value="technical">Technical Enhancement - Emphasizes technical accuracy and detail</option>
-                                                    <option value="character">Character Enhancement - Focuses on character development</option>
-                                                    <option value="environment">Environment Enhancement - Enhances environmental descriptions</option>
-                                                    <option value="composition">Composition Enhancement - Focuses on composition and visual structure</option>
-                                                    <option value="clean">Clean Enhancement - Removes potentially harmful elements</option>
-                                                    <option value="custom">Custom Enhancement Prompt</option>
+                                                    <option value="standard">Standard Enhancement - General-purpose, balanced enhancement</option>
+                                                    <option value="safety">Safety Enhancement - Safe, policy-aligned enhancement</option>
+                                                    <option value="artistic">Artistic Enhancement - Emphasizes creative visual style</option>
+                                                    <option value="technical">Technical Enhancement - Emphasizes realism and technical detail</option>
+                                                    <option value="character">Character Enhancement - Focuses on character detail and personality</option>
+                                                    <option value="custom">Custom (unsaved)</option>
                                                 </select>
-                                                <small class="nig-hint">Choose a preset enhancement prompt or select 'Custom' to create your own. Preset prompts include safety features to remove harmful content.</small>
+                                                <small class="nig-hint">
+                                                    Choose a curated enhancement preset or use Custom for ad-hoc instructions.
+                                                    Legacy presets are still supported for existing configurations and will map safely to the closest available option.
+                                                </small>
                                             </div>
-                                            <textarea id="nig-enhancement-template" rows="3" placeholder="Enter custom enhancement instructions..."></textarea>
+                                            <textarea id="nig-enhancement-template" rows="3" placeholder="Enter enhancement instructions or leave empty to rely on the selected preset."></textarea>
                                             <div class="nig-form-group-inline">
-                                                <button class="nig-template-btn" id="nig-template-reset">Reset to Preset</button>
+                                                <button class="nig-template-btn" id="nig-template-reset">Reset to Selected Preset</button>
                                                 <button class="nig-template-btn" id="nig-template-example">Load Example</button>
                                             </div>
-                                            <small class="nig-hint">Customize how the AI enhances prompts. Leave empty for intelligent enhancement.</small>
+                                            <small class="nig-hint">Customize how the AI enhances prompts. If left blank, the selected preset behavior is used.</small>
                                         </div>
                                     </div>
 

@@ -148,6 +148,46 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
             normalized.enhancementPresets = DEFAULTS.enhancementPresets;
         }
 
+        // --- Enhancement Template Selection & Legacy Preset Handling ---
+
+        /**
+         * Resolve a possibly legacy or invalid enhancement template key
+         * to a safe, supported key.
+         *
+         * Rules:
+         * - Allow 'standard', 'safety', 'artistic', 'technical', 'character', 'custom'
+         * - Map legacy/removed defaults:
+         *     - 'clean' -> 'safety'
+         *     - 'environment' -> 'standard'
+         *     - 'composition' -> 'technical'
+         * - For any other unknown/non-string value, fall back to DEFAULTS.enhancementTemplateSelected or 'standard'
+         */
+        const resolveEnhancementTemplateKey = (rawKey) => {
+            const validKeys = ['standard', 'safety', 'artistic', 'technical', 'character', 'custom'];
+            if (typeof rawKey === 'string' && rawKey.trim().length > 0) {
+                const key = rawKey.trim();
+                if (validKeys.includes(key)) {
+                    return key;
+                }
+                switch (key) {
+                    case 'clean':
+                        return 'safety';
+                    case 'environment':
+                        return 'standard';
+                    case 'composition':
+                        return 'technical';
+                    default:
+                        break;
+                }
+            }
+            return DEFAULTS.enhancementTemplateSelected || 'standard';
+        };
+
+        // Ensure enhancementTemplateSelected is normalized using resolver
+        normalized.enhancementTemplateSelected = resolveEnhancementTemplateKey(
+            normalized.enhancementTemplateSelected || importedConfig.enhancementTemplateSelected
+        );
+
         // historyDays: default only when missing/invalid
         if (!('historyDays' in importedConfig)) {
             normalized.historyDays = DEFAULTS.historyDays ?? 30;

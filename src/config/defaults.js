@@ -11,7 +11,9 @@ export const DEFAULTS = {
     enhancementProvider: 'gemini', // 'gemini', 'disabled'
     enhancementApiKey: '',
     enhancementModel: 'models/gemini-2.5-pro',
-    enhancementTemplate: 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:',
+    // Default enhancement behavior is driven by the selected preset.
+    // This base template is aligned with the "Standard Enhancement" preset.
+    enhancementTemplate: 'Extract visual elements from this text and craft a concise, image-ready prompt as a flowing paragraph. Focus on: clear subjects, setting and environment, lighting/mood/color palette, and artistic style/composition/framing. Omit narrative, dialogue, text overlays, and non-visual details. Use vivid, concrete descriptors separated by commas or short phrases. End with quality boosters such as highly detailed, sharp focus, high resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene and mood, then add style and technical details.',
     enhancementTemplateSelected: 'standard',
     enhancementOverrideProvider: false,
     enhancementLastStatus: 'disabled',

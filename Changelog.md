@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.0.5] - 2025-11-09
 
-### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, and Prompt Routing Consistency
+### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, Prompt Routing Consistency, and Enhancement Preset Optimization
 
-This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, and aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript while ensuring accurate logging and viewer output.
+This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript, and optimizing AI Prompt Enhancement presets and behavior while preserving user-intended styling.
 
 #### 🆕 Enhancements
 
@@ -56,6 +56,48 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
   - Queue-level logs distinguish AI Horde vs non-AI Horde paths, including base positive prompt metrics and dispatch context.
   - Provider modules log FinalPrompt construction details, negative prompt usage, and previews to simplify debugging and verification.
 
+- ✅ Enhancement Template Preset Optimization (Top 5) in Styling Tab:
+  - Curated and constrained the default Enhancement Template presets to the top 5:
+    - `standard`, `safety`, `artistic`, `technical`, `character`.
+  - Updated the AI Prompt Enhancement dropdown in [`getConfigPanelHTML()`](src/components/configPanelTemplate.js:301) to expose only:
+    - Standard Enhancement (balanced default),
+    - Safety Enhancement (policy-aligned),
+    - Artistic Enhancement (creative focus),
+    - Technical Enhancement (accuracy/detail focus),
+    - Character Enhancement (character-centric),
+    - plus `Custom (unsaved)` for ad-hoc instructions.
+  - Removed `environment`, `composition`, and `clean` from the visible default presets while:
+    - Preserving their definitions in [`DEFAULTS.enhancementPresets`](src/config/defaults.js:31),
+    - Treating them as legacy/advanced options for migration and backward compatibility rather than primary choices.
+
+- ✅ Enhancement Preset Backward Compatibility & Safe Mapping:
+  - Added explicit legacy preset resolution logic in [`configManager.normalizeImportedConfig()`](src/config/configManager.js:71) to normalize `enhancementTemplateSelected`:
+    - `clean` → `safety`
+    - `environment` → `standard`
+    - `composition` → `technical`
+    - Unknown or invalid values → `DEFAULTS.enhancementTemplateSelected` (defaults to `standard`)
+  - Ensures older configurations load without errors and map to the closest modern preset, avoiding broken dropdown values or undefined behavior.
+
+- ✅ Default Enhancement Template Alignment:
+  - Updated [`DEFAULTS.enhancementTemplate`](src/config/defaults.js:12) to match the Standard Enhancement philosophy:
+    - Produces concise, image-ready prompts,
+    - Emphasizes visual clarity and structure,
+    - Avoids narrative and text overlays,
+    - Serves as a consistent base when no custom/preset override is applied.
+
+- ✅ Style-Respecting Gemini Enhancement Behavior:
+  - Enhanced [`enhancePromptWithGemini()`](src/api/gemini.js:37) to construct a merged enhancement template that:
+    - Incorporates the selected preset/base template, and
+    - Adds explicit style directives based on:
+      - Custom style (`customStyleEnabled` + `customStyleText`),
+      - Or main/sub-style (`mainPromptStyle`, `subPromptStyle`).
+  - The merged instructions:
+    - Instruct Gemini to PRESERVE and HONOR the user’s declared style/aesthetic,
+    - Forbid overriding anime/illustration styles with "photorealistic" or "professional photography" language unless the user explicitly requests it,
+    - Ensure technical/safety/artistic presets refine structure, clarity, and constraints without hijacking the chosen visual identity.
+  - Result:
+    - Enhanced prompts for cases like "In the style of sword and magic anime" now remain firmly anime-styled, while still benefiting from the Technical preset’s precision and detail.
+
 #### 🔧 Bug Fixes & Safeguards
 
 - 🧱 Robust error handling for configuration import:
@@ -76,6 +118,7 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
 - 🛡️ Backward compatibility hardening:
   - Legacy 5.x / early 6.x exports normalized against [`config/defaults`](src/config/defaults.js:1).
   - Ensures OpenAI-compatible profiles, enhancement options, and history settings remain stable across upgrades.
+  - Legacy enhancement template keys are safely mapped to supported presets (see above), preventing invalid selections.
 
 - 🖼️ Safe UI rendering:
   - History prompt tooltips escape quotes to avoid attribute breakage.
@@ -84,7 +127,7 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
 #### 🧪 Quality Assurance
 
 - ✅ Build integrity: `npm run build` completed successfully with no syntax or bundling errors for this branch.
-- ✅ Scope: Changes are constrained to configuration management, history presentation, and related UI logic, making this version a safe stabilization baseline for users tracking the `Fixing--Version-6.0.5` branch.
+- ✅ Scope: Changes are constrained to configuration management, history presentation, enhancement preset behavior, and related UI/logic, making this version a safe stabilization baseline for users tracking the `Fixing--Version-6.0.5` branch.
 
 
 ## [6.0.4] - 2025-11-09

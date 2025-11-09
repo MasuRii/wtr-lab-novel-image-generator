@@ -36,10 +36,17 @@ export function shouldUseProviderEnhancement(provider, config) {
  */
 export async function enhancePromptWithGemini(originalPrompt, config) {
     const startTime = Date.now();
+
+    // Resolve effective enhancement instruction that RESPECTS user style/main/sub-style
     const {
         enhancementApiKey: apiKey,
         enhancementModel: rawModel,
-        enhancementTemplate: template,
+        enhancementTemplate: userTemplateOverride,
+        enhancementTemplateSelected,
+        mainPromptStyle,
+        subPromptStyle,
+        customStyleEnabled,
+        customStyleText,
         enhancementMaxRetriesPerModel = 2,
         enhancementRetryDelay = 1000,
         enhancementModelsFallback = [
@@ -52,6 +59,54 @@ export async function enhancePromptWithGemini(originalPrompt, config) {
         enhancementLogLevel = 'info',
         enhancementAlwaysFallback = true
     } = config;
+
+    // Build a style-respecting instruction layer:
+    // - If custom style is enabled, explicitly tell Gemini to preserve and reinforce it.
+    // - Else if main/sub styles are set, tell Gemini to keep them.
+    // - Otherwise, no extra constraint.
+    const styleDirectives = (() => {
+        if (customStyleEnabled && customStyleText && customStyleText.trim().length > 0) {
+            return [
+                `The user has explicitly chosen this style: "${customStyleText.trim()}".`,
+                `You MUST preserve and honor this exact style and aesthetic.`,
+                `Do NOT replace it with "photorealistic", "professional photography", or any other conflicting medium unless the user text itself asks for that.`,
+                `All enhancements must be consistent with this declared style.`
+            ].join(' ');
+        }
+
+        if (mainPromptStyle && mainPromptStyle !== 'None') {
+            if (subPromptStyle && subPromptStyle !== 'none') {
+                return [
+                    `The user has selected main style "${mainPromptStyle}" and sub-style "${subPromptStyle}".`,
+                    `You MUST preserve and honor these styles as the primary aesthetic.`,
+                    `Do NOT override them with photorealistic/technical photography language unless these styles explicitly imply it.`,
+                    `All enhancements must be consistent with these selected styles.`
+                ].join(' ');
+            }
+            return [
+                `The user has selected main style "${mainPromptStyle}".`,
+                `You MUST preserve and honor this style as the primary aesthetic.`,
+                `Do NOT override it with photorealistic/technical photography language unless this style explicitly implies it.`,
+                `All enhancements must be consistent with this selected style.`
+            ].join(' ');
+        }
+
+        return '';
+    })();
+
+    // Base template to use:
+    // - Prefer userTemplateOverride when provided (from UI textarea).
+    // - Otherwise, derive from presets (standard/safety/artistic/technical/character) via DEFAULTS.enhancementTemplate in config.
+    //   (config should already contain the selected preset mapping.)
+    const baseTemplate = (userTemplateOverride && userTemplateOverride.trim().length > 0)
+        ? userTemplateOverride.trim()
+        : (config.enhancementTemplate || '').trim();
+
+    // Merge base template and style directives into final template sent to Gemini.
+    const mergedTemplate = [
+        baseTemplate || 'Extract visual, image-ready elements from the text without changing its intended style.',
+        styleDirectives
+    ].filter(Boolean).join(' ');
 
     if (!apiKey) {
         throw new Error('Gemini API key is required for prompt enhancement.');
@@ -94,7 +149,7 @@ export async function enhancePromptWithGemini(originalPrompt, config) {
                 const enhancedText = await attemptEnhancementWithModel(
                     originalPrompt,
                     model,
-                    template,
+                    mergedTemplate,
                     apiKey,
                     isPrimaryModel,
                     attemptsForThisModel,
