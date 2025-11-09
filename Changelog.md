@@ -65,10 +65,42 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
     - Artistic Enhancement (creative focus),
     - Technical Enhancement (accuracy/detail focus),
     - Character Enhancement (character-centric),
-    - plus `Custom (unsaved)` for ad-hoc instructions.
+    - plus `Custom (one-off)` for ad-hoc instructions.
   - Removed `environment`, `composition`, and `clean` from the visible default presets while:
-    - Preserving their definitions in [`DEFAULTS.enhancementPresets`](src/config/defaults.js:31),
     - Treating them as legacy/advanced options for migration and backward compatibility rather than primary choices.
+
+- ✅ User-Created Enhancement Presets with Grouped Priority & Tampermonkey Persistence:
+  - Introduced dedicated `enhancementUserPresets` storage in [`DEFAULTS`](src/config/defaults.js:33) to persist user-defined enhancement presets via Tampermonkey:
+    - Schema v1: map of `id` → `{ id, name, description?, template, createdAt?, updatedAt?, version? }`.
+    - Loaded as part of [`storage.getConfig()`](src/utils/storage.js:17) so presets participate in config export/import seamlessly.
+  - Implemented robust user preset loading and normalization in [`getNormalizedUserPresets()`](src/components/enhancementPanel.js:66):
+    - Supports both modern map shape and legacy array-based exports.
+    - Ignores malformed entries without breaking the UI.
+  - Updated enhancement template initialization in [`handleEnhancementTemplateSelection()`](src/components/enhancementPanel.js:213) to:
+    - Resolve `enhancementTemplateSelected` across:
+      - User presets (`user:{id}`),
+      - Default presets (`standard`, `safety`, `artistic`, `technical`, `character`),
+      - Custom templates (`custom`),
+      - Legacy/unknown values via safe inference from stored template content.
+    - Automatically populate the dropdown with:
+      - A non-selectable `User Presets` group (always shown above defaults),
+      - A non-selectable `Default Presets` group (top 5 curated presets),
+      - A trailing `Custom (one-off)` option for unsaved instructions.
+  - Added explicit "Save as Preset" workflow in [`setupEnhancementEventListeners()`](src/components/enhancementPanel.js:406):
+    - Prompts for a preset name, generates a stable unique `id`, and writes to `enhancementUserPresets` via Tampermonkey.
+    - Immediately rebuilds the grouped dropdown and switches selection to the new user preset.
+    - Locks the textarea for named presets to indicate they are managed entities.
+  - Added safe "Delete Selected User Preset" support in [`setupEnhancementEventListeners()`](src/components/enhancementPanel.js:476):
+    - Only allows deletion for entries under the `User Presets` group (`user:{id}`).
+    - Confirms intent, removes from `enhancementUserPresets`, and persists via Tampermonkey.
+    - Rebuilds the dropdown and restores a sane fallback:
+      - Defaults to `standard` when available, otherwise `custom`.
+      - Keeps textarea/selection in sync if the active preset was deleted.
+  - Ensured manual textarea edits:
+    - Always persist the latest `enhancementTemplate` for resilience.
+    - Only mark `enhancementTemplateSelected = 'custom'` when the user is explicitly in Custom mode, avoiding accidental override of named presets.
+  - Result:
+    - Users can create, reuse, delete, export, and import enhancement presets reliably on the `Fixing--Version-6.0.5` branch, with clear separation between user and default presets.
 
 - ✅ Enhancement Preset Backward Compatibility & Safe Mapping:
   - Added explicit legacy preset resolution logic in [`configManager.normalizeImportedConfig()`](src/config/configManager.js:71) to normalize `enhancementTemplateSelected`:

@@ -30,6 +30,7 @@ export const DEFAULTS = {
     enhancementLogLevel: 'info', // 'debug', 'info', 'warn', 'error'
     enhancementAlwaysFallback: true,
     // Preset Enhancement Prompts
+    // Default enhancement presets (top 5 only). User presets are stored separately.
     enhancementPresets: {
         standard: {
             name: 'Standard Enhancement',
@@ -55,23 +56,31 @@ export const DEFAULTS = {
             name: 'Character Enhancement',
             description: 'Focuses on character development and description',
             template: 'Extract visual elements from this text and craft a character-focused image generation prompt as a flowing paragraph with emphasis on character details and development. Focus on: detailed character appearances/actions/expressions with rich personality traits, character-centric setting and environment, character-appropriate lighting/mood/color palette, character-driven artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, character-specific descriptors separated by commas or short phrases for clarity. End with character-focused quality boosters like "detailed character, expressive features, well-defined personality, professional portrait, masterpiece character study, highly detailed, sharp focus, 8K resolution. Generated Prompt Structure: Start with compelling core characters, layer in character-appropriate scene/mood, then character-focused style/technicals:'
-        },
-        environment: {
-            name: 'Environment Enhancement',
-            description: 'Enhances environmental and setting descriptions',
-            template: 'Extract visual elements from this text and craft an environment-focused image generation prompt as a flowing paragraph with emphasis on immersive setting details. Focus on: characters within richly described environment and setting, atmospheric surrounding environment with detailed lighting/mood/color palette, environmental artistic style/composition/framing with emphasis on spatial relationships. Omit narrative, dialogue, text, or non-visual details. Use vivid, environmental descriptors separated by commas or short phrases for clarity. End with environmental quality boosters like "immersive environment, detailed background, atmospheric lighting, cinematic composition, 8K environmental detail, masterpiece. Generated Prompt Structure: Start with environment-centric subjects, layer in detailed scene/mood, then environmental style/technicals:'
-        },
-        composition: {
-            name: 'Composition Enhancement',
-            description: 'Focuses on composition and visual structure',
-            template: 'Extract visual elements from this text and craft a composition-focused image generation prompt as a flowing paragraph with emphasis on visual structure and framing. Focus on: characters with composition-aware appearances/actions/expressions, well-composed setting and environment, strategically lit lighting/mood/color palette, composition-driven artistic style/composition/framing with photographic techniques. Omit narrative, dialogue, text, or non-visual details. Use vivid, compositional descriptors separated by commas or short phrases for clarity. End with compositional quality boosters like "excellent composition, balanced framing, visual impact, professional photography, cinematic quality, masterpiece composition, highly detailed, sharp focus, 8K resolution. Generated Prompt Structure: Start with compositionally strong core subjects, layer in balanced scene/mood, then composition-focused style/technicals:'
-        },
-        clean: {
-            name: 'Clean Enhancement',
-            description: 'Removes potentially harmful or inappropriate elements',
-            template: 'Extract visual elements from this text and craft a clean, family-friendly image generation prompt as a flowing paragraph while removing harmful, inappropriate, or problematic elements. Focus on: positive, appropriate characters and their wholesome appearances/actions/expressions, safe, family-friendly setting and environment, positive lighting/mood/color palette, appropriate artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use positive, clean descriptors separated by commas or short phrases for clarity. End with clean quality boosters like "appropriate content, family-friendly, positive imagery, clean composition, well-balanced, detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with clean core subjects, layer in positive scene/mood, then appropriate style/technicals:'
         }
     },
+    /**
+     * User-defined enhancement presets (schema v1).
+     * Stored separately from enhancementPresets to preserve default set across updates.
+     *
+     * Shape:
+     * {
+     *   "<id>": {
+     *     id: string,
+     *     name: string,
+     *     description?: string,
+     *     template: string,
+     *     createdAt?: string,
+     *     updatedAt?: string,
+     *     version?: 1
+     *   },
+     *   ...
+     * }
+     *
+     * Backward compatibility:
+     * - If existing stored value is an array or legacy map without id, migration logic
+     *   in the UI/loader should normalize it into this keyed-object shape.
+     */
+    enhancementUserPresets: {},
     // Global Negative Prompting
     enableNegPrompt: true,
     globalNegPrompt: 'ugly, blurry, deformed, disfigured, poor details, bad anatomy, low quality',

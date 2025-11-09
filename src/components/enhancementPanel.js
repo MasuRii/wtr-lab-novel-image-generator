@@ -59,50 +59,248 @@ export function updateEnhancementUI(provider, config) {
 /**
  * Handles enhancement template selection and updates UI accordingly
  */
+/**
+ * Load and normalize user presets from config.
+ * Ensures backward compatibility with potential legacy shapes.
+ */
+function getNormalizedUserPresets(config) {
+    const raw = config.enhancementUserPresets;
+    const normalized = {};
+
+    try {
+        if (!raw) {
+            return normalized;
+        }
+
+        // If already an object map of id -> preset
+        if (typeof raw === 'object' && !Array.isArray(raw)) {
+            Object.entries(raw).forEach(([id, value]) => {
+                if (value && typeof value.template === 'string') {
+                    const presetId = value.id || id;
+                    normalized[presetId] = {
+                        id: presetId,
+                        name: value.name || presetId,
+                        description: typeof value.description === 'string' ? value.description : '',
+                        template: value.template,
+                        createdAt: value.createdAt || null,
+                        updatedAt: value.updatedAt || null,
+                        version: value.version || 1
+                    };
+                }
+            });
+            return normalized;
+        }
+
+        // If legacy array: [{ name, template, ... }]
+        if (Array.isArray(raw)) {
+            raw.forEach((p, index) => {
+                if (p && typeof p.template === 'string') {
+                    const safeName = (p.name && typeof p.name === 'string')
+                        ? p.name.trim()
+                        : `Preset ${index + 1}`;
+                    const id = p.id || safeName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '') || `preset-${index + 1}`;
+                    if (!normalized[id]) {
+                        normalized[id] = {
+                            id,
+                            name: safeName,
+                            description: typeof p.description === 'string' ? p.description : '',
+                            template: p.template,
+                            createdAt: p.createdAt || null,
+                            updatedAt: p.updatedAt || null,
+                            version: 1
+                        };
+                    }
+                }
+            });
+            return normalized;
+        }
+    } catch (e) {
+        console.error('[NIG] Failed to normalize enhancementUserPresets, clearing corrupted data', e);
+    }
+
+    return normalized;
+}
+
+/**
+ * Persist normalized user presets back to storage.
+ */
+async function saveUserPresetsToStorage(userPresetsMap) {
+    try {
+        await storage.setConfigValue('enhancementUserPresets', userPresetsMap || {});
+    } catch (e) {
+        console.error('[NIG] Failed to save enhancementUserPresets', e);
+        alert('Failed to save enhancement preset. See console for details.');
+    }
+}
+
+/**
+ * Populate the Enhancement Template select with grouped user + default presets,
+ * ensuring "User Presets" group appears above "Default Presets".
+ */
+function populateEnhancementTemplateSelect(templateSelect, userPresetsMap, selectedKey) {
+    const defaultPresets = DEFAULTS.enhancementPresets || {};
+
+    // Clear existing options while preserving optgroup structure from template
+    templateSelect.innerHTML = '';
+
+    // User Presets group
+    const userOptgroup = document.createElement('optgroup');
+    userOptgroup.label = 'User Presets';
+    userOptgroup.dataset.group = 'user-presets';
+
+    const userPresetEntries = Object.values(userPresetsMap || {});
+    if (userPresetEntries.length === 0) {
+        const emptyOption = document.createElement('option');
+        emptyOption.disabled = true;
+        emptyOption.textContent = 'No user presets saved yet';
+        userOptgroup.appendChild(emptyOption);
+    } else {
+        userPresetEntries.forEach(preset => {
+            const option = document.createElement('option');
+            option.value = `user:${preset.id}`;
+            option.textContent = preset.name || preset.id;
+            option.title = preset.description || preset.template || '';
+            userOptgroup.appendChild(option);
+        });
+    }
+
+    // Default Presets group (top 5 only per DEFAULTS)
+    const defaultOptgroup = document.createElement('optgroup');
+    defaultOptgroup.label = 'Default Presets';
+    defaultOptgroup.dataset.group = 'default-presets';
+
+    Object.entries(defaultPresets).forEach(([key, preset]) => {
+        if (!preset || typeof preset.template !== 'string') return;
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${preset.name} - ${preset.description}`;
+        option.title = preset.template;
+        defaultOptgroup.appendChild(option);
+    });
+
+    // Append groups in required order
+    templateSelect.appendChild(userOptgroup);
+    templateSelect.appendChild(defaultOptgroup);
+
+    // Custom one-off entry at bottom (not part of any optgroup)
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = 'Custom (one-off)';
+    templateSelect.appendChild(customOption);
+
+    // Resolve selection
+    if (selectedKey && templateSelect.querySelector(`option[value="${selectedKey}"]`)) {
+        templateSelect.value = selectedKey;
+    } else if (selectedKey && selectedKey.startsWith('user:') && templateSelect.querySelector(`option[value="${selectedKey}"]`)) {
+        templateSelect.value = selectedKey;
+    } else if (selectedKey && defaultPresets[selectedKey]) {
+        templateSelect.value = selectedKey;
+    } else if (selectedKey === 'custom') {
+        templateSelect.value = 'custom';
+    } else {
+        // Fallback to standard if available
+        if (defaultPresets.standard) {
+            templateSelect.value = 'standard';
+        } else {
+            templateSelect.value = 'custom';
+        }
+    }
+}
+
+/**
+ * Handle initial enhancement template selection, including user presets.
+ */
 export async function handleEnhancementTemplateSelection(config) {
     const templateSelect = document.getElementById('nig-enhancement-template-select');
     const templateTextarea = document.getElementById('nig-enhancement-template');
 
-    // Resolve selected preset:
-    // 1) If enhancementTemplateSelected is a known preset key (or 'custom'), trust it.
-    // 2) Otherwise, infer from enhancementTemplate content; fall back to 'standard'.
-    const presets = DEFAULTS.enhancementPresets || {};
+    if (!templateSelect || !templateTextarea) {
+        return;
+    }
+
+    const defaultPresets = DEFAULTS.enhancementPresets || {};
+    const userPresets = getNormalizedUserPresets(config);
+
     const storedSelected = config.enhancementTemplateSelected;
     const storedTemplate = typeof config.enhancementTemplate === 'string'
         ? config.enhancementTemplate
         : '';
 
-    let selectedPreset = 'standard';
+    // Try to resolve selection:
+    // - user:<id> for user presets
+    // - default preset keys
+    // - 'custom'
+    let resolvedKey = null;
 
-    if (storedSelected === 'custom' || presets[storedSelected]) {
-        selectedPreset = storedSelected;
-    } else if (storedTemplate) {
-        let matchedKey = null;
-        for (const [key, preset] of Object.entries(presets)) {
-            if (preset && typeof preset === 'object' && preset.template === storedTemplate) {
-                matchedKey = key;
+    if (storedSelected && typeof storedSelected === 'string') {
+        if (storedSelected === 'custom') {
+            resolvedKey = 'custom';
+        } else if (storedSelected.startsWith('user:')) {
+            const id = storedSelected.replace(/^user:/, '');
+            if (userPresets[id]) {
+                resolvedKey = `user:${id}`;
+            }
+        } else if (defaultPresets[storedSelected]) {
+            resolvedKey = storedSelected;
+        }
+    }
+
+    // If no direct match, attempt to infer from stored template content
+    if (!resolvedKey && storedTemplate) {
+        // Check user presets
+        for (const preset of Object.values(userPresets)) {
+            if (preset.template === storedTemplate) {
+                resolvedKey = `user:${preset.id}`;
                 break;
             }
         }
-        selectedPreset = matchedKey || 'custom';
+
+        // Check default presets if still not resolved
+        if (!resolvedKey) {
+            for (const [key, preset] of Object.entries(defaultPresets)) {
+                if (preset && typeof preset === 'object' && preset.template === storedTemplate) {
+                    resolvedKey = key;
+                    break;
+                }
+            }
+        }
+
+        // Fallback: treat as custom if we have content
+        if (!resolvedKey) {
+            resolvedKey = 'custom';
+        }
     }
 
-    // Apply resolved selection to dropdown
-    templateSelect.value = selectedPreset;
+    // Final fallback to standard if nothing else
+    if (!resolvedKey) {
+        resolvedKey = defaultPresets.standard ? 'standard' : 'custom';
+    }
 
-    // Populate textarea according to selection without overwriting valid custom content
-    if (selectedPreset === 'custom') {
-        // For custom, always show the stored template text as-is and keep editable
+    // Populate select with grouped options
+    populateEnhancementTemplateSelect(templateSelect, userPresets, resolvedKey);
+
+    // Populate textarea and readonly/editable state
+    if (resolvedKey === 'custom') {
         templateTextarea.value = storedTemplate || '';
         templateTextarea.disabled = false;
-    } else {
-        const preset = presets[selectedPreset];
+    } else if (resolvedKey.startsWith('user:')) {
+        const id = resolvedKey.replace(/^user:/, '');
+        const preset = userPresets[id];
         if (preset) {
-            // For preset, ensure textarea reflects the preset content and is read-only
             templateTextarea.value = preset.template;
             templateTextarea.disabled = true;
         } else {
-            // Fallback safety: treat as custom if preset missing
+            // Missing user preset -> fallback to custom with storedTemplate
+            templateTextarea.value = storedTemplate || '';
+            templateTextarea.disabled = false;
+            templateSelect.value = 'custom';
+        }
+    } else {
+        const preset = defaultPresets[resolvedKey];
+        if (preset) {
+            templateTextarea.value = preset.template;
+            templateTextarea.disabled = true;
+        } else {
             templateTextarea.value = storedTemplate || '';
             templateTextarea.disabled = false;
             templateSelect.value = 'custom';
@@ -159,6 +357,8 @@ export function setupEnhancementEventListeners(panelElement) {
     const overrideProviderBtn = panelElement.querySelector('#nig-override-provider');
     const templateSelect = panelElement.querySelector('#nig-enhancement-template-select');
     const templateResetBtn = panelElement.querySelector('#nig-template-reset');
+    const templateSavePresetBtn = panelElement.querySelector('#nig-template-save-preset');
+    const templateDeletePresetBtn = panelElement.querySelector('#nig-template-delete-preset');
     const templateExampleBtn = panelElement.querySelector('#nig-template-example');
     const testEnhancementBtn = panelElement.querySelector('#nig-test-enhancement');
     const geminiApiKeyInput = panelElement.querySelector('#nig-gemini-api-key');
@@ -167,49 +367,205 @@ export function setupEnhancementEventListeners(panelElement) {
     templateSelect.addEventListener('change', async (e) => {
         const selectedValue = e.target.value;
         const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
-        const presets = DEFAULTS.enhancementPresets || {};
+        const defaultPresets = DEFAULTS.enhancementPresets || {};
+        const config = await storage.getConfig();
+        const userPresets = getNormalizedUserPresets(config);
 
         if (selectedValue === 'custom') {
-            // Switching to custom: make textarea editable and keep whatever text is currently shown.
+            // Custom one-off: textarea editable, not bound to a named preset.
             templateTextarea.disabled = false;
-            // Do not overwrite enhancementTemplate here; it will be updated on input/save.
             await storage.setConfigValue('enhancementTemplateSelected', 'custom');
+        } else if (selectedValue.startsWith('user:')) {
+            const id = selectedValue.replace(/^user:/, '');
+            const preset = userPresets[id];
+            if (preset) {
+                templateTextarea.value = preset.template;
+                templateTextarea.disabled = true;
+                await storage.setConfigValue('enhancementTemplate', preset.template);
+                await storage.setConfigValue('enhancementTemplateSelected', `user:${id}`);
+            } else {
+                // Missing user preset -> treat as custom to avoid data loss.
+                templateTextarea.disabled = false;
+                await storage.setConfigValue('enhancementTemplateSelected', 'custom');
+            }
         } else {
-            // Switching to a non-custom preset: apply preset content and lock textarea.
-            const preset = presets[selectedValue];
+            // Default preset
+            const preset = defaultPresets[selectedValue];
             if (preset) {
                 templateTextarea.value = preset.template;
                 templateTextarea.disabled = true;
                 await storage.setConfigValue('enhancementTemplate', preset.template);
                 await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
             } else {
-                // Unknown preset key: treat as custom to avoid wiping user content.
+                // Unknown key: fallback to custom
                 templateTextarea.disabled = false;
                 await storage.setConfigValue('enhancementTemplateSelected', 'custom');
             }
         }
     });
 
+    // Save as Preset Button
+    if (templateSavePresetBtn) {
+        templateSavePresetBtn.addEventListener('click', async () => {
+            try {
+                const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
+                const templateSelectEl = panelElement.querySelector('#nig-enhancement-template-select');
+                const rawText = (templateTextarea.value || '').trim();
+
+                if (!rawText) {
+                    alert('Cannot save an empty enhancement preset.');
+                    return;
+                }
+
+                const name = prompt('Enter a name for this enhancement preset:', '');
+                if (!name) {
+                    return;
+                }
+
+                const trimmedName = name.trim();
+                if (!trimmedName) {
+                    alert('Preset name cannot be empty.');
+                    return;
+                }
+
+                const config = await storage.getConfig();
+                const existing = getNormalizedUserPresets(config);
+
+                // Generate stable id from name
+                let baseId = trimmedName.toLowerCase()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^a-z0-9-_]/g, '')
+                    .substring(0, 64) || 'preset';
+
+                let id = baseId;
+                let suffix = 1;
+                while (existing[id] && existing[id].name !== trimmedName) {
+                    id = `${baseId}-${suffix++}`;
+                }
+
+                const nowIso = new Date().toISOString();
+                existing[id] = {
+                    id,
+                    name: trimmedName,
+                    description: '',
+                    template: rawText,
+                    createdAt: existing[id]?.createdAt || nowIso,
+                    updatedAt: nowIso,
+                    version: 1
+                };
+
+                await saveUserPresetsToStorage(existing);
+
+                // Refresh select with new user preset list
+                populateEnhancementTemplateSelect(templateSelectEl, existing, `user:${id}`);
+
+                // Lock textarea for the saved preset
+                templateTextarea.value = rawText;
+                templateTextarea.disabled = true;
+
+                await storage.setConfigValue('enhancementTemplate', rawText);
+                await storage.setConfigValue('enhancementTemplateSelected', `user:${id}`);
+
+                alert(`Enhancement preset "${trimmedName}" saved under User Presets.`);
+            } catch (e) {
+                console.error('[NIG] Failed to save enhancement preset', e);
+                alert('Failed to save enhancement preset. Please check the console for details.');
+            }
+        });
+    }
+
+    // Delete selected user preset
+    if (templateDeletePresetBtn) {
+        templateDeletePresetBtn.addEventListener('click', async () => {
+            try {
+                const templateSelectEl = panelElement.querySelector('#nig-enhancement-template-select');
+                const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
+                const selected = templateSelectEl ? templateSelectEl.value : '';
+
+                if (!selected || !selected.startsWith('user:')) {
+                    alert('Please select a User Preset from the "User Presets" group to delete.');
+                    return;
+                }
+
+                const id = selected.replace(/^user:/, '');
+                const config = await storage.getConfig();
+                const existing = getNormalizedUserPresets(config);
+
+                if (!existing[id]) {
+                    alert('The selected user preset no longer exists or is invalid.');
+                    return;
+                }
+
+                const confirmMessage = `Delete user preset "${existing[id].name || id}"? This action cannot be undone.`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                // Remove preset and persist
+                delete existing[id];
+                await saveUserPresetsToStorage(existing);
+
+                // Rebuild the select; default to "standard" if available or "custom"
+                const fallbackKey = DEFAULTS.enhancementPresets?.standard ? 'standard' : 'custom';
+                populateEnhancementTemplateSelect(templateSelectEl, existing, fallbackKey);
+
+                // If we deleted the active preset, update textarea and selection accordingly
+                if (selected === config.enhancementTemplateSelected) {
+                    if (fallbackKey === 'custom') {
+                        templateTextarea.value = (config.enhancementTemplate || '').trim();
+                        templateTextarea.disabled = false;
+                        await storage.setConfigValue('enhancementTemplateSelected', 'custom');
+                    } else {
+                        const fallbackPreset = DEFAULTS.enhancementPresets[fallbackKey];
+                        templateTextarea.value = fallbackPreset?.template || '';
+                        templateTextarea.disabled = !!fallbackPreset;
+                        if (fallbackPreset) {
+                            await storage.setConfigValue('enhancementTemplate', fallbackPreset.template);
+                        }
+                        await storage.setConfigValue('enhancementTemplateSelected', fallbackKey);
+                    }
+                }
+
+                alert('User preset deleted.');
+            } catch (e) {
+                console.error('[NIG] Failed to delete enhancement user preset', e);
+                alert('Failed to delete user preset. Please check the console for details.');
+            }
+        });
+    }
+
     // Reset to Preset Button
     templateResetBtn.addEventListener('click', async () => {
         const selectedValue = templateSelect.value;
         const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
-        const presets = DEFAULTS.enhancementPresets || {};
+        const defaultPresets = DEFAULTS.enhancementPresets || {};
+        const config = await storage.getConfig();
+        const userPresets = getNormalizedUserPresets(config);
 
         if (selectedValue !== 'custom') {
-            const preset = presets[selectedValue];
-            if (preset) {
-                // Explicit "reset" restores the currently selected preset template.
-                templateTextarea.value = preset.template;
-                templateTextarea.disabled = true;
-                await storage.setConfigValue('enhancementTemplate', preset.template);
-                await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
+            if (selectedValue.startsWith('user:')) {
+                const id = selectedValue.replace(/^user:/, '');
+                const preset = userPresets[id];
+                if (preset) {
+                    templateTextarea.value = preset.template;
+                    templateTextarea.disabled = true;
+                    await storage.setConfigValue('enhancementTemplate', preset.template);
+                    await storage.setConfigValue('enhancementTemplateSelected', `user:${id}`);
+                }
+            } else {
+                const preset = defaultPresets[selectedValue];
+                if (preset) {
+                    templateTextarea.value = preset.template;
+                    templateTextarea.disabled = true;
+                    await storage.setConfigValue('enhancementTemplate', preset.template);
+                    await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
+                }
             }
         } else {
-            // If "custom" is selected, reset should preserve custom mode and just restore stored custom text if any.
-            const config = await storage.getConfig();
-            const customTemplate = typeof config.enhancementTemplate === 'string'
-                ? config.enhancementTemplate
+            // If "custom" is selected, reset should restore stored custom text if any.
+            const cfg = await storage.getConfig();
+            const customTemplate = typeof cfg.enhancementTemplate === 'string'
+                ? cfg.enhancementTemplate
                 : '';
             templateTextarea.value = customTemplate;
             templateTextarea.disabled = false;
@@ -263,19 +619,19 @@ export function setupEnhancementEventListeners(panelElement) {
     });
 
     // Track manual edits to enhancement template:
-    // Any change by the user should:
-    // - Update enhancementTemplate in storage
-    // - Flip enhancementTemplateSelected to 'custom' explicitly
+    // Always persist latest raw text for resilience.
     const templateTextareaForInput = panelElement.querySelector('#nig-enhancement-template');
     const templateSelectForInput = panelElement.querySelector('#nig-enhancement-template-select');
-    if (templateTextareaForInput) {
+    if (templateTextareaForInput && templateSelectForInput) {
         templateTextareaForInput.addEventListener('input', async () => {
             const value = templateTextareaForInput.value;
-            await storage.setConfigValue('enhancementTemplate', value);
-            await storage.setConfigValue('enhancementTemplateSelected', 'custom');
+            const currentSelect = templateSelectForInput.value;
 
-            if (templateSelectForInput && templateSelectForInput.value !== 'custom') {
-                templateSelectForInput.value = 'custom';
+            await storage.setConfigValue('enhancementTemplate', value);
+
+            // Only mark as custom when explicitly in custom mode
+            if (currentSelect === 'custom') {
+                await storage.setConfigValue('enhancementTemplateSelected', 'custom');
             }
         });
     }
