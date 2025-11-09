@@ -40,7 +40,8 @@ export function getConfigPanelHTML() {
                                     <option>Loading models...</option>
                                 </select>
                             </div>
-                            <div class="nig-form-group-inline">
+                            <div class="nig-form-group nig-form-group-inline">
+                                <label>Dimensions (Width × Height)</label>
                                 <div>
                                     <label for="nig-pollinations-width">Width</label>
                                     <input type="number" id="nig-pollinations-width" min="64" max="2048" step="64">

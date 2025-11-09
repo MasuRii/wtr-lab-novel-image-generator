@@ -1,9 +1,196 @@
-// --- IMPORTS ---
+ // --- IMPORTS ---
 import { DEFAULTS } from '../config/defaults.js';
 import { PROMPT_CATEGORIES } from '../config/styles.js';
 import * as storage from '../utils/storage.js';
 import * as logger from '../utils/logger.js';
 import * as file from '../utils/file.js';
+import { populateEnhancementSettings, updateEnhancementUI } from '../components/enhancementPanel.js';
+
+// --- INTERNAL HELPERS ---
+
+/**
+ * Normalize imported configuration for compatibility between legacy (e.g. 5.7.0) and 6.0.4+.
+ * - Start from DEFAULTS
+ * - Overlay importedConfig (no dropping of known keys)
+ * - Apply targeted fixes for new fields and legacy mappings
+ * - Preserve sensitive values when present and valid
+ * @param {object} importedConfig
+ * @returns {object} normalized configuration object
+ */
+export function normalizeImportedConfig(importedConfig = {}) {
+    try {
+        // Start from defaults (shallow clone - structure is flat enough for our use)
+        const normalized = { ...DEFAULTS };
+
+        // Overlay imported config (do not drop keys present in file)
+        // This keeps any extra/unknown keys as-is for forward compatibility.
+        Object.assign(normalized, importedConfig);
+
+        // --- Backward compatibility and field normalization ---
+
+        // Detect legacy enhancement template selection:
+        // If enhancementTemplateSelected missing but enhancementTemplate present:
+        if (!('enhancementTemplateSelected' in importedConfig)) {
+            const importedTemplate = importedConfig.enhancementTemplate;
+            let matchedKey = null;
+
+            if (importedTemplate && typeof importedTemplate === 'string' && DEFAULTS.enhancementPresets) {
+                for (const [key, preset] of Object.entries(DEFAULTS.enhancementPresets)) {
+                    if (preset && typeof preset === 'object' && preset.template === importedTemplate) {
+                        matchedKey = key;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedKey) {
+                normalized.enhancementTemplateSelected = matchedKey;
+            } else {
+                // Default to custom while preserving enhancementTemplate content
+                normalized.enhancementTemplateSelected = 'custom';
+            }
+        } else {
+            // Validate enhancementTemplateSelected if present
+            const sel = normalized.enhancementTemplateSelected;
+            const presets = DEFAULTS.enhancementPresets || {};
+            if (!sel || (sel !== 'custom' && !presets[sel])) {
+                normalized.enhancementTemplateSelected = DEFAULTS.enhancementTemplateSelected || 'standard';
+            }
+        }
+
+        // Ensure enhancement-related new tuning fields are populated when missing/invalid
+        const ensureNumber = (value, fallback) =>
+            (typeof value === 'number' && !isNaN(value) && value >= 0) ? value : fallback;
+
+        const ensureArray = (value, fallback) =>
+            Array.isArray(value) ? value : fallback;
+
+        const ensureLogLevel = (value, fallback) => {
+            const allowed = ['debug', 'info', 'warn', 'error'];
+            return allowed.includes(value) ? value : fallback;
+        };
+
+        // enhancementMaxRetriesPerModel
+        normalized.enhancementMaxRetriesPerModel = ensureNumber(
+            importedConfig.enhancementMaxRetriesPerModel,
+            DEFAULTS.enhancementMaxRetriesPerModel
+        );
+
+        // enhancementRetryDelay
+        normalized.enhancementRetryDelay = ensureNumber(
+            importedConfig.enhancementRetryDelay,
+            DEFAULTS.enhancementRetryDelay
+        );
+
+        // enhancementModelsFallback
+        normalized.enhancementModelsFallback = ensureArray(
+            importedConfig.enhancementModelsFallback,
+            DEFAULTS.enhancementModelsFallback
+        );
+
+        // enhancementLogLevel
+        normalized.enhancementLogLevel = ensureLogLevel(
+            importedConfig.enhancementLogLevel,
+            DEFAULTS.enhancementLogLevel
+        );
+
+        // enhancementAlwaysFallback
+        if (typeof importedConfig.enhancementAlwaysFallback === 'boolean') {
+            normalized.enhancementAlwaysFallback = importedConfig.enhancementAlwaysFallback;
+        } else {
+            normalized.enhancementAlwaysFallback = DEFAULTS.enhancementAlwaysFallback;
+        }
+
+        // enhancementPresets: if missing or invalid, fill from defaults
+        if (!importedConfig.enhancementPresets || typeof importedConfig.enhancementPresets !== 'object') {
+            normalized.enhancementPresets = DEFAULTS.enhancementPresets;
+        }
+
+        // historyDays: default only when missing/invalid
+        if (!('historyDays' in importedConfig)) {
+            normalized.historyDays = DEFAULTS.historyDays ?? 30;
+        } else {
+            const parsedDays = parseInt(importedConfig.historyDays, 10);
+            if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
+                normalized.historyDays = DEFAULTS.historyDays ?? 30;
+            } else {
+                normalized.historyDays = parsedDays;
+            }
+        }
+
+        // --- Sensitive / critical fields preservation ---
+        const isNonEmptyString = v => typeof v === 'string' && v.trim().length > 0;
+
+        // Direct provider API keys / tokens
+        if (isNonEmptyString(importedConfig.aiHordeApiKey)) {
+            normalized.aiHordeApiKey = importedConfig.aiHordeApiKey;
+        }
+
+        if (isNonEmptyString(importedConfig.pollinationsToken)) {
+            normalized.pollinationsToken = importedConfig.pollinationsToken;
+        }
+
+        if (isNonEmptyString(importedConfig.enhancementApiKey)) {
+            normalized.enhancementApiKey = importedConfig.enhancementApiKey;
+        }
+
+        if (isNonEmptyString(importedConfig.googleApiKey)) {
+            normalized.googleApiKey = importedConfig.googleApiKey;
+        }
+
+        // OpenAI-compatible profiles: ensure structure and preserve apiKey-like fields
+        if (importedConfig.openAICompatProfiles && typeof importedConfig.openAICompatProfiles === 'object') {
+            const normalizedProfiles = {};
+            for (const [url, profile] of Object.entries(importedConfig.openAICompatProfiles)) {
+                if (profile && typeof profile === 'object') {
+                    const cloned = { ...profile };
+                    // Preserve any non-empty apiKey fields
+                    if (isNonEmptyString(profile.apiKey)) {
+                        cloned.apiKey = profile.apiKey;
+                    }
+                    normalizedProfiles[url] = cloned;
+                }
+            }
+            normalized.openAICompatProfiles = normalizedProfiles;
+        } else if (DEFAULTS.openAICompatProfiles) {
+            normalized.openAICompatProfiles = DEFAULTS.openAICompatProfiles;
+        }
+
+        // Preserve active profile URL if valid string, otherwise use default
+        if (isNonEmptyString(importedConfig.openAICompatActiveProfileUrl)) {
+            normalized.openAICompatActiveProfileUrl = importedConfig.openAICompatActiveProfileUrl;
+        } else {
+            normalized.openAICompatActiveProfileUrl = DEFAULTS.openAICompatActiveProfileUrl;
+        }
+
+        // Preserve openAICompatModelManualInput boolean
+        if (typeof importedConfig.openAICompatModelManualInput === 'boolean') {
+            normalized.openAICompatModelManualInput = importedConfig.openAICompatModelManualInput;
+        } else if (typeof normalized.openAICompatModelManualInput !== 'boolean') {
+            normalized.openAICompatModelManualInput = DEFAULTS.openAICompatModelManualInput;
+        }
+
+        // Ensure we do not overwrite valid sensitive values with empty defaults
+        // If normalized has empty string but imported had non-empty, restore imported
+        const sensitiveKeys = [
+            'aiHordeApiKey',
+            'pollinationsToken',
+            'enhancementApiKey',
+            'googleApiKey'
+        ];
+        for (const key of sensitiveKeys) {
+            if (isNonEmptyString(importedConfig[key]) && !isNonEmptyString(normalized[key])) {
+                normalized[key] = importedConfig[key];
+            }
+        }
+
+        return normalized;
+    } catch (error) {
+        logger.logError('Failed to normalize imported config', error);
+        // On failure, fall back to DEFAULTS merged with raw imported config to avoid total breakage.
+        return { ...DEFAULTS, ...(importedConfig || {}) };
+    }
+}
 
 // --- PUBLIC FUNCTIONS ---
 
@@ -140,6 +327,8 @@ export async function saveConfig() {
  * Exports configuration to a JSON file
  */
 export async function exportConfig() {
+    // Export the current normalized configuration.
+    // storage.getConfig() already merges stored values over DEFAULTS to produce a flat config.
     const config = await storage.getConfig();
     const configData = JSON.stringify(config, null, 2);
     const filename = `wtr-lab-image-generator-config-${new Date().toISOString().split('T')[0]}.json`;
@@ -150,26 +339,54 @@ export async function exportConfig() {
  * Imports configuration from a JSON file
  */
 export async function handleImportFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) return;
 
     try {
-        const text = await file.text();
-        const config = JSON.parse(text);
-        
+        const text = await selectedFile.text();
+        const importedConfig = JSON.parse(text);
+
+        if (!importedConfig || typeof importedConfig !== 'object' || Array.isArray(importedConfig)) {
+            throw new Error('Invalid configuration format: root must be an object.');
+        }
+
         if (confirm('This will overwrite all current settings. Continue?')) {
-            // Set all config values
-            Object.keys(config).forEach(key => {
-                storage.setConfigValue(key, config[key]);
-            });
-            
-            alert('Configuration imported successfully!');
+            const normalizedConfig = normalizeImportedConfig(importedConfig);
+ 
+            // Persist all normalized keys to storage before notifying user
+            await Promise.all(
+                Object.keys(normalizedConfig).map(key =>
+                    storage.setConfigValue(key, normalizedConfig[key])
+                )
+            );
+ 
+            // Retrieve the fully merged config to ensure UI reflects the latest values
+            const updatedConfig = await storage.getConfig();
+ 
+            // Update core config form fields
             await populateConfigForm();
+ 
+            // Synchronize enhancement panel UI with imported configuration
+            try {
+                if (typeof populateEnhancementSettings === 'function') {
+                    await populateEnhancementSettings(updatedConfig);
+                }
+                if (typeof updateEnhancementUI === 'function') {
+                    const provider = updatedConfig.selectedProvider || DEFAULTS.selectedProvider;
+                    updateEnhancementUI(provider, updatedConfig);
+                }
+            } catch (uiError) {
+                // Log but do not fail the import if UI sync has issues
+                logger.logError('Failed to update enhancement UI after config import', uiError);
+            }
+ 
+            alert('Configuration imported successfully!');
         }
     } catch (error) {
+        logger.logError('Failed to import configuration', error);
         alert(`Failed to import configuration: ${error.message}`);
     }
-    
+
     // Clear file input
     event.target.value = '';
 }

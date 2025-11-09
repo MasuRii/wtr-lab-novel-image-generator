@@ -4,6 +4,21 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.4] - 2025-11-09
+
+### 🛠️ Maintenance & UX Polish
+
+- 🧹 Fixed History Tab Cleaner layout, including mobile alignment and input width behavior.
+- 🖼️ Improved image viewer modal stacking and close button hit area for more reliable access above other UI layers.
+- 🔄 Implemented robust configuration import/export normalization to ensure compatibility between legacy (5.7.x) and 6.x configurations.
+- 🎯 Corrected global negative prompt handling for AI Horde so it is only applied via supported `negative_prompt` fields.
+- 🚀 Clarified AI Prompt Enhancement queue behavior and surfaced enhancement queue state more clearly in the status widget.
+- ⚡ Ensured AI Prompt Enhancement indicators update immediately following configuration import.
+- 📏 Standardized Pollinations dimension input UI for a consistent and predictable experience.
+- 📝 Fixed persistence of custom enhancement templates across save/reload, example loading, and reset flows.
+
+**Status**: Recommended. Focused on reliability, clarity, and compatibility without breaking existing workflows.
+
 ## [6.0.3] - 2025-11-08
 
 ### 🏗️ MINOR: UI/UX Improvements and Feature Enhancements

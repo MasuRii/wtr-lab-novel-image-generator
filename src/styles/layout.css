@@ -180,22 +180,6 @@
     color: var(--nig-color-hover-primary);
 }
 
-.nig-history-cleanup {
-    padding: var(--nig-space-lg);
-    background: var(--nig-color-bg-tertiary);
-    border-radius: var(--nig-radius-md);
-    margin-bottom: var(--nig-space-xl);
-    display: flex;
-    align-items: center;
-    gap: var(--nig-space-lg);
-    border: 1px solid var(--nig-color-border);
-}
-
-.nig-history-cleanup input[type="number"] {
-    width: 80px;
-    padding: var(--nig-space-sm);
-}
-
 /* === Panel Configuration Grid Layout === */
 .nig-config-grid {
     display: grid;
@@ -345,7 +329,6 @@
     display: flex;
     align-items: center;
     gap: var(--nig-space-md);
-    flex-wrap: wrap;
 }
 
 .nig-cleanup-controls label {
@@ -527,4 +510,11 @@
 .nig-api-prompt-link:hover {
     color: var(--nig-color-hover-primary);
     text-decoration: underline;
+}
+/* Override for History Tab Cleaner number input width on mobile.
+   Ensures #nig-history-clean-days remains compact even if external CSS applies width: 100%. */
+@media (max-width: 767px) {
+  .nig-history-cleanup input[type="number"]#nig-history-clean-days {
+    width: 80px;
+  }
 }

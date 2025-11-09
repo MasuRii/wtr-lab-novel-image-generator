@@ -31,6 +31,7 @@ import * as configPanel from './components/configPanel.js';
     let errorQueue = [];
     let isGenerating = false;
     let currentGenerationStatusText = '';
+    let enhancementInFlightCount = 0;
     let isErrorModalVisible = false;
     let currentSelection = '';
     let generateBtn;
@@ -329,33 +330,35 @@ import * as configPanel from './components/configPanel.js';
 
         if (config.enhancementEnabled) {
             const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(config.selectedProvider, config);
-            const hasApiKey = config.enhancementApiKey.trim().length > 0;
+            const hasApiKey = (config.enhancementApiKey || '').trim().length > 0;
             const shouldUseExternalEnhancement = (!shouldUseProviderEnh || config.enhancementOverrideProvider) && hasApiKey;
 
             if (shouldUseExternalEnhancement) {
-                statusWidget.update('loading', 'Enhancing prompt...');
+                enhancementInFlightCount++;
+                const startQueueText = enhancementInFlightCount > 1 ? ` (Queue: ${enhancementInFlightCount})` : '';
+                statusWidget.update('loading', `Enhancing prompt...${startQueueText}`);
                 try {
                     // Clean prompt for enhancement API call
-                    const cleanPromptForEnhancement = getApiReadyPrompt(finalPrompt, 'enhancement');
+                    // IMPORTANT: Enhancement must ONLY see the positive prompt (style + user text), never global negatives
+                    const cleanPromptForEnhancement = getApiReadyPrompt(finalPrompt, 'enhancement_positive_only');
                     finalPrompt = await apiGemini.enhancePromptWithGemini(cleanPromptForEnhancement, config);
-                    statusWidget.update('success', 'Prompt enhanced!');
+                    enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+                    const successQueueText = enhancementInFlightCount > 0 ? ` (Queue: ${enhancementInFlightCount})` : '';
+                    statusWidget.update('success', `Prompt enhanced!${successQueueText}`);
                     setTimeout(() => updateSystemStatus(), 2000);
                 } catch (error) {
+                    enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+                    const errorQueueText = enhancementInFlightCount > 0 ? ` (Queue: ${enhancementInFlightCount})` : '';
                     logger.logError('ENHANCEMENT', 'External AI enhancement failed, falling back to original', { error: error.message });
-                    statusWidget.update('error', 'Enhancement failed, using original prompt');
+                    statusWidget.update('error', `Enhancement failed, using original prompt${errorQueueText}`);
                     setTimeout(() => updateSystemStatus(), 3000);
                 }
             }
         }
 
-        if (config.enableNegPrompt && config.globalNegPrompt && config.selectedProvider !== 'AIHorde') {
-            finalPrompt += `, negative prompt: ${config.globalNegPrompt}`;
-            logger.logDebug('GENERATION', 'Global negative prompt applied', {
-                negativePrompt: config.globalNegPrompt,
-                originalLength: finalPrompt.length - config.globalNegPrompt.length - 18,
-                finalLength: finalPrompt.length
-            });
-        }
+        // NOTE (Objective 4):
+        // Global negative prompt is applied ONLY at provider dispatch time for providers that explicitly support it.
+        // Do NOT concatenate globalNegPrompt into finalPrompt here.
 
         logger.logInfo('GENERATION', 'Prompt preparation completed, adding to queue', {
             provider: config.selectedProvider,

@@ -1,18 +1,97 @@
-# 🚀 WTR LAB Novel Image Generator v6.0.3
+# 🚀 WTR LAB Novel Image Generator 🖼️ (v6.0.4)
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.4-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
-## 🌟 Version 6.0.3 - UI/UX Improvements and Feature Enhancements
+## ✨ Overview
 
-## 🌟 Version 6.0.0 - Major Release: Modular Architecture Transformation
+WTR LAB Novel Image Generator is a modern userscript that turns your WTR-LAB novel reading into a visual experience. Select text on `wtr-lab.com` and generate AI-powered images via multiple providers with a clean UI, modular architecture, prompt enhancement, history, and powerful configuration options.
 
-**This release represents a complete architectural transformation** - we've evolved from a single 5,000-line monolith (v5.7.1) to a clean, maintainable modular codebase with 14 major stability and enhancement fixes. Experience unprecedented maintainability, scalability, and developer experience! 🎨
+## ✨ Key Features
 
-## ✨ What's New in v6.0.0
+- 🔄 Multi-provider support: Pollinations, AI Horde, OpenAI-compatible, Google Imagen
+- 🚀 AI Prompt Enhancement via Gemini with smart queue behavior
+- 🎛️ Rich configuration panel with import/export and backward-compatible normalization
+- 🧱 Fully modular architecture for maintainability and stability
+- 🖼️ Unified image viewer with history, cleanup tools, and mobile-friendly layout
 
-### 🏗️ **Major Modularization Achievement**
+## 📥 Installation
+
+1. Install a userscript manager (Tampermonkey recommended).
+2. Install the built userscript:
+   - Use the GreasyFork page (recommended) or
+   - Load the built script from the `dist/` directory into Tampermonkey.
+3. Navigate to `https://wtr-lab.com/en/novel/...`, select descriptive text, and click "🎨 Generate Image".
+
+## ⚙️ Configuration Overview
+
+- 🔐 API Providers:
+  - AI Horde, Pollinations, Google Imagen, and OpenAI-compatible endpoints.
+- 🚀 AI Prompt Enhancement:
+  - Gemini-powered enhancement with clear queue indicators and immediate status updates after config import.
+  - Supports custom templates and safe handling of prompts without leaking global negative prompts into enhancement.
+- 🕶️ Negative Prompt Handling:
+  - Correct behavior for AI Horde: global negative prompt applied only where supported (e.g., `negative_prompt`).
+- 🧩 Templates & Persistence:
+  - Custom enhancement templates persist correctly across save/reload, load example, and reset flows.
+- 📏 Dimensions & UI:
+  - Standardized Pollinations dimension inputs and polished layout for key panels.
+- 🧹 History & Maintenance:
+  - History cleaner and mobile layout tuned for reliability and readability.
+
+## 🆕 New in v6.0.4
+
+- 🧹 Fixed History Tab Cleaner layout and ensured mobile-friendly input widths.
+- ❌ Improved image viewer modal layering and close-button usability so it remains accessible above other UI.
+- 🔄 Hardened config import/export to seamlessly normalize between legacy (5.7.x) and 6.x formats.
+- 🎯 Corrected global negative prompt behavior for AI Horde so it is only applied via `negative_prompt` where supported.
+- 🚀 Clarified AI Prompt Enhancement queue behavior and added refinement so the status widget reflects enhancement queue state.
+- ⚡ Ensured AI Prompt Enhancement status reacts immediately after configuration imports.
+- 📏 Standardized Pollinations size/dimension controls for consistent UX.
+- 📝 Made enhancement templates reliably persist across typical user workflows.
+
+## 📚 Usage
+
+1. Highlight descriptive text in a WTR-LAB chapter.
+2. Click "🎨 Generate Image" when the floating button appears.
+3. Watch the status widget for queue/progress, enhancement, and error states.
+4. Open the image viewer to inspect, download, and manage generated images.
+5. Use the configuration panel (Tampermonkey menu → "Image Generator Settings") to:
+   - Set API keys, models, endpoints
+   - Enable/disable AI Prompt Enhancement
+   - Manage enhancement templates and global settings
+
+## 🏗️ Architecture
+
+Built as a modular, webpack-bundled userscript:
+
+- `src/api/` – provider integrations (AI Horde, Pollinations, Google, OpenAI-compatible, Gemini)
+- `src/components/` – UI pieces (status widget, viewer, config, prompts, history, etc.)
+- `src/config/` – defaults, model maps, shared styles
+- `src/core/` – bootstrapping, events, core app flow
+- `src/utils/` – logging, storage, prompt utilities, file helpers
+- `src/styles/` – layered CSS for base, layout, components, themes, and utilities
+
+This structure enables safer changes, better debugging, and clean separation of concerns.
+
+## 📦 Links
+
+- 📜 Changelog: [Changelog.md](Changelog.md)
+- 🧩 GreasyFork Script Page: https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator
+- 🗂️ Source & Issues: https://github.com/MasuRii/wtr-lab-novel-image-generator
+
+## 🤝 Contributing
+
+- 🐛 Report bugs via GitHub Issues with clear reproduction steps.
+- 💡 Propose enhancements focused on UX, performance, or provider support.
+- 📖 Improve documentation to help new users onboard quickly.
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for full terms.
+
+_Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling._
 
 - **Complete Architecture Redesign**: Transformed from single-file monolith to professional modular structure
 - **Separation of Concerns**: Cleanly organized into API modules, components, utilities, and configuration

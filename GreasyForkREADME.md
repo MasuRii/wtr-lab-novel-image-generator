@@ -2,7 +2,7 @@
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.2-blue.svg)](CHANGELOGS.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.4-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 A professional userscript that transforms your novel reading experience by generating AI-powered images from text descriptions. Seamlessly integrate image generation into your reading workflow on `wtr-lab.com` with support for multiple AI providers and advanced prompt enhancement. Why? Because visual storytelling makes stories come alive! 🎨
 
@@ -136,7 +136,17 @@ Access via Tampermonkey menu → "Image Generator Settings":
 
 Track all updates and new features in [History](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions).
 
-**Latest: v6.0.3** - UI/UX improvements with enhanced z-index hierarchy, mobile positioning fixes, smooth animations, and automatic link cleaning 🎨
+**Latest: v6.0.4** — Maintenance and UX polish focused on reliability, clarity, and compatibility.
+
+### 🆕 New in v6.0.4
+
+- 🧹 Refined History Tab Cleaner layout and mobile behavior so inputs and controls remain readable and usable.
+- 🖼️ Improved image viewer modal stacking and close button hit box to ensure it stays accessible on all pages.
+- 🔄 Strengthened config import/export to normalize between older (5.7.x) and new 6.x configurations without breaking settings.
+- 🎯 Corrected global negative prompt behavior for AI Horde so it is only sent via supported `negative_prompt` fields.
+- 🚀 Clarified AI Prompt Enhancement queue and status widget behavior, including faster feedback after config import.
+- 📏 Standardized Pollinations dimension input UI for consistent control over generated image sizes.
+- 📝 Ensured custom enhancement templates persist correctly across save, reload, load-example, and reset flows.
 
 ### 🆕 New in v6.0.3
 
@@ -198,4 +208,4 @@ This project is MIT licensed. See LICENSE for details.
 ---
 
 _Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_ | _Questions? [Open an Issue](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/feedback)_
-_Last Updated: November 08, 2025_ | _Current Version: 6.0.2_
+_Last Updated: November 08, 2025_ | _Current Version: 6.0.4_

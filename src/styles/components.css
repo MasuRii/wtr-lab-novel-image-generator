@@ -83,8 +83,9 @@
 
 .nig-close-btn {
     position: absolute;
-    top: var(--nig-space-lg);
-    right: var(--nig-space-lg);
+    top: 8px;
+    right: 8px;
+    z-index: 10;
     font-size: var(--nig-font-size-2xl);
     font-weight: 300;
     cursor: pointer;

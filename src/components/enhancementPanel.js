@@ -62,30 +62,50 @@ export function updateEnhancementUI(provider, config) {
 export async function handleEnhancementTemplateSelection(config) {
     const templateSelect = document.getElementById('nig-enhancement-template-select');
     const templateTextarea = document.getElementById('nig-enhancement-template');
-    
-    // Determine which preset matches the current template
-    let selectedPreset = 'standard'; // default
-    if (config.enhancementTemplateSelected) {
-        selectedPreset = config.enhancementTemplateSelected;
-    } else {
-        // Try to match existing template to a preset
-        for (const [key, preset] of Object.entries(DEFAULTS.enhancementPresets)) {
-            if (config.enhancementTemplate === preset.template) {
-                selectedPreset = key;
+
+    // Resolve selected preset:
+    // 1) If enhancementTemplateSelected is a known preset key (or 'custom'), trust it.
+    // 2) Otherwise, infer from enhancementTemplate content; fall back to 'standard'.
+    const presets = DEFAULTS.enhancementPresets || {};
+    const storedSelected = config.enhancementTemplateSelected;
+    const storedTemplate = typeof config.enhancementTemplate === 'string'
+        ? config.enhancementTemplate
+        : '';
+
+    let selectedPreset = 'standard';
+
+    if (storedSelected === 'custom' || presets[storedSelected]) {
+        selectedPreset = storedSelected;
+    } else if (storedTemplate) {
+        let matchedKey = null;
+        for (const [key, preset] of Object.entries(presets)) {
+            if (preset && typeof preset === 'object' && preset.template === storedTemplate) {
+                matchedKey = key;
                 break;
             }
         }
+        selectedPreset = matchedKey || 'custom';
     }
-    
+
+    // Apply resolved selection to dropdown
     templateSelect.value = selectedPreset;
-    
+
+    // Populate textarea according to selection without overwriting valid custom content
     if (selectedPreset === 'custom') {
+        // For custom, always show the stored template text as-is and keep editable
+        templateTextarea.value = storedTemplate || '';
         templateTextarea.disabled = false;
     } else {
-        const preset = DEFAULTS.enhancementPresets[selectedPreset];
+        const preset = presets[selectedPreset];
         if (preset) {
+            // For preset, ensure textarea reflects the preset content and is read-only
             templateTextarea.value = preset.template;
             templateTextarea.disabled = true;
+        } else {
+            // Fallback safety: treat as custom if preset missing
+            templateTextarea.value = storedTemplate || '';
+            templateTextarea.disabled = false;
+            templateSelect.value = 'custom';
         }
     }
 }
@@ -147,41 +167,70 @@ export function setupEnhancementEventListeners(panelElement) {
     templateSelect.addEventListener('change', async (e) => {
         const selectedValue = e.target.value;
         const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
-        
+        const presets = DEFAULTS.enhancementPresets || {};
+
         if (selectedValue === 'custom') {
-            // Keep the current template text for custom editing
+            // Switching to custom: make textarea editable and keep whatever text is currently shown.
             templateTextarea.disabled = false;
+            // Do not overwrite enhancementTemplate here; it will be updated on input/save.
+            await storage.setConfigValue('enhancementTemplateSelected', 'custom');
         } else {
-            // Load preset template
-            const preset = DEFAULTS.enhancementPresets[selectedValue];
+            // Switching to a non-custom preset: apply preset content and lock textarea.
+            const preset = presets[selectedValue];
             if (preset) {
                 templateTextarea.value = preset.template;
                 templateTextarea.disabled = true;
                 await storage.setConfigValue('enhancementTemplate', preset.template);
+                await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
+            } else {
+                // Unknown preset key: treat as custom to avoid wiping user content.
+                templateTextarea.disabled = false;
+                await storage.setConfigValue('enhancementTemplateSelected', 'custom');
             }
         }
-        await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
     });
 
     // Reset to Preset Button
     templateResetBtn.addEventListener('click', async () => {
         const selectedValue = templateSelect.value;
         const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
-        
+        const presets = DEFAULTS.enhancementPresets || {};
+
         if (selectedValue !== 'custom') {
-            const preset = DEFAULTS.enhancementPresets[selectedValue];
+            const preset = presets[selectedValue];
             if (preset) {
+                // Explicit "reset" restores the currently selected preset template.
                 templateTextarea.value = preset.template;
+                templateTextarea.disabled = true;
                 await storage.setConfigValue('enhancementTemplate', preset.template);
+                await storage.setConfigValue('enhancementTemplateSelected', selectedValue);
             }
+        } else {
+            // If "custom" is selected, reset should preserve custom mode and just restore stored custom text if any.
+            const config = await storage.getConfig();
+            const customTemplate = typeof config.enhancementTemplate === 'string'
+                ? config.enhancementTemplate
+                : '';
+            templateTextarea.value = customTemplate;
+            templateTextarea.disabled = false;
+            await storage.setConfigValue('enhancementTemplateSelected', 'custom');
         }
     });
 
     // Load Example Button
     templateExampleBtn.addEventListener('click', async () => {
         const exampleTemplate = 'Extract visual elements from this text and craft a concise image generation prompt as a flowing paragraph. Focus on: characters and their appearances/actions/expressions, setting and environment, lighting/mood/color palette, artistic style/composition/framing. Omit narrative, dialogue, text, or non-visual details. Use vivid, specific descriptors separated by commas or short phrases for clarity. End with quality boosters like "highly detailed, sharp focus, 8K resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene/mood, then style/technicals:';
-        panelElement.querySelector('#nig-enhancement-template').value = exampleTemplate;
+        const templateTextarea = panelElement.querySelector('#nig-enhancement-template');
+        const templateSelect = panelElement.querySelector('#nig-enhancement-template-select');
+
+        // Treat example as an explicit template choice: store it and mark as custom.
+        templateTextarea.value = exampleTemplate;
+        templateTextarea.disabled = false;
+        if (templateSelect) {
+            templateSelect.value = 'custom';
+        }
         await storage.setConfigValue('enhancementTemplate', exampleTemplate);
+        await storage.setConfigValue('enhancementTemplateSelected', 'custom');
     });
 
     // Enhancement enabled toggle
@@ -212,6 +261,24 @@ export function setupEnhancementEventListeners(panelElement) {
             panelElement.querySelector('#nig-enhancement-preview').style.display = 'none';
         }
     });
+
+    // Track manual edits to enhancement template:
+    // Any change by the user should:
+    // - Update enhancementTemplate in storage
+    // - Flip enhancementTemplateSelected to 'custom' explicitly
+    const templateTextareaForInput = panelElement.querySelector('#nig-enhancement-template');
+    const templateSelectForInput = panelElement.querySelector('#nig-enhancement-template-select');
+    if (templateTextareaForInput) {
+        templateTextareaForInput.addEventListener('input', async () => {
+            const value = templateTextareaForInput.value;
+            await storage.setConfigValue('enhancementTemplate', value);
+            await storage.setConfigValue('enhancementTemplateSelected', 'custom');
+
+            if (templateSelectForInput && templateSelectForInput.value !== 'custom') {
+                templateSelectForInput.value = 'custom';
+            }
+        });
+    }
 
     // Test enhancement button
     testEnhancementBtn.addEventListener('click', async () => {
