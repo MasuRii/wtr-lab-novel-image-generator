@@ -66,7 +66,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-pollinations-token">API Token (Optional)</label>
-                                <input type="password" id="nig-pollinations-token" placeholder="Enter token for premium models">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-pollinations-token" placeholder="Enter token for premium models">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-pollinations-token"
+                                        aria-label="Show API token"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                                 <small class="nig-hint">Get a token from <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
                             </div>
                         </div>
@@ -78,7 +89,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-horde-api-key">AI Horde API Key</label>
-                                <input type="password" id="nig-horde-api-key" placeholder="Defaults to '0000000000'">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-horde-api-key" placeholder="Defaults to '0000000000'">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-horde-api-key"
+                                        aria-label="Show AI Horde API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                                 <small>Use anonymous key or get your own from <a href="https://aihorde.net/" target="_blank" class="nig-api-prompt-link">AI Horde</a> for higher priority.</small>
                             </div>
                             <div class="nig-provider-controls">
@@ -146,7 +168,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-google-api-key">Gemini API Key</label>
-                                <input type="password" id="nig-google-api-key">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-google-api-key">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-google-api-key"
+                                        aria-label="Show Gemini API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-model">Imagen Model</label>
@@ -207,7 +240,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-openai-compat-api-key">API Key</label>
-                                <input type="password" id="nig-openai-compat-api-key">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-openai-compat-api-key">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-openai-compat-api-key"
+                                        aria-label="Show OpenAI compatible API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-openai-compat-model">Model</label>
@@ -282,7 +326,18 @@ export function getConfigPanelHTML() {
                                 <div class="nig-enhancement-settings disabled" id="nig-enhancement-settings">
                                     <div class="nig-form-group">
                                         <label for="nig-gemini-api-key">Gemini API Key</label>
-                                        <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                        <div class="nig-password-wrapper">
+                                            <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                            <button
+                                                type="button"
+                                                class="nig-password-toggle"
+                                                data-target="nig-gemini-api-key"
+                                                aria-label="Show Gemini API key for enhancement"
+                                                aria-pressed="false"
+                                            >
+                                                <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                            </button>
+                                        </div>
                                         <small class="nig-hint">Get a free API key from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a></small>
                                     </div>
 

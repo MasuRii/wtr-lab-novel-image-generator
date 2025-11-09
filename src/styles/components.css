@@ -189,6 +189,41 @@
     gap: var(--nig-space-lg);
 }
 
+/* Password / API key visibility wrapper */
+.nig-password-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--nig-space-sm);
+}
+
+.nig-password-wrapper input[type="password"],
+.nig-password-wrapper input[type="text"] {
+    flex: 1;
+}
+
+.nig-password-toggle {
+    border: none;
+    background: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--nig-color-text-muted);
+    transition: color var(--nig-transition-fast), transform var(--nig-transition-fast);
+}
+
+.nig-password-toggle:hover,
+.nig-password-toggle:focus-visible {
+    color: var(--nig-color-accent-primary);
+    transform: scale(1.05);
+    outline: none;
+}
+
+.nig-password-toggle .material-symbols-outlined {
+    font-size: 20px;
+}
+
 .nig-checkbox-group label {
     display: flex;
     align-items: center;

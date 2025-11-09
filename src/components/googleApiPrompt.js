@@ -18,7 +18,18 @@ export function show() {
             <p>Please provide your Google AI Gemini API key. You can get one from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a>.</p>
             <div class="nig-form-group">
                 <label for="nig-prompt-api-key">Gemini API Key</label>
-                <input type="password" id="nig-prompt-api-key">
+                <div class="nig-password-wrapper">
+                    <input type="password" id="nig-prompt-api-key">
+                    <button
+                        type="button"
+                        class="nig-password-toggle"
+                        data-target="nig-prompt-api-key"
+                        aria-label="Show Gemini API key"
+                        aria-pressed="false"
+                    >
+                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                    </button>
+                </div>
             </div>
             <button id="nig-prompt-save-btn" class="nig-save-btn">Save Key</button>
         </div>`;

@@ -155,6 +155,37 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
     - For small screens, `.nig-preview-container` stacks vertically via media query:
       - Arrow rotates (90°) and sits between Original and Enhanced sections.
       - Ensures readability, tap targets, and layout clarity on mobile devices.
+- ✅ API Key Show/Hide Toggle for Image Provider Credentials:
+  - Implemented consistent, accessible show/hide toggles for key/token fields using Material symbols:
+    - Pollinations:
+      - [`nig-pollinations-token`](src/components/configPanelTemplate.js:68) wrapped with `.nig-password-wrapper` and `.nig-password-toggle`.
+    - AI Horde:
+      - [`nig-horde-api-key`](src/components/configPanelTemplate.js:91) wrapped with `.nig-password-wrapper` and `.nig-password-toggle`.
+    - Google Imagen:
+      - [`nig-google-api-key`](src/components/configPanelTemplate.js:170) wrapped with `.nig-password-wrapper` and `.nig-password-toggle`.
+    - OpenAI Compatible:
+      - [`nig-openai-compat-api-key`](src/components/configPanelTemplate.js:242) wrapped with `.nig-password-wrapper` and `.nig-password-toggle`.
+    - Gemini Enhancement:
+      - [`nig-gemini-api-key`](src/components/configPanelTemplate.js:328) wrapped with `.nig-password-wrapper` and `.nig-password-toggle`.
+    - Google API Prompt Modal:
+      - [`nig-prompt-api-key`](src/components/googleApiPrompt.js:19) wrapped with `.nig-password-wrapper` and `.nig-password-toggle` for on-demand key entry.
+  - All toggles:
+    - Default to masked (`type="password"`) so keys are never shown on initial load.
+    - Use `visibility` / `visibility_off` Material icons to reflect current state.
+    - Are strictly per-field: each toggle targets its own input via `data-target`, without affecting other fields.
+  - Behavior implemented via [`initializePasswordVisibilityToggles()`](src/components/configPanelEvents.js:16):
+    - Binds click handlers for `.nig-password-toggle` within the config panel lifecycle.
+    - Toggles only the mapped input’s `type` between `password` and `text`.
+    - Updates `aria-pressed` and `aria-label` (e.g., "Show API key" / "Hide API key") for accessibility.
+    - Wrapped in defensive `try/catch` with logging, ensuring:
+      - If initialization fails, API keys remain hidden by default.
+      - Any runtime errors in toggles do not impact entering or saving configuration.
+  - Styling defined in [`components.css`](src/styles/components.css:192):
+    - `.nig-password-wrapper` maintains clean inline alignment across providers.
+    - `.nig-password-toggle` is minimal, keyboard-focusable, and visually consistent with existing design tokens.
+  - Fully backward compatible:
+    - No changes to configuration schema, APIs, or storage formats.
+    - Existing configuration loading, saving, and validation flows remain unchanged.
 
 - ✅ Style-Respecting Gemini Enhancement Behavior:
   - Enhanced [`enhancePromptWithGemini()`](src/api/gemini.js:37) to construct a merged enhancement template that:

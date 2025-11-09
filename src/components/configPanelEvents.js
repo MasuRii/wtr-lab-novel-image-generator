@@ -9,12 +9,78 @@ import * as logger from '../utils/logger.js';
 import * as models from '../api/models.js';
 import { PROMPT_CATEGORIES } from '../config/styles.js';
 
+/**
+ * Initialize show/hide toggles for all password-like API key fields.
+ * This is UI-only and does not affect storage, validation, or submission behavior.
+ */
+function initializePasswordVisibilityToggles(panelElement) {
+    try {
+        const toggles = panelElement.querySelectorAll('.nig-password-toggle');
+        if (!toggles || toggles.length === 0) {
+            // Graceful no-op: ensure keys remain hidden by default.
+            return;
+        }
+
+        toggles.forEach((toggleBtn) => {
+            // Avoid double-binding if panel is re-initialized.
+            if (toggleBtn.dataset.nigToggleBound === 'true') {
+                return;
+            }
+            toggleBtn.dataset.nigToggleBound = 'true';
+
+            toggleBtn.addEventListener('click', (event) => {
+                try {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const targetId = toggleBtn.getAttribute('data-target');
+                    if (!targetId) return;
+
+                    const input = panelElement.querySelector(`#${CSS.escape(targetId)}`);
+                    if (!input) return;
+
+                    const isCurrentlyHidden = input.type === 'password';
+                    input.type = isCurrentlyHidden ? 'text' : 'password';
+
+                    const icon = toggleBtn.querySelector('.material-symbols-outlined');
+                    if (icon) {
+                        icon.textContent = isCurrentlyHidden ? 'visibility' : 'visibility_off';
+                    }
+
+                    toggleBtn.setAttribute('aria-pressed', isCurrentlyHidden ? 'true' : 'false');
+                    toggleBtn.setAttribute(
+                        'aria-label',
+                        isCurrentlyHidden ? 'Hide API key' : 'Show API key'
+                    );
+                } catch (err) {
+                    // Safety: log but do not break other behaviors.
+                    try {
+                        logger.logError('UI', 'Failed to toggle API key visibility', { error: err.message });
+                    } catch (_) {
+                        // Swallow if logger itself is unavailable in this context.
+                    }
+                }
+            });
+        });
+    } catch (error) {
+        // If anything unexpected happens, API keys remain masked by default.
+        try {
+            logger.logError('UI', 'Failed to initialize API key visibility toggles', { error: error.message });
+        } catch (_) {
+            // Swallow secondary errors.
+        }
+    }
+}
+
 // --- PUBLIC FUNCTIONS ---
 
 /**
  * Sets up all the tab functionality event listeners
  */
 export function setupTabEventListeners(panelElement) {
+    // Initialize password visibility toggles once panel DOM is ready
+    initializePasswordVisibilityToggles(panelElement);
+
     panelElement.querySelectorAll('.nig-tab').forEach(tab => {
         tab.addEventListener('click', async () => {
             panelElement.querySelectorAll('.nig-tab, .nig-tab-content').forEach(el => el.classList.remove('active'));
