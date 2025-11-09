@@ -639,18 +639,66 @@ export function setupEnhancementEventListeners(panelElement) {
     // Test enhancement button
     testEnhancementBtn.addEventListener('click', async () => {
         const config = await storage.getConfig();
-        const testPrompt = 'A mystical warrior standing on a cliff overlooking a magical forest with glowing mushrooms and ethereal mist';
-        
+        const maxTestLength = 4000;
+        const defaultPrompt = (
+            'As dusk settles over the glass-domed city of Aurelia, bioluminescent vines unfurl along the skybridges, ' +
+            'casting soft teal and amethyst reflections across the rain-slick streets below. A lone archivist in a ' +
+            'weathered indigo cloak pauses at the edge of the highest promenade, holographic pages circling her like ' +
+            'gentle fireflies, each fragment revealing glimpses of forgotten constellations and outlawed legends. ' +
+            'Far beneath, maglev trams weave through layers of suspended gardens, mirrored water channels, and rising ' +
+            'plumes of golden steam as hidden market stalls ignite with warm lantern light. In the distance, an ancient ' +
+            'stone observatory fused with gleaming chrome spires pierces the cloudline, its rotating rings aligning ' +
+            'slowly with an eclipse of twin moons. The air shimmers with drifting petals, neon signage in lost languages, ' +
+            'and faint auroras bending around colossal statues half-consumed by ivy and circuitry.'
+        );
+
+        const originalPromptEl = document.getElementById('nig-original-prompt');
+        let testPrompt = originalPromptEl ? (originalPromptEl.value || originalPromptEl.textContent || '').trim() : '';
+
+        // If no user-provided prompt in the editable field, fallback to default narrative prompt
+        if (!testPrompt) {
+            testPrompt = defaultPrompt;
+            if (originalPromptEl) {
+                // Populate the editable area so the user can see/modify what was used
+                if ('value' in originalPromptEl) {
+                    originalPromptEl.value = defaultPrompt;
+                } else {
+                    originalPromptEl.textContent = defaultPrompt;
+                }
+            }
+        }
+
+        // Enforce a reasonable length limit for preview requests
+        if (testPrompt.length > maxTestLength) {
+            alert('Test prompt is too long. Please use 4000 characters or fewer for preview.');
+            return;
+        }
+
         testEnhancementBtn.disabled = true;
         const originalContent = testEnhancementBtn.innerHTML;
         testEnhancementBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span>Testing...';
 
         try {
             const result = await testEnhancement(testPrompt, config);
-            document.getElementById('nig-original-prompt').textContent = result.original;
-            document.getElementById('nig-enhanced-prompt').textContent = result.enhanced;
+            const originalEl = document.getElementById('nig-original-prompt');
+            const enhancedEl = document.getElementById('nig-enhanced-prompt');
+
+            // Reflect the exact original prompt used for enhancement in the editable field
+            if (originalEl) {
+                if ('value' in originalEl) {
+                    originalEl.value = result.original || '';
+                } else {
+                    originalEl.textContent = result.original || '';
+                }
+            }
+
+            if (enhancedEl) {
+                enhancedEl.textContent = result.enhanced || '';
+            }
         } catch (error) {
-            alert(`Enhancement test failed: ${error.message}`);
+            console.error('[NIG] Enhancement test failed', error);
+            const message = error && error.message ? error.message : 'Unknown error occurred while requesting enhancement.';
+            alert(`Enhancement test failed: ${message}`);
         } finally {
             testEnhancementBtn.disabled = false;
             testEnhancementBtn.innerHTML = originalContent;

@@ -117,6 +117,45 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
     - Avoids narrative and text overlays,
     - Serves as a consistent base when no custom/preset override is applied.
 
+- ✅ AI Prompt Enhancement Preview: Customizable Narrative Test Prompt:
+  - Updated the "AI Prompt Enhancement" preview in [`configPanelTemplate.getConfigPanelHTML()`](src/components/configPanelTemplate.js:338) to use a single editable "Original Prompt" field:
+    - Pre-populated with a rich, narrative-style default prompt representing typical story/novel/book descriptions.
+    - Users can directly edit or replace this text to test how enhancement behaves with their own prose.
+    - If left empty on test, the system automatically falls back to the curated default narrative prompt (cleaner UX, no extra fields).
+  - Ensures the Test Enhancement flow remains fully backward compatible:
+    - Uses the same `testEnhancement(prompt, config)` pipeline in [`enhancementPanel.testEnhancement()`](src/components/enhancementPanel.js:314).
+    - Calls [`enhancePromptWithGemini()`](src/api/gemini.js:37) with either the user-provided or default prompt, with no changes to live generation logic.
+
+- ✅ AI Prompt Enhancement Preview Error Handling & Input Validation:
+  - In [`setupEnhancementEventListeners()`](src/components/enhancementPanel.js:355), enhanced Test Enhancement button behavior:
+    - Applies a 4000-character soft limit for preview input; overly long prompts are rejected with a clear alert.
+    - Wraps enhancement calls in robust try/catch:
+      - Logs failures to console with context.
+      - Shows a user-safe error message if enhancement fails (e.g. network/API issues).
+    - Always restores button state (disabled/enabled + label) to avoid stuck UI states.
+  - Guarantees preview failures do not impact real generation or configuration.
+
+- ✅ AI Prompt Enhancement Preview Layout & Responsive Styling:
+  - Introduced a dedicated, consistent layout for the preview block in [`components.css`](src/styles/components.css:370):
+    - `.nig-preview-container`:
+      - Flex layout aligning the Original Prompt, center arrow, and Enhanced Prompt in a single row on desktop.
+    - `.nig-preview-section`:
+      - Shared flex-column structure for headings and prompt areas.
+    - `.nig-preview-arrow`:
+      - Vertically and horizontally centered between the two sections for clear directionality.
+  - Standardized prompt field visuals:
+    - `#nig-original-prompt`, `#nig-enhanced-prompt`, and `.nig-prompt-display` share:
+      - Full-width, consistent padding, border, radius, typography, and min/max heights.
+      - Scrollable content areas for long prompts.
+    - Original prompt:
+      - Editable (resizable vertically) for user experiments.
+    - Enhanced prompt:
+      - Read-only display area, non-resizable, mirroring the enhanced output.
+  - Mobile-friendly behavior:
+    - For small screens, `.nig-preview-container` stacks vertically via media query:
+      - Arrow rotates (90°) and sits between Original and Enhanced sections.
+      - Ensures readability, tap targets, and layout clarity on mobile devices.
+
 - ✅ Style-Respecting Gemini Enhancement Behavior:
   - Enhanced [`enhancePromptWithGemini()`](src/api/gemini.js:37) to construct a merged enhancement template that:
     - Incorporates the selected preset/base template, and

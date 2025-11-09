@@ -374,3 +374,80 @@
     border-top: 1px solid var(--nig-color-border);
     text-align: center;
 }
+
+/* === Enhancement Preview Layout === */
+.nig-preview-container {
+    display: flex;
+    align-items: stretch;
+    gap: var(--nig-space-md);
+    margin-top: var(--nig-space-sm);
+}
+
+.nig-preview-section {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--nig-space-xs);
+}
+
+.nig-preview-section h5 {
+    margin: 0 0 var(--nig-space-xs) 0;
+    font-size: var(--nig-font-size-sm);
+    font-weight: 600;
+    color: var(--nig-color-text-secondary);
+}
+
+/* Ensure both original and enhanced prompt areas share consistent sizing */
+#nig-original-prompt,
+#nig-enhanced-prompt,
+.nig-prompt-display {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--nig-color-bg-tertiary);
+    border: 1px solid var(--nig-color-border);
+    border-radius: var(--nig-radius-md);
+    padding: var(--nig-space-md);
+    font-family: var(--nig-font-family-mono, 'Fira Code', monospace);
+    font-size: var(--nig-font-size-sm);
+    color: var(--nig-color-text-primary);
+    min-height: 120px;
+    max-height: 260px;
+    line-height: 1.5;
+    overflow-y: auto;
+}
+
+/* Editable textarea (original) */
+#nig-original-prompt {
+    resize: vertical;
+}
+
+/* Read-only enhanced prompt display */
+#nig-enhanced-prompt {
+    resize: none;
+}
+
+/* Center the arrow between the two sections */
+.nig-preview-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--nig-space-xs);
+    color: var(--nig-color-text-muted);
+}
+
+.nig-preview-arrow .material-symbols-outlined {
+    font-size: 28px;
+}
+
+/* Responsive layout: stack vertically on small screens */
+@media (max-width: 600px) {
+    .nig-preview-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nig-preview-arrow {
+        padding: var(--nig-space-xs) 0;
+        transform: rotate(90deg);
+    }
+}

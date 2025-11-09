@@ -339,7 +339,7 @@ export function getConfigPanelHTML() {
                                         <div class="nig-preview-container">
                                             <div class="nig-preview-section">
                                                 <h5>Original Prompt</h5>
-                                                <div class="nig-prompt-display" id="nig-original-prompt"></div>
+                                                <textarea id="nig-original-prompt" class="nig-prompt-display" rows="4" placeholder="A rich narrative-style prompt will appear here for testing. You can edit or replace it with your own text before running Test Enhancement."></textarea>
                                             </div>
                                             <div class="nig-preview-arrow">
                                                 <span class="material-symbols-outlined">arrow_forward</span>
