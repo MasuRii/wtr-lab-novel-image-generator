@@ -4,6 +4,27 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.5] - 2025-11-09
+
+### 🛠️ Configuration Import Robustness (Partial Release)
+
+This is an incremental technical release on the `Fixing--Version-6.0.5` branch to support upcoming features.
+
+- ✅ Enhanced [`normalizeImportedConfig()`](src/config/configManager.js:28) to:
+  - Safely handle legacy and new configuration schemas.
+  - Support nested payloads such as `{ "config": { ... }, "meta": { ... } }`.
+  - Coerce numeric-like strings for fields such as history days and enhancement tuning values.
+  - Preserve user presets, enhancement presets, and negative prompt settings without unintended loss.
+  - Preserve sensitive values (API keys, tokens, OpenAI-compatible profiles) when valid.
+  - Ignore or safely default malformed/unsupported values while logging under `CONFIG_IMPORT`.
+- ✅ Updated import flow to ensure:
+  - Imported configuration values are normalized before persistence.
+  - Configuration panel values reflect imported settings immediately after import.
+  - Enhancement panel sync attempts run after import without breaking data on UI failure.
+- ✅ Verified build integrity via `npm run build` for this partial release.
+
+Note: This version is reserved for configuration-import improvements and may receive additional changes before a public tagged release.
+
 ## [6.0.4] - 2025-11-09
 
 ### 🛠️ Maintenance & UX Polish

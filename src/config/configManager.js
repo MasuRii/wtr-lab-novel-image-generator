@@ -9,21 +9,63 @@ import { populateEnhancementSettings, updateEnhancementUI } from '../components/
 // --- INTERNAL HELPERS ---
 
 /**
- * Normalize imported configuration for compatibility between legacy (e.g. 5.7.0) and 6.0.4+.
- * - Start from DEFAULTS
- * - Overlay importedConfig (no dropping of known keys)
- * - Apply targeted fixes for new fields and legacy mappings
- * - Preserve sensitive values when present and valid
- * @param {object} importedConfig
+ * Normalize imported configuration for compatibility between legacy and current schemas.
+ * Goals:
+ * - Safely consume older exports (5.x / early 6.x) and newer variants
+ * - Start from DEFAULTS as baseline
+ * - Overlay imported configuration while:
+ *      - Preserving valid known fields (including presets, negative prompts, enhancements)
+ *      - Preserving unknown fields for forward compatibility
+ *      - Avoiding invalid type overwrites
+ * - Apply targeted fixes for:
+ *      - Nested payloads (e.g. { config: { ... }, meta: { ... } })
+ *      - Legacy/renamed keys
+ *      - String vs number coercions for numeric settings
+ * - Preserve sensitive values (API keys, tokens) when present and valid
+ * @param {object} importedConfigRaw
  * @returns {object} normalized configuration object
  */
-export function normalizeImportedConfig(importedConfig = {}) {
+export function normalizeImportedConfig(importedConfigRaw = {}) {
     try {
+        let importedConfig = importedConfigRaw;
+
+        // --- Support nested payloads: { config: { ... }, meta: { ... } } ---
+        if (importedConfig && typeof importedConfig === 'object' && !Array.isArray(importedConfig)) {
+            if (importedConfig.config && typeof importedConfig.config === 'object' && !Array.isArray(importedConfig.config)) {
+                importedConfig = importedConfig.config;
+            }
+        }
+
+        // Guard against non-object payloads after unwrapping
+        if (!importedConfig || typeof importedConfig !== 'object' || Array.isArray(importedConfig)) {
+            logger.logError('CONFIG_IMPORT', 'Invalid configuration format after normalization; using DEFAULTS', {
+                importedType: typeof importedConfig
+            });
+            return { ...DEFAULTS };
+        }
+
         // Start from defaults (shallow clone - structure is flat enough for our use)
         const normalized = { ...DEFAULTS };
 
-        // Overlay imported config (do not drop keys present in file)
-        // This keeps any extra/unknown keys as-is for forward compatibility.
+        // --- Overlay imported config with cautious merging ---
+        // We:
+        //  - Apply values for known keys when types are compatible or coercible
+        //  - Keep unknown keys as-is for forward compatibility
+        //  - Avoid breaking core structure with obviously invalid types
+
+        const coerceNumber = (value) => {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string' && value.trim() !== '') {
+                const parsed = Number(value);
+                return Number.isFinite(parsed) ? parsed : undefined;
+            }
+            return undefined;
+        };
+
+        const isBoolean = (value) => (typeof value === 'boolean');
+        const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
+
+        // First copy all keys from importedConfig, then selectively clean/fix known ones.
         Object.assign(normalized, importedConfig);
 
         // --- Backward compatibility and field normalization ---
@@ -119,7 +161,6 @@ export function normalizeImportedConfig(importedConfig = {}) {
         }
 
         // --- Sensitive / critical fields preservation ---
-        const isNonEmptyString = v => typeof v === 'string' && v.trim().length > 0;
 
         // Direct provider API keys / tokens
         if (isNonEmptyString(importedConfig.aiHordeApiKey)) {
@@ -144,7 +185,6 @@ export function normalizeImportedConfig(importedConfig = {}) {
             for (const [url, profile] of Object.entries(importedConfig.openAICompatProfiles)) {
                 if (profile && typeof profile === 'object') {
                     const cloned = { ...profile };
-                    // Preserve any non-empty apiKey fields
                     if (isNonEmptyString(profile.apiKey)) {
                         cloned.apiKey = profile.apiKey;
                     }
@@ -186,9 +226,16 @@ export function normalizeImportedConfig(importedConfig = {}) {
 
         return normalized;
     } catch (error) {
-        logger.logError('Failed to normalize imported config', error);
+        logger.logError('CONFIG_IMPORT', 'Failed to normalize imported config', { error: error.message });
         // On failure, fall back to DEFAULTS merged with raw imported config to avoid total breakage.
-        return { ...DEFAULTS, ...(importedConfig || {}) };
+        try {
+            const safeImported = (importedConfigRaw && typeof importedConfigRaw === 'object' && !Array.isArray(importedConfigRaw))
+                ? importedConfigRaw
+                : {};
+            return { ...DEFAULTS, ...safeImported };
+        } catch {
+            return { ...DEFAULTS };
+        }
     }
 }
 
