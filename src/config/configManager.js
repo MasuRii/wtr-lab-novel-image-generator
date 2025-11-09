@@ -1,11 +1,11 @@
  // --- IMPORTS ---
-import { DEFAULTS } from '../config/defaults.js';
-import { PROMPT_CATEGORIES } from '../config/styles.js';
-import * as storage from '../utils/storage.js';
-import * as logger from '../utils/logger.js';
-import * as file from '../utils/file.js';
-import { populateEnhancementSettings, updateEnhancementUI } from '../components/enhancementPanel.js';
-
+ import { DEFAULTS } from '../config/defaults.js';
+ import { PROMPT_CATEGORIES } from '../config/styles.js';
+ import * as storage from '../utils/storage.js';
+ import * as logger from '../utils/logger.js';
+ import * as file from '../utils/file.js';
+ import { populateEnhancementSettings, updateEnhancementUI } from '../components/enhancementPanel.js';
+ import { populateProviderForms as populateProviderFormsModels } from '../api/models.js';
 // --- INTERNAL HELPERS ---
 
 /**
@@ -397,43 +397,87 @@ export async function handleImportFile(event) {
             throw new Error('Invalid configuration format: root must be an object.');
         }
 
-        if (confirm('This will overwrite all current settings. Continue?')) {
-            const normalizedConfig = normalizeImportedConfig(importedConfig);
- 
-            // Persist all normalized keys to storage before notifying user
-            await Promise.all(
-                Object.keys(normalizedConfig).map(key =>
-                    storage.setConfigValue(key, normalizedConfig[key])
-                )
-            );
- 
-            // Retrieve the fully merged config to ensure UI reflects the latest values
-            const updatedConfig = await storage.getConfig();
- 
-            // Update core config form fields
-            await populateConfigForm();
- 
-            // Synchronize enhancement panel UI with imported configuration
-            try {
-                if (typeof populateEnhancementSettings === 'function') {
-                    await populateEnhancementSettings(updatedConfig);
-                }
-                if (typeof updateEnhancementUI === 'function') {
-                    const provider = updatedConfig.selectedProvider || DEFAULTS.selectedProvider;
-                    updateEnhancementUI(provider, updatedConfig);
-                }
-            } catch (uiError) {
-                // Log but do not fail the import if UI sync has issues
-                logger.logError('Failed to update enhancement UI after config import', uiError);
-            }
- 
-            alert('Configuration imported successfully!');
-        }
-    } catch (error) {
-        logger.logError('Failed to import configuration', error);
-        alert(`Failed to import configuration: ${error.message}`);
-    }
+     if (confirm('This will overwrite all current settings. Continue?')) {
+         const normalizedConfig = normalizeImportedConfig(importedConfig);
 
-    // Clear file input
-    event.target.value = '';
+         try {
+             // Persist all normalized keys to storage
+             await Promise.all(
+                 Object.keys(normalizedConfig).map((key) =>
+                     storage.setConfigValue(key, normalizedConfig[key])
+                 )
+             );
+
+             // Retrieve the fully merged config (storage over DEFAULTS)
+             const updatedConfig = await storage.getConfig();
+
+             // --- Reactive UI synchronization (no panel reopen required) ---
+
+             // 1) Core config + styling + history
+             try {
+                 await populateConfigForm();
+             } catch (uiError) {
+                 logger.logError('CONFIG_IMPORT', 'Failed to update core configuration form after import', {
+                     error: uiError?.message || uiError
+                 });
+             }
+
+             // 2) Provider-specific sections (Pollinations, AI Horde, Google, OpenAICompat)
+             try {
+                 await populateProviderFormsModels(updatedConfig);
+             } catch (uiError) {
+                 logger.logError('CONFIG_IMPORT', 'Failed to update provider configuration forms after import', {
+                     error: uiError?.message || uiError
+                 });
+             }
+
+             // 3) Enhancement panel (Gemini / enhancement settings)
+             try {
+                 if (typeof populateEnhancementSettings === 'function') {
+                     await populateEnhancementSettings(updatedConfig);
+                 }
+             } catch (uiError) {
+                 logger.logError('CONFIG_IMPORT', 'Failed to update enhancement settings after import', {
+                     error: uiError?.message || uiError
+                 });
+             }
+
+             // 4) Enhancement UI state in styling tab (provider-aware)
+             try {
+                 if (typeof updateEnhancementUI === 'function') {
+                     const provider = updatedConfig.selectedProvider || DEFAULTS.selectedProvider;
+                     updateEnhancementUI(provider, updatedConfig);
+                 }
+             } catch (uiError) {
+                 logger.logError('CONFIG_IMPORT', 'Failed to update enhancement UI state after import', {
+                     error: uiError?.message || uiError
+                 });
+             }
+
+             alert('Configuration imported successfully! All visible settings have been updated.');
+         } catch (persistError) {
+             // If persisting or UI sync fails in a critical way, surface a clear error
+             logger.logError('CONFIG_IMPORT', 'Failed during configuration import application', {
+                 error: persistError?.message || persistError
+             });
+             alert(
+                 'Configuration import failed while applying settings. ' +
+                 'Your previous configuration is still in effect. ' +
+                 `Details: ${persistError?.message || persistError}`
+             );
+         }
+     }
+ } catch (error) {
+     // Robust error handling for:
+     // - Invalid JSON
+     // - Non-object / malformed structures
+     // - Unexpected runtime errors
+     logger.logError('CONFIG_IMPORT', 'Failed to import configuration', {
+         error: error?.message || error
+     });
+     alert(`Failed to import configuration: ${error?.message || error}`);
+ } finally {
+     // Always clear file input to allow re-import attempts
+     event.target.value = '';
+ }
 }

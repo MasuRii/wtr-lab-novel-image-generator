@@ -6,24 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.0.5] - 2025-11-09
 
-### 🛠️ Configuration Import Robustness (Partial Release)
+### 🛠️ Configuration Import Robustness & Reactive Panel Sync
 
-This is an incremental technical release on the `Fixing--Version-6.0.5` branch to support upcoming features.
+This is an incremental technical release on the `Fixing--Version-6.0.5` branch to support and harden configuration management behavior.
 
 - ✅ Enhanced [`normalizeImportedConfig()`](src/config/configManager.js:28) to:
   - Safely handle legacy and new configuration schemas.
   - Support nested payloads such as `{ "config": { ... }, "meta": { ... } }`.
-  - Coerce numeric-like strings for fields such as history days and enhancement tuning values.
+  - Coerce numeric-like strings for numeric settings (e.g. history days, enhancement tuning values).
   - Preserve user presets, enhancement presets, and negative prompt settings without unintended loss.
   - Preserve sensitive values (API keys, tokens, OpenAI-compatible profiles) when valid.
   - Ignore or safely default malformed/unsupported values while logging under `CONFIG_IMPORT`.
-- ✅ Updated import flow to ensure:
-  - Imported configuration values are normalized before persistence.
-  - Configuration panel values reflect imported settings immediately after import.
-  - Enhancement panel sync attempts run after import without breaking data on UI failure.
-- ✅ Verified build integrity via `npm run build` for this partial release.
+- ✅ Updated configuration import flow in [`handleImportFile()`](src/config/configManager.js:386) to:
+  - Normalize and persist imported configuration keys before any UI updates.
+  - Immediately repopulate:
+    - Core configuration form and styling fields via [`populateConfigForm()`](src/config/configManager.js:286),
+    - Provider-specific sections via [`populateProviderForms()`](src/api/models.js:459),
+    - Enhancement settings and status via [`populateEnhancementSettings()`](src/components/enhancementPanel.js:1) and [`updateEnhancementUI()`](src/components/enhancementPanel.js:1).
+  - Ensure all changes are reflected live in an already-open configuration panel without requiring a manual close/reopen.
+- ✅ Improved error handling for configuration import:
+  - Clear alerts and structured logging when:
+    - JSON is invalid or the root structure is not an object.
+    - Persistence or UI synchronization encounters runtime issues.
+    - Only part of the UI fails to update; valid imported data is still preserved where possible.
+  - Guarantees the file input is always reset so users can safely retry imports.
+- ✅ Backward compatibility guarantees:
+  - Legacy exports (5.x / early 6.x) and new 6.x+ schemas are normalized against [`DEFAULTS`](src/config/defaults.js:1).
+  - OpenAI-compatible profiles, enhancement options, and history settings remain compatible across versions.
+- ✅ Integrity verification:
+  - Successfully ran `npm run build` to confirm there are no syntax or bundling issues for this branch.
 
-Note: This version is reserved for configuration-import improvements and may receive additional changes before a public tagged release.
+Note: This version focuses specifically on configuration-import reliability and reactive UI behavior on the current working branch and is safe to use as a stabilization baseline.
 
 ## [6.0.4] - 2025-11-09
 
