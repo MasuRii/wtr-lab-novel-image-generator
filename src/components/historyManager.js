@@ -22,12 +22,27 @@ export async function populateHistoryTab() {
         const li = document.createElement('li');
         li.className = 'nig-history-item';
 
-        const providerInfo = item.provider ? `<strong>${item.provider}</strong>` : '';
-        const modelInfo = item.model ? `(${item.model})` : '';
+        const safePrompt = typeof item.prompt === 'string'
+            ? item.prompt
+            : (item && typeof item === 'object' && typeof item.prompt === 'string'
+                ? item.prompt
+                : '');
 
-        // Set the static part of the HTML
-        li.innerHTML = `<small>${new Date(item.date).toLocaleString()} - ${providerInfo} ${modelInfo}</small>
-                      <small><em>${item.prompt.substring(0, 70)}...</em></small>`;
+        const providerInfo = item && item.provider ? `<strong>${item.provider}</strong>` : '';
+        const modelInfo = item && item.model ? `(${item.model})` : '';
+
+        const metaText = new Date(item.date).toLocaleString();
+        const metaHtml = `<div class="nig-history-meta"><small>${metaText} - ${providerInfo} ${modelInfo}</small></div>`;
+
+        // Prompt display: up to 2 lines, full available width, ellipsis beyond 2 lines.
+        const promptHtml = safePrompt
+            ? `<div class="nig-history-prompt" title="${safePrompt.replace(/"/g, '"')}">${safePrompt}</div>`
+            : '<div class="nig-history-prompt nig-history-prompt-empty">No prompt available</div>';
+
+        li.innerHTML = `
+            ${metaHtml}
+            ${promptHtml}
+        `;
 
         // Create the link element separately to add the event listener
         const viewLink = document.createElement('a');
@@ -39,7 +54,7 @@ export async function populateHistoryTab() {
             // Use unified modal for all image types (both base64 and URL)
             import('./imageViewer.js').then(module => {
                 if (typeof module.show === 'function') {
-                    module.show([item.url], item.prompt, item.provider, item.model);
+                    module.show([item.url], safePrompt || 'No prompt available', item.provider, item.model);
                 }
             });
         });

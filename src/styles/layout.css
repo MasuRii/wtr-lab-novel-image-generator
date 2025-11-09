@@ -176,6 +176,25 @@
     transition: color var(--nig-transition-fast);
 }
 
+/* History prompt: use up to 2 lines, full width, then ellipsis */
+.nig-history-prompt {
+    margin-bottom: var(--nig-space-xs);
+    font-size: var(--nig-font-size-sm);
+    color: var(--nig-color-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.nig-history-prompt-empty {
+    color: var(--nig-color-text-muted);
+    font-style: italic;
+}
+
 .nig-history-item a:hover {
     color: var(--nig-color-hover-primary);
 }

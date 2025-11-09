@@ -6,37 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.0.5] - 2025-11-09
 
-### 🛠️ Configuration Import Robustness & Reactive Panel Sync
+### 🏗️ MINOR: Configuration Reliability, History UX, and UI Safety
 
-This is an incremental technical release on the `Fixing--Version-6.0.5` branch to support and harden configuration management behavior.
+This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, and adding safeguards around UI rendering.
 
-- ✅ Enhanced [`normalizeImportedConfig()`](src/config/configManager.js:28) to:
-  - Safely handle legacy and new configuration schemas.
-  - Support nested payloads such as `{ "config": { ... }, "meta": { ... } }`.
-  - Coerce numeric-like strings for numeric settings (e.g. history days, enhancement tuning values).
-  - Preserve user presets, enhancement presets, and negative prompt settings without unintended loss.
-  - Preserve sensitive values (API keys, tokens, OpenAI-compatible profiles) when valid.
-  - Ignore or safely default malformed/unsupported values while logging under `CONFIG_IMPORT`.
-- ✅ Updated configuration import flow in [`handleImportFile()`](src/config/configManager.js:386) to:
-  - Normalize and persist imported configuration keys before any UI updates.
-  - Immediately repopulate:
-    - Core configuration form and styling fields via [`populateConfigForm()`](src/config/configManager.js:286),
-    - Provider-specific sections via [`populateProviderForms()`](src/api/models.js:459),
-    - Enhancement settings and status via [`populateEnhancementSettings()`](src/components/enhancementPanel.js:1) and [`updateEnhancementUI()`](src/components/enhancementPanel.js:1).
-  - Ensure all changes are reflected live in an already-open configuration panel without requiring a manual close/reopen.
-- ✅ Improved error handling for configuration import:
-  - Clear alerts and structured logging when:
-    - JSON is invalid or the root structure is not an object.
-    - Persistence or UI synchronization encounters runtime issues.
-    - Only part of the UI fails to update; valid imported data is still preserved where possible.
-  - Guarantees the file input is always reset so users can safely retry imports.
-- ✅ Backward compatibility guarantees:
-  - Legacy exports (5.x / early 6.x) and new 6.x+ schemas are normalized against [`DEFAULTS`](src/config/defaults.js:1).
-  - OpenAI-compatible profiles, enhancement options, and history settings remain compatible across versions.
-- ✅ Integrity verification:
-  - Successfully ran `npm run build` to confirm there are no syntax or bundling issues for this branch.
+#### 🆕 Enhancements
 
-Note: This version focuses specifically on configuration-import reliability and reactive UI behavior on the current working branch and is safe to use as a stabilization baseline.
+- ✅ Configuration import normalization via [`configManager.normalizeImportedConfig()`](src/config/configManager.js:28):
+  - Safely handles both legacy and new schemas, including nested payloads like `{ "config": { ... }, "meta": { ... } }`.
+  - Coerces numeric-like strings into proper numbers for fields such as history retention days and enhancement tuning values.
+  - Preserves user presets, enhancement presets, and global negative prompts without unintended resets.
+  - Preserves sensitive values (API keys, tokens, OpenAI-compatible profiles) when valid.
+  - Ignores or safely defaults malformed or unsupported values while logging details under the `CONFIG_IMPORT` channel.
+
+- ✅ Configuration import flow updates in [`configManager.handleImportFile()`](src/config/configManager.js:386):
+  - Normalizes and persists configuration before applying any UI updates.
+  - Reactively repopulates:
+    - Core configuration and styling fields via [`configManager.populateConfigForm()`](src/config/configManager.js:286),
+    - Provider-specific sections via [`models.populateProviderForms()`](src/api/models.js:459),
+    - Enhancement controls via [`enhancementPanel.populateEnhancementSettings()`](src/components/enhancementPanel.js:1) and [`enhancementPanel.updateEnhancementUI()`](src/components/enhancementPanel.js:1).
+  - Ensures an already-open configuration panel reflects imported changes immediately without requiring close/reopen.
+
+- ✅ History tab prompt display improvements in [`historyManager.populateHistoryTab()`](src/components/historyManager.js:10):
+  - Displays history prompts using the full available width, up to a maximum of two lines.
+  - Applies truncation visually (ellipsis) only when text exceeds two lines, avoiding premature substring cuts.
+  - Introduces defensive `safePrompt` handling to guard against missing or non-string prompt values.
+  - Preserves the "View Generated Image" action, passing a safe fallback label if the original prompt is unavailable.
+
+#### 🔧 Bug Fixes & Safeguards
+
+- 🧱 Robust error handling for configuration import:
+  - Clear, specific alerts and structured logging when:
+    - JSON is invalid or not an object.
+    - Persistence or UI synchronization fails in part or in full.
+  - Guarantees the file input element is always reset, allowing safe re-attempts.
+
+- 🛡️ Backward compatibility hardening:
+  - Legacy 5.x / early 6.x exports normalized against [`config/defaults`](src/config/defaults.js:1).
+  - Ensures OpenAI-compatible profiles, enhancement options, and history settings remain stable across upgrades.
+
+- 🖼️ Safe UI rendering:
+  - History prompt tooltips escape quotes to avoid attribute breakage.
+  - Empty or invalid prompts render as a clearly marked "No prompt available" state instead of causing runtime errors.
+
+#### 🧪 Quality Assurance
+
+- ✅ Build integrity: `npm run build` completed successfully with no syntax or bundling errors for this branch.
+- ✅ Scope: Changes are constrained to configuration management, history presentation, and related UI logic, making this version a safe stabilization baseline for users tracking the `Fixing--Version-6.0.5` branch.
+
 
 ## [6.0.4] - 2025-11-09
 
