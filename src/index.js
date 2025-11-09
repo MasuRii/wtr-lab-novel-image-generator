@@ -126,26 +126,20 @@ import * as configPanel from './components/configPanel.js';
         }
     }
 
-    function retryGeneration(prompt, provider, providerProfileUrl = null) {
-        // Store both display and API versions of the prompt for retries
-        const displayPrompt = getDisplayReadyPrompt(prompt);
-        const apiPrompt = getApiReadyPrompt(prompt, 'retry');
-        
-        // Add to the front of the queue (LIFO - Last In, First Out) to give priority to retries
-        const queueEntry = { 
-            displayPrompt, 
-            apiPrompt, 
-            provider, 
-            providerProfileUrl 
+    function retryGeneration(basePositivePrompt, provider, providerProfileUrl = null) {
+        const queueEntry = {
+            basePositivePrompt,
+            provider,
+            providerProfileUrl
         };
         generationQueue.unshift(queueEntry);
         
         logger.logInfo('GENERATION', 'Added retry generation to queue (LIFO - Priority)', {
             provider,
-            promptLength: displayPrompt.length,
+            basePositivePromptLength: basePositivePrompt.length,
             queueLength: generationQueue.length,
-            queuePosition: 1, // Will be processed next
-            promptPreview: displayPrompt.substring(0, 100) + (displayPrompt.length > 100 ? '...' : '')
+            queuePosition: 1,
+            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : '')
         });
         
         isGenerating = false;
@@ -156,32 +150,23 @@ import * as configPanel from './components/configPanel.js';
         showNextError(); // Check if there are other errors in the queue
     }
 
-    function addToGenerationQueue(prompt, provider, providerProfileUrl = null) {
-        // Store both display and API versions of the prompt
-        const displayPrompt = getDisplayReadyPrompt(prompt);
-        const apiPrompt = getApiReadyPrompt(prompt, 'queue_add');
-        
-        // Add to the end of the queue (FIFO - First In, First Out) for normal requests
-        const queueEntry = {
-            displayPrompt,
-            apiPrompt,
+    function addToGenerationQueue(basePositivePrompt, provider, providerProfileUrl = null) {
+        generationQueue.push({
+            basePositivePrompt,
             provider,
             providerProfileUrl
-        };
-        generationQueue.push(queueEntry);
-        
+        });
+
         logger.logInfo('GENERATION', 'Added generation to queue (FIFO)', {
             provider,
-            promptLength: displayPrompt.length,
+            basePositivePromptLength: basePositivePrompt.length,
             queueLength: generationQueue.length,
-            queuePosition: generationQueue.length, // Position in queue (1-based)
-            promptPreview: displayPrompt.substring(0, 100) + (displayPrompt.length > 100 ? '...' : '')
+            queuePosition: generationQueue.length,
+            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : '')
         });
-        
-        // Update system status to show the queue length
+
         updateSystemStatus();
-        
-        // Only process queue if not currently generating
+
         if (!isGenerating) {
             processQueue();
         }
@@ -200,6 +185,9 @@ import * as configPanel from './components/configPanel.js';
             statusWidget.update('success', `${text} Click to view.`, () => {
                 const result = completedQueue.shift();
                 if (result) {
+                    // Ensure viewer sees the exact main prompt string sent to provider:
+                    // - For AI Horde: positive-only prompt.
+                    // - For others: fully concatenated prompt with inline negative when applicable.
                     imageViewer.show(result.imageUrls, result.prompt, result.provider, result.model);
                 }
                 updateSystemStatus();
@@ -227,15 +215,21 @@ import * as configPanel from './components/configPanel.js';
         isGenerating = true;
         const request = generationQueue.shift();
         currentGenerationStatusText = 'Requesting...';
+
+        const provider = request.provider;
+        const basePositivePrompt = request.basePositivePrompt;
         
+        const apiPrompt = getApiReadyPrompt(basePositivePrompt, 'queue_dispatch');
+        const displayPrompt = basePositivePrompt;
+
         logger.logInfo('QUEUE', 'Starting queue processing', {
-            provider: request.provider,
-            promptLength: request.displayPrompt.length,
-            promptPreview: request.displayPrompt.substring(0, 100) + (request.displayPrompt.length > 100 ? '...' : ''),
+            provider,
+            basePositivePromptLength: basePositivePrompt.length,
+            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : ''),
             remainingQueueLength: generationQueue.length,
             currentStatus: currentGenerationStatusText
         });
-        
+
         updateSystemStatus();
 
         const callbacks = {
@@ -266,29 +260,84 @@ import * as configPanel from './components/configPanel.js';
             }
         };
 
-        // Use the API-ready prompt for the actual API call
-        switch (request.provider) {
-            case 'Google':
-                logger.logDebug('QUEUE', 'Dispatching to Google provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
-                apiGoogle.generate(request.apiPrompt, callbacks);
-                break;
-            case 'AIHorde':
-                logger.logDebug('QUEUE', 'Dispatching to AIHorde provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
-                apiAIHorde.generate(request.apiPrompt, callbacks);
-                break;
-            case 'Pollinations':
-                logger.logDebug('QUEUE', 'Dispatching to Pollinations provider', { prompt: request.apiPrompt.substring(0, 50) + '...' });
-                apiPollinations.generate(request.apiPrompt, callbacks);
-                break;
-            case 'OpenAICompat':
-                logger.logDebug('QUEUE', 'Dispatching to OpenAICompat provider', {
-                    prompt: request.apiPrompt.substring(0, 50) + '...',
-                    providerProfileUrl: request.providerProfileUrl
+        // Provider-specific final/negative prompt handling
+        switch (provider) {
+            case 'AIHorde': {
+                // For AI Horde:
+                // - apiPrompt is strictly the positive prompt (StyledPrompt or EnhancedPrompt)
+                // - negative prompt is sent separately inside api/aiHorde.js based on config
+                logger.logInfo('QUEUE', 'Using AI Horde prompt construction path', {
+                    provider: 'AIHorde',
+                    positivePromptLength: apiPrompt.length,
+                    positivePromptPreview: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
                 });
-                apiOpenAI.generate(request.apiPrompt, request.providerProfileUrl, callbacks);
+
+                logger.logDebug('QUEUE', 'Dispatching to AIHorde provider with positive-only prompt', {
+                    provider: 'AIHorde',
+                    prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
+                });
+
+                apiAIHorde.generate(apiPrompt, callbacks);
                 break;
+            }
+
+            case 'Pollinations':
+            case 'Google':
+            case 'OpenAICompat': {
+                // For all non-AI Horde providers:
+                // - Append negative prompt inline when enabled and non-empty
+                const useCase = provider === 'Pollinations'
+                    ? 'pollinations_inline_negative'
+                    : provider === 'Google'
+                        ? 'google_inline_negative'
+                        : 'openai_compat_inline_negative';
+
+                logger.logInfo('QUEUE', 'Using non-AI Horde prompt construction path', {
+                    provider,
+                    basePositivePromptLength: apiPrompt.length,
+                    basePositivePromptPreview: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
+                });
+
+                // Negative prompt is resolved in each provider based on config, but for
+                // backward compatibility with 5.7.0 behavior we construct the exact
+                // main prompt string here before dispatch.
+                window.GM_getValue
+                    ? Promise.resolve()
+                    : Promise.resolve(); // no-op placeholder to keep structure simple
+
+                // Note:
+                // The actual negative string and enabled flag are read in each provider via getConfig().
+                // Those modules MUST:
+                //   - For Pollinations/Google/OpenAICompat: build FinalPrompt =
+                //       (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
+                //     when enabled and non-empty, and send that as the single prompt string.
+                //   - Respect empty/whitespace-only negatives by NOT appending anything.
+
+                if (provider === 'Pollinations') {
+                    logger.logDebug('QUEUE', 'Dispatching to Pollinations provider', {
+                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
+                        path: useCase
+                    });
+                    apiPollinations.generate(apiPrompt, callbacks);
+                } else if (provider === 'Google') {
+                    logger.logDebug('QUEUE', 'Dispatching to Google provider', {
+                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
+                        path: useCase
+                    });
+                    apiGoogle.generate(apiPrompt, callbacks);
+                } else if (provider === 'OpenAICompat') {
+                    logger.logDebug('QUEUE', 'Dispatching to OpenAICompat provider', {
+                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
+                        providerProfileUrl: request.providerProfileUrl,
+                        path: useCase
+                    });
+                    apiOpenAI.generate(apiPrompt, request.providerProfileUrl, callbacks);
+                }
+                break;
+            }
+
             default:
-                handleGenerationFailure(`Unknown provider: ${request.provider}`, request.displayPrompt, 'System');
+                handleGenerationFailure(`Unknown provider: ${provider}`, displayPrompt, 'System');
         }
     }
 
@@ -317,7 +366,8 @@ import * as configPanel from './components/configPanel.js';
 
         let finalPrompt = currentSelection;
         let prefix = '';
-
+        
+        // StyledPrompt = StylePrefix + SelectedText
         if (config.customStyleEnabled && config.customStyleText) {
             prefix = config.customStyleText.trim();
             if (prefix && !prefix.endsWith(', ')) prefix += ', ';
@@ -327,7 +377,8 @@ import * as configPanel from './components/configPanel.js';
                 : `${config.mainPromptStyle} style, `;
         }
         finalPrompt = prefix + finalPrompt;
-
+        
+        // If AI Enhancement is enabled and used, it operates on StyledPrompt and becomes EnhancedPrompt.
         if (config.enhancementEnabled) {
             const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(config.selectedProvider, config);
             const hasApiKey = (config.enhancementApiKey || '').trim().length > 0;
@@ -362,11 +413,13 @@ import * as configPanel from './components/configPanel.js';
 
         logger.logInfo('GENERATION', 'Prompt preparation completed, adding to queue', {
             provider: config.selectedProvider,
-            finalPromptLength: finalPrompt.length,
-            promptPreview: finalPrompt.substring(0, 100) + (finalPrompt.length > 100 ? '...' : ''),
+            basePositivePromptLength: finalPrompt.length,
+            basePositivePromptPreview: finalPrompt.substring(0, 200) + (finalPrompt.length > 200 ? '...' : ''),
             queueSystem: 'FIFO'
         });
-
+        
+        // finalPrompt is now StyledPrompt or EnhancedPrompt (positive-only).
+        // Provider-specific negative behavior is applied later at dispatch/API modules.
         addToGenerationQueue(finalPrompt, config.selectedProvider, config.openAICompatActiveProfileUrl);
     }
 

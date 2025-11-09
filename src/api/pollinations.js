@@ -19,18 +19,43 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
         pollinationsSafe,
         pollinationsNologo,
         pollinationsPrivate,
+        enableNegPrompt,
+        globalNegPrompt
     } = config;
 
-    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
-    const cleanPrompt = getApiReadyPrompt(prompt, 'pollinations_api');
+    // Base positive prompt from queue (StyledPrompt or EnhancedPrompt)
+    const basePositive = typeof prompt === 'string' ? prompt : '';
+
+    const negEnabled = !!enableNegPrompt;
+    const negText = (globalNegPrompt || '').trim();
+    const hasValidNegative = negEnabled && negText.length > 0;
+
+    // For Pollinations and other non-AI Horde providers:
+    // FinalPrompt = (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
+    // when enabled and non-empty.
+    const finalPrompt = hasValidNegative
+        ? `${basePositive}, negative prompt: ${negText}`
+        : basePositive;
+
+    // Apply prompt cleaning as a safety measure (on the fully formed FinalPrompt)
+    const cleanPrompt = getApiReadyPrompt(finalPrompt, 'pollinations_api_final');
 
     // Use the configured model (includes kontext which can do text-to-image)
     const finalModel = model || 'flux';
     
-    // Debug logging to track model configuration
+    // Debug logging to track model configuration and prompt construction
     console.log('[NIG-DEBUG] [POLLINATIONS] Model configuration:', {
         originalModel: model,
         finalModel: finalModel
+    });
+    console.log('[NIG-DEBUG] [POLLINATIONS] Prompt construction:', {
+        path: 'non-horde inline negative',
+        basePositivePromptLength: basePositive.length,
+        hasNegativePrompt: hasValidNegative,
+        enableNegPrompt: negEnabled,
+        negativePromptLength: hasValidNegative ? negText.length : 0,
+        finalPromptLength: cleanPrompt.length,
+        finalPromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? '...' : '')
     });
 
     const params = new URLSearchParams();
@@ -57,7 +82,8 @@ export async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) 
         onload: async (response) => {
             if (response.status >= 200 && response.status < 300) {
                 const blobUrl = URL.createObjectURL(response.response);
-                onSuccess([blobUrl], prompt, 'Pollinations', finalModel, [url]);
+                // Pass the exact FinalPrompt string used for the API to the viewer/history
+                onSuccess([blobUrl], cleanPrompt, 'Pollinations', finalModel, [url]);
             } else {
                 const text = await response.response.text();
                 if (text.toLowerCase().includes('model not found')) {

@@ -118,14 +118,22 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
     const { aiHordeApiKey, aiHordeModel, aiHordeSampler, aiHordeCfgScale, aiHordeSteps, aiHordeWidth, aiHordeHeight, aiHordeSeed, aiHordePostProcessing, enableNegPrompt, globalNegPrompt } = config;
     
     // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
-    const cleanPrompt = getApiReadyPrompt(prompt, 'aihorde_api');
+    // For AI Horde, "prompt" must remain strictly the positive prompt (Styled/Enhanced).
+    const cleanPrompt = getApiReadyPrompt(prompt, 'aihorde_api_positive_only');
     
+    const negEnabled = !!enableNegPrompt;
+    const negText = (globalNegPrompt || '').trim();
+    const hasValidNegative = negEnabled && negText.length > 0;
+
     logInfo('AIHORDE', 'Starting AI Horde generation', {
-        promptLength: cleanPrompt.length,
-        promptPreview: cleanPrompt.substring(0, 100) + (cleanPrompt.length > 100 ? '...' : ''),
+        promptConstructionPath: 'AIHorde: positive_only + separate_negative_field',
+        positivePromptLength: cleanPrompt.length,
+        positivePromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? '...' : ''),
         model: aiHordeModel,
         apiKeyProvided: !!aiHordeApiKey,
-        hasNegativePrompt: enableNegPrompt && !!globalNegPrompt
+        enableNegPrompt: negEnabled,
+        hasNegativePromptText: hasValidNegative,
+        negativePromptLength: hasValidNegative ? negText.length : 0
     });
 
     const params = {
@@ -139,15 +147,19 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
     if (aiHordePostProcessing.length > 0) params.post_processing = aiHordePostProcessing;
 
     const payload = { prompt: cleanPrompt, params, models: [aiHordeModel] };
-    if (enableNegPrompt && globalNegPrompt) {
-        payload.negative_prompt = globalNegPrompt;
+    if (hasValidNegative) {
+        payload.negative_prompt = negText;
     }
-
+    
     logDebug('AIHORDE', 'Sending generation request to AI Horde', {
         url: 'https://aihorde.net/api/v2/generate/async',
         model: aiHordeModel,
-        params: params,
-        hasNegativePrompt: !!payload.negative_prompt
+        params,
+        usesNegativePromptField: !!payload.negative_prompt,
+        negativePromptLength: payload.negative_prompt ? payload.negative_prompt.length : 0,
+        negativePromptPreview: payload.negative_prompt
+            ? payload.negative_prompt.substring(0, 200) + (payload.negative_prompt.length > 200 ? '...' : '')
+            : null
     });
 
     updateStatus('Requesting...');

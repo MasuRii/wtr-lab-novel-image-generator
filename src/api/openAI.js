@@ -70,8 +70,33 @@ export async function generate(prompt, providerProfileUrl, { onSuccess, onFailur
         return;
     }
 
-    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
-    const cleanPrompt = getApiReadyPrompt(prompt, 'openai_api');
+    const { enableNegPrompt, globalNegPrompt } = config;
+
+    const basePositive = typeof prompt === 'string' ? prompt : '';
+
+    const negEnabled = !!enableNegPrompt;
+    const negText = (globalNegPrompt || '').trim();
+    const hasValidNegative = negEnabled && negText.length > 0;
+
+    // For non-AI Horde providers:
+    // FinalPrompt = (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
+    // when enabled and non-empty.
+    const finalPrompt = hasValidNegative
+        ? `${basePositive}, negative prompt: ${negText}`
+        : basePositive;
+
+    // Apply prompt cleaning as a safety measure on the fully-formed FinalPrompt
+    const cleanPrompt = getApiReadyPrompt(finalPrompt, 'openai_api_final');
+
+    console.log('[NIG-DEBUG] [OPENAI-COMPAT] Prompt construction:', {
+        path: 'non-horde inline negative',
+        basePositivePromptLength: basePositive.length,
+        hasNegativePrompt: hasValidNegative,
+        enableNegPrompt: negEnabled,
+        negativePromptLength: hasValidNegative ? negText.length : 0,
+        finalPromptLength: cleanPrompt.length,
+        finalPromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? '...' : '')
+    });
 
     const url = `${activeUrl}/images/generations`;
     const payload = {
@@ -134,7 +159,8 @@ export async function generate(prompt, providerProfileUrl, { onSuccess, onFailur
                         }).filter(Boolean);
                         
                         if (imageUrls.length > 0) {
-                            onSuccess(imageUrls, prompt, 'OpenAICompat', activeProfile.model);
+                            // Pass the exact FinalPrompt string used for the API to the viewer/history
+                            onSuccess(imageUrls, cleanPrompt, 'OpenAICompat', activeProfile.model);
                         } else {
                             throw new Error('API response did not contain usable image data.');
                         }

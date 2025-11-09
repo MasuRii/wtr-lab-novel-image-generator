@@ -6,9 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [6.0.5] - 2025-11-09
 
-### 🏗️ MINOR: Configuration Reliability, History UX, and UI Safety
+### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, and Prompt Routing Consistency
 
-This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, and adding safeguards around UI rendering.
+This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, and aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript while ensuring accurate logging and viewer output.
 
 #### 🆕 Enhancements
 
@@ -33,6 +33,29 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
   - Introduces defensive `safePrompt` handling to guard against missing or non-string prompt values.
   - Preserves the "View Generated Image" action, passing a safe fallback label if the original prompt is unavailable.
 
+- ✅ Provider-specific prompt and negative prompt handling aligned with the 5.7.0 userscript:
+  - Central queue now tracks a positive-only `basePositivePrompt` (style prefix + selection and optional enhancement) and defers provider-specific formatting to the API layer ([`processQueue()`](src/index.js:205) and provider modules).
+  - AI Horde ([`aiHorde.generate()`](src/api/aiHorde.js:116)):
+    - Sends only the styled/enhanced positive prompt in `prompt`.
+    - When global negative prompting is enabled and non-empty, sends `globalNegPrompt` via the dedicated `negative_prompt` field.
+    - Logs `promptConstructionPath`, positive/negative prompt lengths, and `usesNegativePromptField` to verify correct routing.
+  - Pollinations ([`pollinations.generate()`](src/api/pollinations.js:10)), Google Imagen ([`google.generate()`](src/api/google.js:9)), and OpenAI Compatible ([`openAI.generate()`](src/api/openAI.js:63)):
+    - Construct a single FinalPrompt string:
+      - `(StyledPrompt or EnhancedPrompt)` when negative prompting is disabled or blank.
+      - `(StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt` when enabled and non-empty.
+    - Clean and send this FinalPrompt as the provider `prompt`.
+    - Pass the same FinalPrompt through success callbacks so that history and the viewer reflect exactly what was sent to the API.
+
+- ✅ Accurate "Generated Image Prompt" display in [`imageViewer.show()`](src/components/imageViewer.js:59):
+  - The image viewer now consistently displays the exact prompt string provided by each provider callback:
+    - AI Horde images show only the positive prompt (no inline negative), matching API payload.
+    - Other providers show the full concatenated FinalPrompt including inline negative prompt text when applied.
+  - Ensures visual parity with the actual API request and with the legacy (5.7.0) behavior.
+
+- ✅ Detailed logging for prompt construction and routing:
+  - Queue-level logs distinguish AI Horde vs non-AI Horde paths, including base positive prompt metrics and dispatch context.
+  - Provider modules log FinalPrompt construction details, negative prompt usage, and previews to simplify debugging and verification.
+
 #### 🔧 Bug Fixes & Safeguards
 
 - 🧱 Robust error handling for configuration import:
@@ -40,6 +63,15 @@ This release on the `Fixing--Version-6.0.5` branch focuses on hardening configur
     - JSON is invalid or not an object.
     - Persistence or UI synchronization fails in part or in full.
   - Guarantees the file input element is always reset, allowing safe re-attempts.
+
+- 🩹 Negative prompt safety and consistency:
+  - Empty or whitespace-only `globalNegPrompt` values are ignored gracefully across providers.
+  - AI Horde never inlines the negative prompt into `prompt` and uses `negative_prompt` only when valid.
+  - Non-AI Horde providers only append the `", negative prompt: ..."` suffix when configuration is explicitly enabled and non-empty.
+
+- 🩹 Gemini enhancement logging fix:
+  - Correctly import and use [`logWarn`](src/utils/logger.js:53) in [`enhancePromptWithGemini()`](src/api/gemini.js:37) to prevent `logWarn is not defined` runtime errors when all enhancement retries/models are exhausted.
+  - Maintains comprehensive enhancement logging (successes, retries, fallbacks) without impacting generation flow.
 
 - 🛡️ Backward compatibility hardening:
   - Legacy 5.x / early 6.x exports normalized against [`config/defaults`](src/config/defaults.js:1).

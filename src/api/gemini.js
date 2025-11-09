@@ -1,4 +1,4 @@
-import { log, logInfo, logDebug, logError } from '../utils/logger.js';
+import { log, logInfo, logDebug, logWarn, logError } from '../utils/logger.js';
 import { getApiReadyPrompt } from '../utils/promptUtils.js';
 
 /**
