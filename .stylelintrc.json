@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "no-duplicate-selectors": true,
+    "import-notation": "url"
+  },
+  "ignoreFiles": [
+    "node_modules/**/*",
+    "dist/**/*",
+    "build/**/*"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "jquery": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-undef": "error",
+    "no-console": "warn",
+    "no-debugger": "warn",
+    "eqeqeq": "error",
+    "curly": "error",
+    "no-var": "warn",
+    "prefer-const": "warn",
+    "no-implicit-coercion": "error",
+    "no-constant-condition": "error",
+    "no-unreachable": "error",
+    "no-dupe-args": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "valid-typeof": "error",
+    "no-func-assign": "error",
+    "no-undef": "error",
+    "no-unused-expressions": "error",
+    "no-self-assign": "error",
+    "no-sparse-arrays": "error",
+    "no-unexpected-multiline": "error",
+    "no-unsafe-negation": "error",
+    "use-isnan": "error",
+    "no-useless-escape": "error",
+    "object-shorthand": "warn",
+    "prefer-template": "warn",
+    "prefer-destructuring": "warn"
+  },
+  "globals": {
+    "GM_xmlhttpRequest": "readonly",
+    "GM_getValue": "readonly",
+    "GM_setValue": "readonly",
+    "GM_addStyle": "readonly",
+    "GM_info": "readonly"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "build/",
+    "*.min.js",
+    "webpack.config.js"
+  ]
+}
