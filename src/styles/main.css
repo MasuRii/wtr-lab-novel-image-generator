@@ -4,11 +4,11 @@
  */
 
 /* Import all CSS modules in proper order for cascade and specificity */
-@import './base.css';
-@import './components.css';
-@import './utilities.css';
-@import './layout.css';
-@import './themes.css';
+@import url("./base.css");
+@import url("./components.css");
+@import url("./utilities.css");
+@import url("./layout.css");
+@import url("./themes.css");
 
 /* CSS Modules Structure:
  * - base.css: CSS custom properties, typography, fonts, and base styles

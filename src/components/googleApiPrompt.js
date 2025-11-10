@@ -1,4 +1,4 @@
-import { setConfigValue } from '../utils/storage.js';
+import { setConfigValue } from "../utils/storage.js";
 
 let promptElement = null;
 
@@ -6,12 +6,14 @@ let promptElement = null;
  * Shows a modal prompting the user for their Google API key.
  */
 export function show() {
-    if (document.getElementById('nig-google-api-prompt')) return;
+  if (document.getElementById("nig-google-api-prompt")) {
+    return;
+  }
 
-    promptElement = document.createElement('div');
-    promptElement.id = 'nig-google-api-prompt';
-    promptElement.className = 'nig-modal-overlay';
-    promptElement.innerHTML = `
+  promptElement = document.createElement("div");
+  promptElement.id = "nig-google-api-prompt";
+  promptElement.className = "nig-modal-overlay";
+  promptElement.innerHTML = `
         <div class="nig-modal-content">
             <span class="nig-close-btn">&times;</span>
             <h2>Google API Key Required</h2>
@@ -33,19 +35,25 @@ export function show() {
             </div>
             <button id="nig-prompt-save-btn" class="nig-save-btn">Save Key</button>
         </div>`;
-    document.body.appendChild(promptElement);
+  document.body.appendChild(promptElement);
 
-    const close = () => promptElement.remove();
+  const close = () => promptElement.remove();
 
-    promptElement.querySelector('.nig-close-btn').addEventListener('click', close);
-    promptElement.querySelector('#nig-prompt-save-btn').addEventListener('click', async () => {
-        const key = promptElement.querySelector('#nig-prompt-api-key').value.trim();
-        if (key) {
-            await setConfigValue('googleApiKey', key);
-            alert('API Key saved. You can now generate an image.');
-            close();
-        } else {
-            alert('API Key cannot be empty.');
-        }
+  promptElement
+    .querySelector(".nig-close-btn")
+    .addEventListener("click", close);
+  promptElement
+    .querySelector("#nig-prompt-save-btn")
+    .addEventListener("click", async () => {
+      const key = promptElement
+        .querySelector("#nig-prompt-api-key")
+        .value.trim();
+      if (key) {
+        await setConfigValue("googleApiKey", key);
+        alert("API Key saved. You can now generate an image.");
+        close();
+      } else {
+        alert("API Key cannot be empty.");
+      }
     });
 }

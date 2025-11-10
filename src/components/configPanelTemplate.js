@@ -4,7 +4,7 @@
  * Gets the complete HTML template for the configuration panel
  */
 export function getConfigPanelHTML() {
-    return `
+  return `
         <div class="nig-modal-content">
             <span class="nig-close-btn">&times;</span>
             <h2>Image Generator Configuration</h2>
@@ -536,11 +536,11 @@ export function getConfigPanelHTML() {
  * Creates the panel element with the template
  */
 export function createPanelElement() {
-    const panelElement = document.createElement('div');
-    panelElement.id = 'nig-config-panel';
-    panelElement.className = 'nig-modal-overlay';
-    panelElement.style.display = 'none';
-    panelElement.innerHTML = getConfigPanelHTML();
-    
-    return panelElement;
+  const panelElement = document.createElement("div");
+  panelElement.id = "nig-config-panel";
+  panelElement.className = "nig-modal-overlay";
+  panelElement.style.display = "none";
+  panelElement.innerHTML = getConfigPanelHTML();
+
+  return panelElement;
 }

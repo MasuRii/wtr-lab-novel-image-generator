@@ -53,6 +53,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -98,7 +99,7 @@
   right: var(--nig-space-md);
   display: flex;
   gap: var(--nig-space-sm);
-  background: rgba(0, 0, 0, 0.7);
+  background: rgb(0 0 0 / 70%);
   backdrop-filter: blur(10px);
   padding: var(--nig-space-sm);
   border-radius: var(--nig-radius-md);
@@ -111,7 +112,7 @@
 }
 
 .nig-image-actions button {
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   border: none;
   border-radius: var(--nig-radius-md);
   width: 36px;
@@ -132,7 +133,7 @@
 
 /* === URL Link Button Styling === */
 .nig-image-actions button[title="Open Image URL"] {
-  background: rgba(99, 102, 241, 0.9);
+  background: rgb(99 102 241 / 90%);
 }
 
 .nig-image-actions button[title="Open Image URL"]:hover {
@@ -180,6 +181,7 @@
 .nig-history-prompt {
   margin-bottom: var(--nig-space-xs);
   font-size: var(--nig-font-size-sm);
+
   /* Use a dedicated dark color specific to history prompts only */
   color: #d0d0d0a6;
   display: -webkit-box;
@@ -432,7 +434,7 @@
   border: 1px solid var(--nig-color-border);
   border-radius: var(--nig-radius-md);
   padding: var(--nig-space-md);
-  font-family: "Fira Code", "Monaco", "Consolas", monospace;
+  font-family: "Fira Code", Monaco, Consolas, monospace;
   font-size: var(--nig-font-size-xs);
   line-height: 1.4;
   color: var(--nig-color-text-secondary);
@@ -523,6 +525,7 @@
     max-height: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     max-height: 300px;
@@ -531,9 +534,6 @@
 }
 
 /* === Additional Layout Utilities === */
-.nig-provider-settings {
-  display: none;
-}
 
 .nig-api-prompt-link {
   color: var(--nig-color-accent-primary);
@@ -545,9 +545,10 @@
   color: var(--nig-color-hover-primary);
   text-decoration: underline;
 }
+
 /* Override for History Tab Cleaner number input width on mobile.
    Ensures #nig-history-clean-days remains compact even if external CSS applies width: 100%. */
-@media (max-width: 767px) {
+@media (width <= 767px) {
   .nig-history-cleanup input[type="number"]#nig-history-clean-days {
     width: 80px;
   }

@@ -1,504 +1,671 @@
 // Import styles
-import './styles/main.css';
+import "./styles/main.css";
 
 // Import utility modules
-import * as logger from './utils/logger.js';
-import * as storage from './utils/storage.js';
-import { parseErrorMessage } from './utils/error.js';
-import { getApiReadyPrompt, getDisplayReadyPrompt } from './utils/promptUtils.js';
+import * as logger from "./utils/logger.js";
+import * as storage from "./utils/storage.js";
+import { parseErrorMessage } from "./utils/error.js";
+import {
+  getApiReadyPrompt,
+  // getDisplayReadyPrompt, // Not currently used
+} from "./utils/promptUtils.js";
 
 // Import API modules
-import * as apiGemini from './api/gemini.js';
-import * as apiGoogle from './api/google.js';
-import * as apiPollinations from './api/pollinations.js';
-import * as apiAIHorde from './api/aiHorde.js';
-import * as apiOpenAI from './api/openAI.js';
+import * as apiGemini from "./api/gemini.js";
+import * as apiGoogle from "./api/google.js";
+import * as apiPollinations from "./api/pollinations.js";
+import * as apiAIHorde from "./api/aiHorde.js";
+import * as apiOpenAI from "./api/openAI.js";
 
 // Import Component modules
-import * as statusWidget from './components/statusWidget.js';
-import * as imageViewer from './components/imageViewer.js';
-import * as errorModal from './components/errorModal.js';
-import * as googleApiPrompt from './components/googleApiPrompt.js';
-import * as pollinationsAuthPrompt from './components/pollinationsAuthPrompt.js';
-import * as configPanel from './components/configPanel.js';
+import * as statusWidget from "./components/statusWidget.js";
+import * as imageViewer from "./components/imageViewer.js";
+import * as errorModal from "./components/errorModal.js";
+import * as googleApiPrompt from "./components/googleApiPrompt.js";
+import * as pollinationsAuthPrompt from "./components/pollinationsAuthPrompt.js";
+import * as configPanel from "./components/configPanel.js";
 
 (function () {
-    'use strict';
+  "use strict";
 
-    // --- STATE MANAGEMENT ---
-    let generationQueue = [];
-    let completedQueue = [];
-    let errorQueue = [];
-    let isGenerating = false;
-    let currentGenerationStatusText = '';
-    let enhancementInFlightCount = 0;
-    let isErrorModalVisible = false;
-    let currentSelection = '';
-    let generateBtn;
+  // --- STATE MANAGEMENT ---
+  const generationQueue = [];
+  const completedQueue = [];
+  const errorQueue = [];
+  let isGenerating = false;
+  let currentGenerationStatusText = "";
+  let enhancementInFlightCount = 0;
+  let isErrorModalVisible = false;
+  let currentSelection = "";
+  let generateBtn;
 
-    // --- CORE LOGIC ---
+  // --- CORE LOGIC ---
 
-    function handleGenerationSuccess(displayUrls, prompt, provider, model, persistentUrls = null) {
-        logger.logInfo('GENERATION', 'Generation completed successfully', {
-            provider,
-            model,
-            promptLength: prompt.length,
-            promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
-            imagesGenerated: displayUrls.length,
-            hasPersistentUrls: !!persistentUrls
-        });
-        
-        completedQueue.push({ imageUrls: displayUrls, prompt, provider, model });
-        const historyUrls = persistentUrls || displayUrls;
-        historyUrls.forEach(url => storage.addToHistory({ date: new Date().toISOString(), prompt, url, provider, model }));
-        isGenerating = false;
-        updateSystemStatus();
-        processQueue();
+  function handleGenerationSuccess(
+    displayUrls,
+    prompt,
+    provider,
+    model,
+    persistentUrls = null,
+  ) {
+    logger.logInfo("GENERATION", "Generation completed successfully", {
+      provider,
+      model,
+      promptLength: prompt.length,
+      promptPreview:
+        prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
+      imagesGenerated: displayUrls.length,
+      hasPersistentUrls: Boolean(persistentUrls),
+    });
+
+    completedQueue.push({ imageUrls: displayUrls, prompt, provider, model });
+    const historyUrls = persistentUrls || displayUrls;
+    historyUrls.forEach((url) =>
+      storage.addToHistory({
+        date: new Date().toISOString(),
+        prompt,
+        url,
+        provider,
+        model,
+      }),
+    );
+    isGenerating = false;
+    updateSystemStatus();
+    processQueue();
+  }
+
+  function handleGenerationFailure(
+    errorMessage,
+    prompt = "Unknown",
+    provider,
+    providerProfileUrl = null,
+    errorMetadata = null,
+  ) {
+    logger.logError("GENERATION", `Generation Failed`, {
+      prompt,
+      provider,
+      errorMessage,
+      errorMetadata,
+    });
+
+    // If error metadata is provided (e.g., from OpenAI provider), use it to enhance error parsing
+    const friendlyError = parseErrorMessage(
+      errorMessage,
+      provider,
+      providerProfileUrl,
+    );
+
+    // If metadata provides explicit error type and retryability, use that
+    if (errorMetadata) {
+      if (errorMetadata.errorType) {
+        friendlyError.errorType = errorMetadata.errorType;
+      }
+      if (typeof errorMetadata.isNonRetryable === "boolean") {
+        friendlyError.retryable = !errorMetadata.isNonRetryable;
+        friendlyError.isNonRetryable = errorMetadata.isNonRetryable;
+      }
     }
 
-    function handleGenerationFailure(errorMessage, prompt = 'Unknown', provider, providerProfileUrl = null, errorMetadata = null) {
-        logger.logError('GENERATION', `Generation Failed`, { prompt, provider, errorMessage, errorMetadata });
-        
-        // If error metadata is provided (e.g., from OpenAI provider), use it to enhance error parsing
-        let friendlyError = parseErrorMessage(errorMessage, provider, providerProfileUrl);
-        
-        // If metadata provides explicit error type and retryability, use that
-        if (errorMetadata) {
-            if (errorMetadata.errorType) {
-                friendlyError.errorType = errorMetadata.errorType;
-            }
-            if (typeof errorMetadata.isNonRetryable === 'boolean') {
-                friendlyError.retryable = !errorMetadata.isNonRetryable;
-                friendlyError.isNonRetryable = errorMetadata.isNonRetryable;
-            }
+    errorQueue.push({
+      reason: friendlyError,
+      prompt,
+      provider,
+      providerProfileUrl,
+    });
+    showNextError();
+
+    // Don't auto-continue queue - wait for user action
+    statusWidget.update("error", "Generation Failed.");
+    isGenerating = false;
+
+    // Update status but don't auto-process queue
+    updateSystemStatus();
+
+    logger.logInfo(
+      "GENERATION",
+      "Generation failed - waiting for user action",
+      {
+        errorQueueLength: errorQueue.length,
+        generationQueueLength: generationQueue.length,
+        willWaitForUser: true,
+        errorType: friendlyError.errorType || "unknown",
+        isNonRetryable: friendlyError.isNonRetryable || false,
+      },
+    );
+  }
+
+  function showNextError() {
+    if (isErrorModalVisible || errorQueue.length === 0) {
+      return;
+    }
+    const errorToShow = errorQueue.shift();
+    isErrorModalVisible = true;
+    errorModal.show(errorToShow);
+
+    logger.logInfo("ERROR", "Showing error modal to user", {
+      errorReason: errorToShow.reason.message,
+      provider: errorToShow.provider,
+      remainingErrorQueue: errorQueue.length,
+    });
+
+    // The error modal will hide itself, we don't need to manage its closing state here
+  }
+
+  function handleErrorModalDismiss() {
+    logger.logInfo("ERROR", "Error modal dismissed by user", {
+      errorQueueLength: errorQueue.length,
+      generationQueueLength: generationQueue.length,
+      isGenerating,
+    });
+
+    isErrorModalVisible = false;
+    updateSystemStatus();
+
+    // Resume queue processing if there are more items
+    if (generationQueue.length > 0 && !isGenerating) {
+      logger.logInfo(
+        "ERROR",
+        "Resuming queue processing after error modal dismissal",
+      );
+      processQueue();
+    } else {
+      logger.logInfo("ERROR", "No more items to process, queue paused");
+    }
+  }
+
+  function retryGeneration(
+    basePositivePrompt,
+    provider,
+    providerProfileUrl = null,
+  ) {
+    const queueEntry = {
+      basePositivePrompt,
+      provider,
+      providerProfileUrl,
+    };
+    generationQueue.unshift(queueEntry);
+
+    logger.logInfo(
+      "GENERATION",
+      "Added retry generation to queue (LIFO - Priority)",
+      {
+        provider,
+        basePositivePromptLength: basePositivePrompt.length,
+        queueLength: generationQueue.length,
+        queuePosition: 1,
+        basePositivePromptPreview:
+          basePositivePrompt.substring(0, 100) +
+          (basePositivePrompt.length > 100 ? "..." : ""),
+      },
+    );
+
+    isGenerating = false;
+    errorModal.hide();
+    isErrorModalVisible = false;
+    updateSystemStatus();
+    processQueue();
+    showNextError(); // Check if there are other errors in the queue
+  }
+
+  function addToGenerationQueue(
+    basePositivePrompt,
+    provider,
+    providerProfileUrl = null,
+  ) {
+    generationQueue.push({
+      basePositivePrompt,
+      provider,
+      providerProfileUrl,
+    });
+
+    logger.logInfo("GENERATION", "Added generation to queue (FIFO)", {
+      provider,
+      basePositivePromptLength: basePositivePrompt.length,
+      queueLength: generationQueue.length,
+      queuePosition: generationQueue.length,
+      basePositivePromptPreview:
+        basePositivePrompt.substring(0, 100) +
+        (basePositivePrompt.length > 100 ? "..." : ""),
+    });
+
+    updateSystemStatus();
+
+    if (!isGenerating) {
+      processQueue();
+    }
+  }
+
+  function updateSystemStatus() {
+    logger.logDebug("SYSTEM", "Updating system status", {
+      completedQueueLength: completedQueue.length,
+      isGenerating,
+      generationQueueLength: generationQueue.length,
+      currentStatusText: currentGenerationStatusText,
+    });
+
+    if (completedQueue.length > 0) {
+      const text =
+        completedQueue.length === 1
+          ? "1 Image Ready!"
+          : `${completedQueue.length} Images Ready!`;
+      statusWidget.update("success", `${text} Click to view.`, () => {
+        const result = completedQueue.shift();
+        if (result) {
+          // Ensure viewer sees the exact main prompt string sent to provider:
+          // - For AI Horde: positive-only prompt.
+          // - For others: fully concatenated prompt with inline negative when applicable.
+          imageViewer.show(
+            result.imageUrls,
+            result.prompt,
+            result.provider,
+            result.model,
+          );
         }
-        
-        errorQueue.push({ reason: friendlyError, prompt, provider, providerProfileUrl });
-        showNextError();
-        
-        // Don't auto-continue queue - wait for user action
-        statusWidget.update('error', 'Generation Failed.');
-        isGenerating = false;
-        
-        // Update status but don't auto-process queue
         updateSystemStatus();
-        
-        logger.logInfo('GENERATION', 'Generation failed - waiting for user action', {
-            errorQueueLength: errorQueue.length,
+      });
+    } else if (isGenerating || generationQueue.length > 0) {
+      // Only show queue indicator if there are items actually waiting (generationQueue.length > 0)
+      // This prevents showing "Queue: 1" when only the current item is being processed
+      const queueText =
+        generationQueue.length > 0 ? ` (Queue: ${generationQueue.length})` : "";
+      statusWidget.update(
+        "loading",
+        `${currentGenerationStatusText}${queueText}`,
+      );
+    } else {
+      statusWidget.update("hidden", "");
+    }
+  }
+
+  async function processQueue() {
+    if (isGenerating || generationQueue.length === 0) {
+      logger.logDebug("QUEUE", "Queue processing skipped", {
+        reason: isGenerating ? "Currently generating" : "Queue is empty",
+        isGenerating,
+        queueLength: generationQueue.length,
+      });
+      return;
+    }
+
+    isGenerating = true;
+    const request = generationQueue.shift();
+    currentGenerationStatusText = "Requesting...";
+
+    const provider = request.provider;
+    const basePositivePrompt = request.basePositivePrompt;
+
+    const apiPrompt = getApiReadyPrompt(basePositivePrompt, "queue_dispatch");
+    const displayPrompt = basePositivePrompt;
+
+    logger.logInfo("QUEUE", "Starting queue processing", {
+      provider,
+      basePositivePromptLength: basePositivePrompt.length,
+      basePositivePromptPreview:
+        basePositivePrompt.substring(0, 100) +
+        (basePositivePrompt.length > 100 ? "..." : ""),
+      remainingQueueLength: generationQueue.length,
+      currentStatus: currentGenerationStatusText,
+    });
+
+    updateSystemStatus();
+
+    const callbacks = {
+      onSuccess: handleGenerationSuccess,
+      onFailure: handleGenerationFailure,
+      onAuthFailure: (msg, p) => {
+        logger.logInfo("AUTH", "Authentication required", {
+          provider: p,
+          message: msg,
+        });
+        pollinationsAuthPrompt.show(msg, p, retryGeneration);
+        isGenerating = false;
+        // Don't auto-resume - wait for user action
+        statusWidget.update("error", "Authentication needed.");
+        updateSystemStatus();
+
+        logger.logInfo(
+          "AUTH",
+          "Queue paused due to authentication requirement",
+          {
             generationQueueLength: generationQueue.length,
             willWaitForUser: true,
-            errorType: friendlyError.errorType || 'unknown',
-            isNonRetryable: friendlyError.isNonRetryable || false
+          },
+        );
+      },
+      updateStatus: (text) => {
+        currentGenerationStatusText = text;
+        logger.logDebug("SYSTEM", "Status updated by provider", {
+          provider: request.provider,
+          newStatusText: text,
+          isGenerating,
+          generationQueueLength: generationQueue.length,
         });
-    }
-
-    function showNextError() {
-        if (isErrorModalVisible || errorQueue.length === 0) return;
-        const errorToShow = errorQueue.shift();
-        isErrorModalVisible = true;
-        errorModal.show(errorToShow);
-        
-        logger.logInfo('ERROR', 'Showing error modal to user', {
-            errorReason: errorToShow.reason.message,
-            provider: errorToShow.provider,
-            remainingErrorQueue: errorQueue.length
-        });
-        
-        // The error modal will hide itself, we don't need to manage its closing state here
-    }
-
-    function handleErrorModalDismiss() {
-        logger.logInfo('ERROR', 'Error modal dismissed by user', {
-            errorQueueLength: errorQueue.length,
-            generationQueueLength: generationQueue.length,
-            isGenerating
-        });
-        
-        isErrorModalVisible = false;
         updateSystemStatus();
-        
-        // Resume queue processing if there are more items
-        if (generationQueue.length > 0 && !isGenerating) {
-            logger.logInfo('ERROR', 'Resuming queue processing after error modal dismissal');
-            processQueue();
+      },
+    };
+
+    // Provider-specific final/negative prompt handling
+    switch (provider) {
+      case "AIHorde": {
+        // For AI Horde:
+        // - apiPrompt is strictly the positive prompt (StyledPrompt or EnhancedPrompt)
+        // - negative prompt is sent separately inside api/aiHorde.js based on config
+        logger.logInfo("QUEUE", "Using AI Horde prompt construction path", {
+          provider: "AIHorde",
+          positivePromptLength: apiPrompt.length,
+          positivePromptPreview:
+            apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? "..." : ""),
+        });
+
+        logger.logDebug(
+          "QUEUE",
+          "Dispatching to AIHorde provider with positive-only prompt",
+          {
+            provider: "AIHorde",
+            prompt:
+              apiPrompt.substring(0, 200) +
+              (apiPrompt.length > 200 ? "..." : ""),
+          },
+        );
+
+        apiAIHorde.generate(apiPrompt, callbacks);
+        break;
+      }
+
+      case "Pollinations":
+      case "Google":
+      case "OpenAICompat": {
+        // For all non-AI Horde providers:
+        // - Append negative prompt inline when enabled and non-empty
+        const useCase =
+          provider === "Pollinations"
+            ? "pollinations_inline_negative"
+            : provider === "Google"
+              ? "google_inline_negative"
+              : "openai_compat_inline_negative";
+
+        logger.logInfo("QUEUE", "Using non-AI Horde prompt construction path", {
+          provider,
+          basePositivePromptLength: apiPrompt.length,
+          basePositivePromptPreview:
+            apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? "..." : ""),
+        });
+
+        // Negative prompt is resolved in each provider based on config, but for
+        // backward compatibility with 5.7.0 behavior we construct the exact
+        // main prompt string here before dispatch.
+        // Note:
+        // The actual negative string and enabled flag are read in each provider via getConfig().
+        // Those modules MUST:
+        //   - For Pollinations/Google/OpenAICompat: build FinalPrompt =
+        //       (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
+        //     when enabled and non-empty, and send that as the single prompt string.
+        //   - Respect empty/whitespace-only negatives by NOT appending anything.
+
+        if (provider === "Pollinations") {
+          logger.logDebug("QUEUE", "Dispatching to Pollinations provider", {
+            prompt:
+              apiPrompt.substring(0, 200) +
+              (apiPrompt.length > 200 ? "..." : ""),
+            path: useCase,
+          });
+          apiPollinations.generate(apiPrompt, callbacks);
         } else {
-            logger.logInfo('ERROR', 'No more items to process, queue paused');
-        }
-    }
-
-    function retryGeneration(basePositivePrompt, provider, providerProfileUrl = null) {
-        const queueEntry = {
-            basePositivePrompt,
-            provider,
-            providerProfileUrl
-        };
-        generationQueue.unshift(queueEntry);
-        
-        logger.logInfo('GENERATION', 'Added retry generation to queue (LIFO - Priority)', {
-            provider,
-            basePositivePromptLength: basePositivePrompt.length,
-            queueLength: generationQueue.length,
-            queuePosition: 1,
-            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : '')
-        });
-        
-        isGenerating = false;
-        errorModal.hide();
-        isErrorModalVisible = false;
-        updateSystemStatus();
-        processQueue();
-        showNextError(); // Check if there are other errors in the queue
-    }
-
-    function addToGenerationQueue(basePositivePrompt, provider, providerProfileUrl = null) {
-        generationQueue.push({
-            basePositivePrompt,
-            provider,
-            providerProfileUrl
-        });
-
-        logger.logInfo('GENERATION', 'Added generation to queue (FIFO)', {
-            provider,
-            basePositivePromptLength: basePositivePrompt.length,
-            queueLength: generationQueue.length,
-            queuePosition: generationQueue.length,
-            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : '')
-        });
-
-        updateSystemStatus();
-
-        if (!isGenerating) {
-            processQueue();
-        }
-    }
-
-    function updateSystemStatus() {
-        logger.logDebug('SYSTEM', 'Updating system status', {
-            completedQueueLength: completedQueue.length,
-            isGenerating,
-            generationQueueLength: generationQueue.length,
-            currentStatusText: currentGenerationStatusText
-        });
-
-        if (completedQueue.length > 0) {
-            const text = completedQueue.length === 1 ? '1 Image Ready!' : `${completedQueue.length} Images Ready!`;
-            statusWidget.update('success', `${text} Click to view.`, () => {
-                const result = completedQueue.shift();
-                if (result) {
-                    // Ensure viewer sees the exact main prompt string sent to provider:
-                    // - For AI Horde: positive-only prompt.
-                    // - For others: fully concatenated prompt with inline negative when applicable.
-                    imageViewer.show(result.imageUrls, result.prompt, result.provider, result.model);
-                }
-                updateSystemStatus();
+          if (provider === "Google") {
+            logger.logDebug("QUEUE", "Dispatching to Google provider", {
+              prompt:
+                apiPrompt.substring(0, 200) +
+                (apiPrompt.length > 200 ? "..." : ""),
+              path: useCase,
             });
-        } else if (isGenerating || generationQueue.length > 0) {
-            // Only show queue indicator if there are items actually waiting (generationQueue.length > 0)
-            // This prevents showing "Queue: 1" when only the current item is being processed
-            const queueText = generationQueue.length > 0 ? ` (Queue: ${generationQueue.length})` : '';
-            statusWidget.update('loading', `${currentGenerationStatusText}${queueText}`);
-        } else {
-            statusWidget.update('hidden', '');
-        }
-    }
-
-    async function processQueue() {
-        if (isGenerating || generationQueue.length === 0) {
-            logger.logDebug('QUEUE', 'Queue processing skipped', {
-                reason: isGenerating ? 'Currently generating' : 'Queue is empty',
-                isGenerating,
-                queueLength: generationQueue.length
+            apiGoogle.generate(apiPrompt, callbacks);
+          } else if (provider === "OpenAICompat") {
+            logger.logDebug("QUEUE", "Dispatching to OpenAICompat provider", {
+              prompt:
+                apiPrompt.substring(0, 200) +
+                (apiPrompt.length > 200 ? "..." : ""),
+              providerProfileUrl: request.providerProfileUrl,
+              path: useCase,
             });
-            return;
+            apiOpenAI.generate(
+              apiPrompt,
+              request.providerProfileUrl,
+              callbacks,
+            );
+          }
         }
+        break;
+      }
 
-        isGenerating = true;
-        const request = generationQueue.shift();
-        currentGenerationStatusText = 'Requesting...';
+      default:
+        handleGenerationFailure(
+          `Unknown provider: ${provider}`,
+          displayPrompt,
+          "System",
+        );
+    }
+  }
 
-        const provider = request.provider;
-        const basePositivePrompt = request.basePositivePrompt;
-        
-        const apiPrompt = getApiReadyPrompt(basePositivePrompt, 'queue_dispatch');
-        const displayPrompt = basePositivePrompt;
+  // --- EVENT HANDLERS & UI TRIGGERS ---
 
-        logger.logInfo('QUEUE', 'Starting queue processing', {
-            provider,
-            basePositivePromptLength: basePositivePrompt.length,
-            basePositivePromptPreview: basePositivePrompt.substring(0, 100) + (basePositivePrompt.length > 100 ? '...' : ''),
-            remainingQueueLength: generationQueue.length,
-            currentStatus: currentGenerationStatusText
-        });
-
-        updateSystemStatus();
-
-        const callbacks = {
-            onSuccess: handleGenerationSuccess,
-            onFailure: handleGenerationFailure,
-            onAuthFailure: (msg, p) => {
-                logger.logInfo('AUTH', 'Authentication required', { provider: p, message: msg });
-                pollinationsAuthPrompt.show(msg, p, retryGeneration);
-                isGenerating = false;
-                // Don't auto-resume - wait for user action
-                statusWidget.update('error', 'Authentication needed.');
-                updateSystemStatus();
-                
-                logger.logInfo('AUTH', 'Queue paused due to authentication requirement', {
-                    generationQueueLength: generationQueue.length,
-                    willWaitForUser: true
-                });
-            },
-            updateStatus: (text) => {
-                currentGenerationStatusText = text;
-                logger.logDebug('SYSTEM', 'Status updated by provider', {
-                    provider: request.provider,
-                    newStatusText: text,
-                    isGenerating,
-                    generationQueueLength: generationQueue.length
-                });
-                updateSystemStatus();
-            }
-        };
-
-        // Provider-specific final/negative prompt handling
-        switch (provider) {
-            case 'AIHorde': {
-                // For AI Horde:
-                // - apiPrompt is strictly the positive prompt (StyledPrompt or EnhancedPrompt)
-                // - negative prompt is sent separately inside api/aiHorde.js based on config
-                logger.logInfo('QUEUE', 'Using AI Horde prompt construction path', {
-                    provider: 'AIHorde',
-                    positivePromptLength: apiPrompt.length,
-                    positivePromptPreview: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
-                });
-
-                logger.logDebug('QUEUE', 'Dispatching to AIHorde provider with positive-only prompt', {
-                    provider: 'AIHorde',
-                    prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
-                });
-
-                apiAIHorde.generate(apiPrompt, callbacks);
-                break;
-            }
-
-            case 'Pollinations':
-            case 'Google':
-            case 'OpenAICompat': {
-                // For all non-AI Horde providers:
-                // - Append negative prompt inline when enabled and non-empty
-                const useCase = provider === 'Pollinations'
-                    ? 'pollinations_inline_negative'
-                    : provider === 'Google'
-                        ? 'google_inline_negative'
-                        : 'openai_compat_inline_negative';
-
-                logger.logInfo('QUEUE', 'Using non-AI Horde prompt construction path', {
-                    provider,
-                    basePositivePromptLength: apiPrompt.length,
-                    basePositivePromptPreview: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : '')
-                });
-
-                // Negative prompt is resolved in each provider based on config, but for
-                // backward compatibility with 5.7.0 behavior we construct the exact
-                // main prompt string here before dispatch.
-                window.GM_getValue
-                    ? Promise.resolve()
-                    : Promise.resolve(); // no-op placeholder to keep structure simple
-
-                // Note:
-                // The actual negative string and enabled flag are read in each provider via getConfig().
-                // Those modules MUST:
-                //   - For Pollinations/Google/OpenAICompat: build FinalPrompt =
-                //       (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
-                //     when enabled and non-empty, and send that as the single prompt string.
-                //   - Respect empty/whitespace-only negatives by NOT appending anything.
-
-                if (provider === 'Pollinations') {
-                    logger.logDebug('QUEUE', 'Dispatching to Pollinations provider', {
-                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
-                        path: useCase
-                    });
-                    apiPollinations.generate(apiPrompt, callbacks);
-                } else if (provider === 'Google') {
-                    logger.logDebug('QUEUE', 'Dispatching to Google provider', {
-                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
-                        path: useCase
-                    });
-                    apiGoogle.generate(apiPrompt, callbacks);
-                } else if (provider === 'OpenAICompat') {
-                    logger.logDebug('QUEUE', 'Dispatching to OpenAICompat provider', {
-                        prompt: apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? '...' : ''),
-                        providerProfileUrl: request.providerProfileUrl,
-                        path: useCase
-                    });
-                    apiOpenAI.generate(apiPrompt, request.providerProfileUrl, callbacks);
-                }
-                break;
-            }
-
-            default:
-                handleGenerationFailure(`Unknown provider: ${provider}`, displayPrompt, 'System');
-        }
+  async function onGenerateClick() {
+    generateBtn.style.display = "none";
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    }
+    if (!currentSelection) {
+      logger.logWarn("GENERATION", "No text selected for generation");
+      return;
     }
 
-    // --- EVENT HANDLERS & UI TRIGGERS ---
+    logger.logInfo("GENERATION", "User initiated image generation", {
+      selectionLength: currentSelection.length,
+      selectionPreview:
+        currentSelection.substring(0, 100) +
+        (currentSelection.length > 100 ? "..." : ""),
+    });
 
-    async function onGenerateClick() {
-        generateBtn.style.display = 'none';
-        if (window.getSelection) window.getSelection().removeAllRanges();
-        if (!currentSelection) {
-            logger.logWarn('GENERATION', 'No text selected for generation');
-            return;
-        }
+    const config = await storage.getConfig();
 
-        logger.logInfo('GENERATION', 'User initiated image generation', {
-            selectionLength: currentSelection.length,
-            selectionPreview: currentSelection.substring(0, 100) + (currentSelection.length > 100 ? '...' : '')
-        });
-
-        const config = await storage.getConfig();
-
-        if (config.selectedProvider === 'Google' && !config.googleApiKey) {
-            logger.logWarn('GENERATION', 'Google provider selected but no API key provided');
-            googleApiPrompt.show();
-            return;
-        }
-
-        let finalPrompt = currentSelection;
-        let prefix = '';
-        
-        // StyledPrompt = StylePrefix + SelectedText
-        if (config.customStyleEnabled && config.customStyleText) {
-            prefix = config.customStyleText.trim();
-            if (prefix && !prefix.endsWith(', ')) prefix += ', ';
-        } else if (config.mainPromptStyle !== 'None') {
-            prefix = (config.subPromptStyle && config.subPromptStyle !== 'none')
-                ? config.subPromptStyle
-                : `${config.mainPromptStyle} style, `;
-        }
-        finalPrompt = prefix + finalPrompt;
-        
-        // If AI Enhancement is enabled and used, it operates on StyledPrompt and becomes EnhancedPrompt.
-        if (config.enhancementEnabled) {
-            const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(config.selectedProvider, config);
-            const hasApiKey = (config.enhancementApiKey || '').trim().length > 0;
-            const shouldUseExternalEnhancement = (!shouldUseProviderEnh || config.enhancementOverrideProvider) && hasApiKey;
-
-            if (shouldUseExternalEnhancement) {
-                enhancementInFlightCount++;
-                const startQueueText = enhancementInFlightCount > 1 ? ` (Queue: ${enhancementInFlightCount})` : '';
-                statusWidget.update('loading', `Enhancing prompt...${startQueueText}`);
-                try {
-                    // Clean prompt for enhancement API call
-                    // IMPORTANT: Enhancement must ONLY see the positive prompt (style + user text), never global negatives
-                    const cleanPromptForEnhancement = getApiReadyPrompt(finalPrompt, 'enhancement_positive_only');
-                    finalPrompt = await apiGemini.enhancePromptWithGemini(cleanPromptForEnhancement, config);
-                    enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
-                    const successQueueText = enhancementInFlightCount > 0 ? ` (Queue: ${enhancementInFlightCount})` : '';
-                    statusWidget.update('success', `Prompt enhanced!${successQueueText}`);
-                    setTimeout(() => updateSystemStatus(), 2000);
-                } catch (error) {
-                    enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
-                    const errorQueueText = enhancementInFlightCount > 0 ? ` (Queue: ${enhancementInFlightCount})` : '';
-                    logger.logError('ENHANCEMENT', 'External AI enhancement failed, falling back to original', { error: error.message });
-                    statusWidget.update('error', `Enhancement failed, using original prompt${errorQueueText}`);
-                    setTimeout(() => updateSystemStatus(), 3000);
-                }
-            }
-        }
-
-        // NOTE (Objective 4):
-        // Global negative prompt is applied ONLY at provider dispatch time for providers that explicitly support it.
-        // Do NOT concatenate globalNegPrompt into finalPrompt here.
-
-        logger.logInfo('GENERATION', 'Prompt preparation completed, adding to queue', {
-            provider: config.selectedProvider,
-            basePositivePromptLength: finalPrompt.length,
-            basePositivePromptPreview: finalPrompt.substring(0, 200) + (finalPrompt.length > 200 ? '...' : ''),
-            queueSystem: 'FIFO'
-        });
-        
-        // finalPrompt is now StyledPrompt or EnhancedPrompt (positive-only).
-        // Provider-specific negative behavior is applied later at dispatch/API modules.
-        addToGenerationQueue(finalPrompt, config.selectedProvider, config.openAICompatActiveProfileUrl);
+    if (config.selectedProvider === "Google" && !config.googleApiKey) {
+      logger.logWarn(
+        "GENERATION",
+        "Google provider selected but no API key provided",
+      );
+      googleApiPrompt.show();
+      return;
     }
 
-    function handleSelection() {
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) {
-            if(generateBtn) generateBtn.style.display = 'none';
-            return;
-        }
-        const selectedText = selection.toString().trim();
+    let finalPrompt = currentSelection;
+    let prefix = "";
 
-        if (selectedText.length > 5) {
-            currentSelection = selectedText;
-            const range = selection.getRangeAt(0);
-            const rects = range.getClientRects();
-            if (rects.length === 0) {
-                generateBtn.style.display = 'none';
-                return;
-            }
-            const firstRect = rects[0];
-            generateBtn.style.display = 'block';
-            const buttonHeight = generateBtn.offsetHeight || 30;
-            let topPosition = window.scrollY + firstRect.top - buttonHeight - 5;
-            if (topPosition < window.scrollY) {
-                const lastRect = rects[rects.length - 1];
-                topPosition = window.scrollY + lastRect.bottom + 5;
-            }
-            generateBtn.style.top = `${topPosition}px`;
-            generateBtn.style.left = `${window.scrollX + firstRect.left}px`;
-        } else {
-            if(generateBtn) generateBtn.style.display = 'none';
-        }
+    // StyledPrompt = StylePrefix + SelectedText
+    if (config.customStyleEnabled && config.customStyleText) {
+      prefix = config.customStyleText.trim();
+      if (prefix && !prefix.endsWith(", ")) {
+        prefix += ", ";
+      }
+    } else if (config.mainPromptStyle !== "None") {
+      prefix =
+        config.subPromptStyle && config.subPromptStyle !== "none"
+          ? config.subPromptStyle
+          : `${config.mainPromptStyle} style, `;
     }
+    finalPrompt = prefix + finalPrompt;
 
-    // --- INITIALIZATION ---
-    async function init() {
-        await logger.updateLoggingStatus();
+    // If AI Enhancement is enabled and used, it operates on StyledPrompt and becomes EnhancedPrompt.
+    if (config.enhancementEnabled) {
+      const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(
+        config.selectedProvider,
+        config,
+      );
+      const hasApiKey = (config.enhancementApiKey || "").trim().length > 0;
+      const shouldUseExternalEnhancement =
+        (!shouldUseProviderEnh || config.enhancementOverrideProvider) &&
+        hasApiKey;
 
-        // Clean old history entries on startup to maintain data integrity
+      if (shouldUseExternalEnhancement) {
+        enhancementInFlightCount++;
+        const startQueueText =
+          enhancementInFlightCount > 1
+            ? ` (Queue: ${enhancementInFlightCount})`
+            : "";
+        statusWidget.update("loading", `Enhancing prompt...${startQueueText}`);
         try {
-            const removedCount = await storage.cleanOldHistory();
-            if (removedCount > 0) {
-                logger.logInfo('INIT', `Cleaned ${removedCount} old history entries on startup`);
-            }
+          // Clean prompt for enhancement API call
+          // IMPORTANT: Enhancement must ONLY see the positive prompt (style + user text), never global negatives
+          const cleanPromptForEnhancement = getApiReadyPrompt(
+            finalPrompt,
+            "enhancement_positive_only",
+          );
+          finalPrompt = await apiGemini.enhancePromptWithGemini(
+            cleanPromptForEnhancement,
+            config,
+          );
+          enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+          const successQueueText =
+            enhancementInFlightCount > 0
+              ? ` (Queue: ${enhancementInFlightCount})`
+              : "";
+          statusWidget.update("success", `Prompt enhanced!${successQueueText}`);
+          setTimeout(() => updateSystemStatus(), 2000);
         } catch (error) {
-            logger.logError('INIT', 'Failed to clean old history entries on startup', { error: error.message });
+          enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+          const errorQueueText =
+            enhancementInFlightCount > 0
+              ? ` (Queue: ${enhancementInFlightCount})`
+              : "";
+          logger.logError(
+            "ENHANCEMENT",
+            "External AI enhancement failed, falling back to original",
+            { error: error.message },
+          );
+          statusWidget.update(
+            "error",
+            `Enhancement failed, using original prompt${errorQueueText}`,
+          );
+          setTimeout(() => updateSystemStatus(), 3000);
         }
-
-        // Create the main UI button
-        const materialSymbolsLink = document.createElement('link');
-        materialSymbolsLink.rel = 'stylesheet';
-        materialSymbolsLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0';
-        document.head.appendChild(materialSymbolsLink);
-        generateBtn = document.createElement('button');
-        generateBtn.className = 'nig-button';
-        generateBtn.innerHTML = '🎨 Generate Image';
-        generateBtn.addEventListener('click', onGenerateClick);
-        document.body.appendChild(generateBtn);
-
-        // Create and initialize all components
-        statusWidget.create();
-        imageViewer.create();
-        errorModal.create();
-        configPanel.create();
-        errorModal.init({
-            onRetry: retryGeneration,
-            onDismiss: handleErrorModalDismiss
-        });
-
-        // Register global event listeners
-        document.addEventListener('mouseup', handleSelection);
-        document.addEventListener('selectionchange', handleSelection);
-        GM_registerMenuCommand('Image Generator Settings', configPanel.show);
-
-        logger.logInfo('INIT', 'WTR LAB Novel Image Generator initialized successfully', {
-            config: await storage.getConfig()
-        });
+      }
     }
 
-    init();
+    // NOTE (Objective 4):
+    // Global negative prompt is applied ONLY at provider dispatch time for providers that explicitly support it.
+    // Do NOT concatenate globalNegPrompt into finalPrompt here.
 
+    logger.logInfo(
+      "GENERATION",
+      "Prompt preparation completed, adding to queue",
+      {
+        provider: config.selectedProvider,
+        basePositivePromptLength: finalPrompt.length,
+        basePositivePromptPreview:
+          finalPrompt.substring(0, 200) +
+          (finalPrompt.length > 200 ? "..." : ""),
+        queueSystem: "FIFO",
+      },
+    );
+
+    // finalPrompt is now StyledPrompt or EnhancedPrompt (positive-only).
+    // Provider-specific negative behavior is applied later at dispatch/API modules.
+    addToGenerationQueue(
+      finalPrompt,
+      config.selectedProvider,
+      config.openAICompatActiveProfileUrl,
+    );
+  }
+
+  function handleSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      if (generateBtn) {
+        generateBtn.style.display = "none";
+      }
+      return;
+    }
+    const selectedText = selection.toString().trim();
+
+    if (selectedText.length > 5) {
+      currentSelection = selectedText;
+      const range = selection.getRangeAt(0);
+      const rects = range.getClientRects();
+      if (rects.length === 0) {
+        generateBtn.style.display = "none";
+        return;
+      }
+      const firstRect = rects[0];
+      generateBtn.style.display = "block";
+      const buttonHeight = generateBtn.offsetHeight || 30;
+      let topPosition = window.scrollY + firstRect.top - buttonHeight - 5;
+      if (topPosition < window.scrollY) {
+        const lastRect = rects[rects.length - 1];
+        topPosition = window.scrollY + lastRect.bottom + 5;
+      }
+      generateBtn.style.top = `${topPosition}px`;
+      generateBtn.style.left = `${window.scrollX + firstRect.left}px`;
+    } else {
+      if (generateBtn) {
+        generateBtn.style.display = "none";
+      }
+    }
+  }
+
+  // --- INITIALIZATION ---
+  async function init() {
+    await logger.updateLoggingStatus();
+
+    // Clean old history entries on startup to maintain data integrity
+    try {
+      const removedCount = await storage.cleanOldHistory();
+      if (removedCount > 0) {
+        logger.logInfo(
+          "INIT",
+          `Cleaned ${removedCount} old history entries on startup`,
+        );
+      }
+    } catch (error) {
+      logger.logError(
+        "INIT",
+        "Failed to clean old history entries on startup",
+        { error: error.message },
+      );
+    }
+
+    // Create the main UI button
+    const materialSymbolsLink = document.createElement("link");
+    materialSymbolsLink.rel = "stylesheet";
+    materialSymbolsLink.href =
+      "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0";
+    document.head.appendChild(materialSymbolsLink);
+    generateBtn = document.createElement("button");
+    generateBtn.className = "nig-button";
+    generateBtn.innerHTML = "🎨 Generate Image";
+    generateBtn.addEventListener("click", onGenerateClick);
+    document.body.appendChild(generateBtn);
+
+    // Create and initialize all components
+    statusWidget.create();
+    imageViewer.create();
+    errorModal.create();
+    configPanel.create();
+    errorModal.init({
+      onRetry: retryGeneration,
+      onDismiss: handleErrorModalDismiss,
+    });
+
+    // Register global event listeners
+    document.addEventListener("mouseup", handleSelection);
+    document.addEventListener("selectionchange", handleSelection);
+    GM_registerMenuCommand("Image Generator Settings", configPanel.show);
+
+    logger.logInfo(
+      "INIT",
+      "WTR LAB Novel Image Generator initialized successfully",
+      {
+        config: await storage.getConfig(),
+      },
+    );
+  }
+
+  init();
 })();

@@ -1,4 +1,4 @@
-import { setConfigValue } from '../utils/storage.js';
+import { setConfigValue } from "../utils/storage.js";
 
 let promptElement = null;
 
@@ -9,12 +9,14 @@ let promptElement = null;
  * @param {function} onRetry - The callback function to execute on retry.
  */
 export function show(errorMessage, failedPrompt, onRetry) {
-    if (document.getElementById('nig-pollinations-auth-prompt')) return;
+  if (document.getElementById("nig-pollinations-auth-prompt")) {
+    return;
+  }
 
-    promptElement = document.createElement('div');
-    promptElement.id = 'nig-pollinations-auth-prompt';
-    promptElement.className = 'nig-modal-overlay';
-    promptElement.innerHTML = `
+  promptElement = document.createElement("div");
+  promptElement.id = "nig-pollinations-auth-prompt";
+  promptElement.className = "nig-modal-overlay";
+  promptElement.innerHTML = `
         <div class="nig-modal-content">
             <span class="nig-close-btn">&times;</span>
             <h2>Authentication Required</h2>
@@ -31,20 +33,26 @@ export function show(errorMessage, failedPrompt, onRetry) {
             </div>
             <button id="nig-prompt-save-token-btn" class="nig-save-btn">Save Token & Retry</button>
         </div>`;
-    document.body.appendChild(promptElement);
+  document.body.appendChild(promptElement);
 
-    const close = () => promptElement.remove();
+  const close = () => promptElement.remove();
 
-    promptElement.querySelector('.nig-close-btn').addEventListener('click', close);
-    promptElement.querySelector('#nig-prompt-save-token-btn').addEventListener('click', async () => {
-        const token = promptElement.querySelector('#nig-prompt-pollinations-token').value.trim();
-        if (token) {
-            await setConfigValue('pollinationsToken', token);
-            promptElement.remove();
-            alert('Token saved. Retrying generation...');
-            onRetry(failedPrompt, 'Pollinations');
-        } else {
-            alert('Token cannot be empty.');
-        }
+  promptElement
+    .querySelector(".nig-close-btn")
+    .addEventListener("click", close);
+  promptElement
+    .querySelector("#nig-prompt-save-token-btn")
+    .addEventListener("click", async () => {
+      const token = promptElement
+        .querySelector("#nig-prompt-pollinations-token")
+        .value.trim();
+      if (token) {
+        await setConfigValue("pollinationsToken", token);
+        promptElement.remove();
+        alert("Token saved. Retrying generation...");
+        onRetry(failedPrompt, "Pollinations");
+      } else {
+        alert("Token cannot be empty.");
+      }
     });
 }
