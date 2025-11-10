@@ -1,105 +1,132 @@
-# 🚀 WTR LAB Novel Image Generator
+# 🚀 WTR LAB Novel Image Generator 🖼️
 
-[![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
+[![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.5-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.5-blue.svg)](Changelog.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/)
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
-## ✨ Overview
-
-WTR LAB Novel Image Generator is a modern userscript that turns your WTR-LAB novel reading into a visual experience. Select text on `wtr-lab.com` and generate AI-powered images via multiple providers with a clean UI, modular architecture, prompt enhancement, history, and powerful configuration options.
+WTR LAB Novel Image Generator is a modern userscript that turns your novel reading into a visual experience. Select text on `wtr-lab.com` and generate AI-powered images via multiple providers with a clean UI, prompt enhancement, history, and powerful configuration options.
 
 ## ✨ Key Features
 
-- 🔄 **Multi-provider support**: Pollinations, AI Horde, OpenAI-compatible, Google Imagen
-- 🚀 **AI Prompt Enhancement**: Via Gemini with smart queue behavior and immediate status updates
-- 🎛️ **Rich configuration panel**: Import/export, backward-compatible normalization, and provider-specific settings
-- 🧱 **Fully modular architecture**: Maintainable, stable, and extensible codebase
-- 🖼️ **Unified image viewer**: History, cleanup tools, mobile-friendly layout, and professional UI
-- 📱 **Mobile-first design**: Optimized for desktop and mobile reading experiences
-- 🔒 **Privacy-focused**: Local storage with exportable logs and configuration
-- 🌐 **Cross-browser compatible**: Works seamlessly across all modern browsers
+*   **🔄 Multi-Provider Support**: Generate images using Pollinations, AI Horde, Google Imagen, and any OpenAI-compatible API.
+*   **🚀 AI Prompt Enhancement**: Uses Google Gemini to automatically improve your selected text for better image results, with a smart queue and custom templates.
+*   **🎛️ Rich Configuration**: An extensive settings panel to manage API keys, models, prompt styles, and more, with import/export functionality.
+*   **🖼️ Unified Image Viewer**: A clean, mobile-friendly viewer to inspect, download, and manage your image generation history.
+*   **🧱 Modular Architecture**: A professional, webpack-based structure ensures stability, maintainability, and makes it easy to add new features.
+*   **📱 Mobile-First Design**: The entire interface is optimized for a seamless experience on both desktop and mobile devices.
 
 ## 📥 Installation
 
-1. **Install a userscript manager** (Tampermonkey recommended)
-   - [Chrome Extension](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-   - [Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
-   - [Edge Add-on](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
+1.  **Install a Userscript Manager**: [Tampermonkey](https://www.tampermonkey.net/) is highly recommended.
+    *   [Chrome Extension](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+    *   [Firefox Add-on](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+    *   [Edge Add-on](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd)
 
-2. **Install the script**
-   - Use the [GreasyFork page](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator) (recommended) or
-   - Load the built script from the `dist/` directory into Tampermonkey
+2.  **Install the Script**:
+    *   **Recommended**: Install directly from the **[➡️ GreasyFork Page](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator)**.
+    *   **Alternative**: Download the latest release from the `dist/` directory and manually import it into Tampermonkey.
 
-3. **Start creating! 🎉**
-   - Navigate to `https://wtr-lab.com/en/novel/...`
-   - Select descriptive text to generate images
-
-## ⚙️ Configuration Overview
-
-**API Providers**: AI Horde, Pollinations, Google Imagen, and OpenAI-compatible endpoints  
-**AI Prompt Enhancement**: Gemini-powered enhancement with clear queue indicators and immediate status updates  
-**Negative Prompt Handling**: Correct behavior for AI Horde with proper `negative_prompt` support  
-**Templates & Persistence**: Custom enhancement templates persist across all user workflows  
-**Dimensions & UI**: Standardized Pollinations controls and polished mobile-friendly layout  
-**History & Maintenance**: Built-in cleanup tools and reliable mobile layout
+3.  **Start Creating!** 🎉 Navigate to any novel on `https://wtr-lab.com`, and you're ready to go.
 
 ## 📚 Usage
 
-1. **Highlight descriptive text** in any WTR-LAB chapter
-2. **Click "🎨 Generate Image"** when the floating button appears
-3. **Monitor progress** via the status widget for queue, enhancement, and error states
-4. **View results** in the image viewer to inspect, download, and manage generated images
-5. **Configure settings** (Tampermonkey menu → "Image Generator Settings") for:
-   - API keys, models, and endpoints
-   - AI Prompt Enhancement enabling/disabling
-   - Enhancement templates and global settings
+1.  While reading a chapter, **highlight any descriptive text** with your mouse or finger.
+2.  The **"🎨 Generate Image"** button will appear. Click it.
+3.  Watch the status widget for progress updates, including prompt enhancement and image generation.
+4.  Once complete, open the image viewer to see, download, or manage your creations.
+5.  To customize settings, open the Tampermonkey menu and click **"Image Generator Settings"**.
 
-## 🏗️ Architecture
+<details>
+<summary><b>⚙️ Click to see In-Depth Configuration Details</b></summary>
 
-Built as a modular, webpack-bundled userscript following professional development practices:
+The configuration panel gives you full control over the script.
 
-- `src/api/` – provider integrations (AI Horde, Pollinations, Google, OpenAI-compatible, Gemini)
-- `src/components/` – UI pieces (status widget, viewer, config, prompts, history)
-- `src/config/` – defaults, model maps, shared styles, and configuration management
-- `src/core/` – bootstrapping, events, and core application flow
-- `src/utils/` – logging, storage, prompt utilities, file helpers, and caching
-- `src/styles/` – layered CSS for base, layout, components, themes, and utilities
+### 🎨 Prompt Styling
+Choose from comprehensive art style categories to guide the AI:
+- **Anime Styles**: 10+ sub-styles for various anime aesthetics.
+- **Fantasy Styles**: Magical and mythical art approaches.
+- **Realism Styles**: Photorealistic and realistic rendering.
+- **Custom Templates**: Create and save your own personalized enhancement styles.
 
-This modular structure enables safer changes, better debugging, and clean separation of concerns.
+### ⚙️ Provider Settings
+- **API Configuration**: Set up keys and endpoints for each provider.
+- **Model Selection**: Choose specific models for each service.
+- **Generation Parameters**: Fine-tune quality, speed, and style settings.
+- **Fallback Logic**: Configure automatic provider switching on failure.
 
-## 🆕 What's New in v6.0.5
+### 🔄 AI Enhancement
+- **Gemini Integration**: Set up your Google Gemini API key for prompt enhancement.
+- **Enhancement Templates**: Create and save custom enhancement styles.
+- **Preview Mode**: Compare the original text vs. the enhanced prompt before generating.
 
-Latest improvements focus on stability, UI refinements, and enhanced user experience:
+### 📊 History & Maintenance
+- **Generation History**: View all generated images with their metadata.
+- **Export/Import**: Backup and restore your settings and history.
+- **Cleanup Tools**: Manage local storage and remove old entries.
 
-- 🧹 **History & UI Fixes**: Improved History Tab Cleaner layout and mobile-friendly input widths
-- 🔄 **Config Import/Export**: Enhanced backward compatibility between legacy (5.7.x) and 6.x formats
-- 🎯 **Provider Behavior**: Corrected global negative prompt handling for AI Horde
-- 🚀 **Enhancement System**: Improved queue behavior and immediate status updates after config changes
-- 📏 **Consistent UX**: Standardized Pollinations controls and polished layout
-- 📝 **Template Persistence**: Reliable enhancement template storage across all user workflows
-- 🖼️ **Image Viewer**: Better modal layering and close-button accessibility
+</details>
 
-For complete changelog, see [Changelog.md](Changelog.md).
+## 📊 Provider Comparison
 
-## 📦 Links
+| Provider          | Speed       | Cost    | Quality    | Best For                               |
+| ----------------- | ----------- | ------- | ---------- | -------------------------------------- |
+| **Pollinations**  | ⚡ Fast     | 💰 Free | ⭐⭐⭐     | Quick experiments and free usage       |
+| **AI Horde**      | 🐌 Variable | 💰 Free | ⭐⭐⭐⭐   | High-quality results from a community  |
+| **Google Imagen** | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Premium quality and advanced controls  |
+| **OpenAI Comp.**  | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Connecting to custom or premium APIs   |
 
-- 📜 **Changelog**: [Changelog.md](Changelog.md)
-- 🧩 **GreasyFork Script Page**: https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator
-- 🗂️ **Source & Issues**: https://github.com/MasuRii/wtr-lab-novel-image-generator
+## 🏗️ For Developers & Contributors
 
-## 🤝 Contributing
+We welcome contributions! Whether it's reporting a bug, suggesting a feature, or writing code, your help is appreciated.
 
-- 🐛 **Report bugs** via GitHub Issues with clear reproduction steps
-- 💡 **Propose enhancements** focused on UX, performance, or provider support
-- 📖 **Improve documentation** to help new users onboard quickly
-- 🌟 **Join the community** and help make novel reading more immersive
+### 🤝 How to Contribute
+1.  **Report Issues**: Find a bug? [Open an issue](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues) with clear reproduction steps.
+2.  **Suggest Features**: Have a great idea? We'd love to hear it!
+3.  **Submit Pull Requests**: Fork the repo, create a feature branch, and submit a PR.
+
+### 🛠️ Development Setup
+
+The project is built using a modern, modular structure with webpack.
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server with hot-reloading
+npm run dev
+
+# Create an optimized production build
+npm run build
+```
+
+### 🏛️ Architecture Overview
+
+The codebase is cleanly organized for maintainability and scalability.
+
+```
+src/
+├── api/          # AI provider integrations (AI Horde, Gemini, Google, etc.)
+├── components/   # UI components (Config Panel, Image Viewer, Status Widget)
+├── config/       # Default settings, models, and shared styles
+├── core/         # Core application logic, event handling, and bootstrapping
+├── styles/       # Global and component-specific CSS
+└── utils/        # Helper functions (logging, storage, prompt processing)
+```
+
+## 🔗 Quick Links
+
+-   **📜 Changelog**: [Changelog.md](Changelog.md)
+-   **🧩 GreasyFork**: [Script Page](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator)
+-   **🗂️ Source & Issues**: [GitHub Repository](https://github.com/MasuRii/wtr-lab-novel-image-generator)
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for full terms. Use freely for personal and commercial projects, modify and distribute with attribution.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-*Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling.*
-
-_Questions? [Open an Issue](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues)_
+_Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling._
