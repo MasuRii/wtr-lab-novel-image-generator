@@ -4,11 +4,88 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.5] - 2025-11-09
+## [6.0.5] - 2025-11-10
 
-### 🏗️ MINOR: Configuration Reliability, History UX, UI Safety, Prompt Routing Consistency, Enhancement Preset Optimization, and Structured Error Guidance
+### 🏗️ MINOR: Multi-Build System, Centralized Versioning, and Documentation Synchronization
 
-This release on the `Fixing--Version-6.0.5` branch focuses on hardening configuration import/export behavior, improving the History tab prompt display, adding safeguards around UI rendering, aligning prompt/negative-prompt routing with the legacy 5.7.0 userscript, optimizing AI Prompt Enhancement presets and behavior while preserving user-intended styling, and consolidating structured error handling for OpenAI-compatible and other providers.
+This release focuses on aligning the WTR LAB Novel Image Generator build and versioning pipeline with the PROJECT_WORKSPACE_GUIDE multi-build and versioning model. It introduces a structured multi-target webpack configuration, centralized version management, automatic documentation updates, and GreasyFork-safe artifact handling, while preserving backward compatibility for existing users and consumers.
+
+#### 🆕 Build System & Multi-Build Enhancements
+
+- ✅ Introduced a multi-config Webpack setup in [`webpack.config.js`](webpack.config.js:1) that exports three named configurations:
+  - `performance`:
+    - Production-optimized bundle.
+    - Outputs `wtr-lab-novel-image-generator.user.js` (unchanged name for backward compatibility).
+    - Uses `VERSION_INFO` for userscript metadata version.
+  - `greasyfork`:
+    - GreasyFork-compliant bundle.
+    - Outputs `wtr-lab-novel-image-generator.greasyfork.user.js` and `.meta.js` without embedding the version in the filename so each build overwrites previous artifacts.
+    - Keeps code readable (no minification) while enabling safe optimizations (tree-shaking/scope hoisting).
+    - Omits `@updateURL` and `@downloadURL` to respect GreasyFork policy.
+  - `dev`:
+    - Development configuration with proxy userscript.
+    - Outputs `wtr-lab-novel-image-generator.dev.user.js` and proxy script for local testing.
+    - Uses a dev-suffixed version (`{SEMVER}-dev.[buildTime]`) for clarity.
+- ✅ Ensured `npm run build` runs the multi-config Webpack build so all three targets are generated together while retaining the original primary artifact name.
+
+#### 🆕 Centralized Versioning & Automation
+
+- ✅ Added [`config/versions.js`](config/versions.js:1) as the single source of truth for build and display versions:
+  - Derives `VERSION_INFO` using:
+    - `WTR_VERSION` / `APP_VERSION` (if set and valid),
+    - else `package.json` `version`,
+    - with strict semver validation and clear error messages on invalid/missing values.
+  - Exposes:
+    - `SEMANTIC`, `DISPLAY`, `BUILD_DATE`, `BUILD_ENV`,
+    - and mapped fields for `GREASYFORK`, `NPM`, `BADGE`, `CHANGELOG`.
+  - Provides a small `VersionManager` helper API for tooling and metadata generation.
+- ✅ Created [`scripts/update-versions.js`](scripts/update-versions.js:1) to propagate VERSION_INFO across key files:
+  - `update`:
+    - Syncs `package.json` version to `VERSION_INFO.SEMANTIC` (if needed).
+    - Updates `README.md`:
+      - Title version suffix `(vX.Y.Z)`.
+      - Top version badge `version-X.Y.Z-blue.svg`.
+      - Footer line `_Last Updated: ..._ | _Current Version: ..._` using `BUILD_DATE` and `SEMANTIC`.
+      - Does NOT touch historical "**Latest: vX.Y.Z**" changelog entries.
+    - Updates `GreasyForkREADME.md`:
+      - Top version badge.
+      - Footer `_Last Updated` / `_Current Version` line if present.
+      - Does NOT modify historical "**Latest: vX.Y.Z**" content.
+  - `version`, `banner`, `header`:
+    - Provide introspection and header/banner output for CI and tooling.
+  - All file operations include robust error handling with clear logging and non-zero exit codes for CI safety.
+
+#### 🆕 NPM Scripts & Workflow Integration
+
+- ✅ Updated [`package.json`](package.json:1) scripts to integrate the new system:
+  - `"build": "npm run version:update && webpack --mode=production"`
+    - Guarantees documentation and metadata are updated before every build.
+  - `"build:performance"`, `"build:greasyfork"`, `"build:devbundle"`:
+    - Allow explicit target builds using the same multi-config setup.
+  - `"dev": "webpack serve --config webpack.config.js --mode=development"`:
+    - Uses the `dev` config for local development (not used in CI as per requirements).
+  - `"version:update"`, `"version:check"`, `"version:banner"`, `"version:header"`:
+    - Provide a clear version-management interface aligned with PROJECT_WORKSPACE_GUIDE.
+
+#### 🔧 Behavior, Compatibility & Policy Safeguards
+
+- ✅ Backward compatibility:
+  - The primary production artifact remains `wtr-lab-novel-image-generator.user.js`, ensuring existing installation/update URLs and user workflows continue to function.
+  - No breaking changes to the core runtime API or configuration schema as part of this build pipeline update.
+- ✅ GreasyFork storage efficiency:
+  - The GreasyFork bundle now uses stable filenames without embedded versions, preventing accumulation of version-suffixed files and keeping deployment clean.
+- ✅ Error handling and resilience:
+  - `config/versions.js` and `scripts/update-versions.js`:
+    - Fail fast with explicit messages when version configuration is invalid.
+    - Provide predictable, CI-friendly non-zero exit codes when critical issues occur (e.g., malformed JSON, missing version).
+- ✅ Developer workflow simplification:
+  - To release a new version:
+    - Update only `version` in `package.json` to the desired semver.
+    - Run `npm run build`.
+    - The system automatically:
+      - Syncs documentation metadata (README, GreasyForkREADME),
+      - Produces all build artifacts (performance, GreasyFork, dev) with consistent versioning.
+
 
 #### 🆕 Enhancements
 

@@ -1,8 +1,8 @@
-# 🚀 WTR LAB Novel Image Generator 🖼️ (v6.0.4)
+# 🚀 WTR LAB Novel Image Generator 🖼️ (v6.0.5)
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.4-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.5-blue.svg)](Changelog.md) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]() [![Modular Architecture](https://img.shields.io/badge/Architecture-Modular-purple.svg)]()
 
 ## ✨ Overview
 
@@ -406,4 +406,4 @@ This project is MIT licensed. See [LICENSE](LICENSE) for details.
 _Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_
 
 _Questions? [Open an Issue](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues)_  
-_Last Updated: November 08, 2025_ | _Current Version: 6.0.2_ (Known Issues)
+_Last Updated: 2025-11-10_ | _Current Version: 6.0.5_ (Known Issues)

@@ -4,8 +4,15 @@
   "description": "A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.",
   "private": true,
   "scripts": {
-    "build": "webpack --mode=production",
-    "dev": "webpack serve --mode=development"
+    "build": "npm run version:update && webpack --mode=production",
+    "build:performance": "webpack --config webpack.config.js --mode=production",
+    "build:greasyfork": "webpack --config webpack.config.js --mode=production",
+    "build:devbundle": "webpack --config webpack.config.js --mode=development",
+    "dev": "webpack serve --config webpack.config.js --mode=development",
+    "version:update": "node scripts/update-versions.js update",
+    "version:check": "node scripts/update-versions.js version",
+    "version:banner": "node scripts/update-versions.js banner",
+    "version:header": "node scripts/update-versions.js header"
   },
   "author": "MasuRii",
   "license": "MIT",

@@ -2,7 +2,7 @@
 
 [![ezgif.com animated gif maker](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.4-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Version](https://img.shields.io/badge/version-6.0.5-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 A professional userscript that transforms your novel reading experience by generating AI-powered images from text descriptions. Seamlessly integrate image generation into your reading workflow on `wtr-lab.com` with support for multiple AI providers and advanced prompt enhancement. Why? Because visual storytelling makes stories come alive! 🎨
 
@@ -208,4 +208,4 @@ This project is MIT licensed. See LICENSE for details.
 ---
 
 _Built with ❤️ for novel enthusiasts who believe in the power of visual storytelling_ | _Questions? [Open an Issue](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/feedback)_
-_Last Updated: November 08, 2025_ | _Current Version: 6.0.4_
+_Last Updated: 2025-11-10_ | _Current Version: 6.0.5_
