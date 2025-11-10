@@ -535,7 +535,9 @@ import * as configPanel from "./components/configPanel.js";
             enhancementInFlightCount > 0
               ? ` (Queue: ${enhancementInFlightCount})`
               : "";
-          logger.logError(
+          // External enhancement failure is expected to gracefully fall back.
+          // Log as non-critical ENHANCEMENT info so it respects the logging toggle.
+          logger.logInfo(
             "ENHANCEMENT",
             "External AI enhancement failed, falling back to original",
             { error: error.message },

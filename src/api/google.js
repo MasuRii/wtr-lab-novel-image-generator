@@ -1,5 +1,6 @@
 import { getConfig } from "../utils/storage.js";
 import { getApiReadyPrompt } from "../utils/promptUtils.js";
+import { logDebug } from "../utils/logger.js";
 
 /**
  * Generates an image using the Google Imagen API.
@@ -35,7 +36,8 @@ export async function generate(prompt, { onSuccess, onFailure }) {
   // Apply prompt cleaning on the fully-formed FinalPrompt
   const cleanPrompt = getApiReadyPrompt(finalPrompt, "google_api_final");
 
-  console.log("[NIG-DEBUG] [GOOGLE] Prompt construction:", {
+  // Debug-only diagnostics respecting the global logging toggle
+  logDebug("GOOGLE", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,

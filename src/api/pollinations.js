@@ -1,6 +1,7 @@
 import { getConfig } from "../utils/storage.js";
 import { clearCachedModels } from "../utils/cache.js";
 import { getApiReadyPrompt } from "../utils/promptUtils.js";
+import { logDebug } from "../utils/logger.js";
 
 /**
  * Generates an image using the Pollinations.ai API.
@@ -47,11 +48,11 @@ export async function generate(
   const finalModel = model || "flux";
 
   // Debug logging to track model configuration and prompt construction
-  console.log("[NIG-DEBUG] [POLLINATIONS] Model configuration:", {
+  logDebug("POLLINATIONS", "Model configuration", {
     originalModel: model,
     finalModel: finalModel,
   });
-  console.log("[NIG-DEBUG] [POLLINATIONS] Prompt construction:", {
+  logDebug("POLLINATIONS", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,

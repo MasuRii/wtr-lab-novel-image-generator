@@ -2,19 +2,20 @@
 import {
   updateVisibleSettings,
   updateSubStyles,
+  exportConfig,
+  handleImportFile,
 } from "../config/configManager.js";
-import {
-  populateHistoryTab,
-  cleanHistory,
-  handleHistoryDaysChange,
-} from "./historyManager.js";
-import { exportConfig, handleImportFile } from "../config/configManager.js";
-import { updateEnhancementUI } from "./enhancementPanel.js";
 import * as cache from "../utils/cache.js";
 import * as storage from "../utils/storage.js";
 import * as logger from "../utils/logger.js";
 import * as models from "../api/models.js";
 import { PROMPT_CATEGORIES } from "../config/styles.js";
+import { updateEnhancementUI } from "./enhancementPanel.js";
+import {
+  populateHistoryTab,
+  cleanHistory,
+  handleHistoryDaysChange,
+} from "./historyManager.js";
 
 /**
  * Initialize show/hide toggles for all password-like API key fields.

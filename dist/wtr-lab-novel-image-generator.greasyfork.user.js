@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator
 // @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.0.5
+// @version 6.0.6
 // @author MasuRii
+// @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
 // @connect *
 // @grant GM_setValue
@@ -520,29 +521,65 @@ async function updateLoggingStatus() {
  * @param {any} [data=null] - Optional data to log.
  */
 function log(level, category, message, data = null) {
-  if (!loggingEnabled) {
+  const normalizedLevel = (level || "").toLowerCase();
+
+  // Always log critical errors and warnings, regardless of toggle state
+  const isCritical =
+    normalizedLevel === "error" ||
+    normalizedLevel === "warn" ||
+    category === "SECURITY" ||
+    category === "ERROR" ||
+    category === "APP" ||
+    category === "CONFIG_IMPORT";
+
+  if (!loggingEnabled && !isCritical) {
+    // When logging is disabled, completely suppress debug/info and non-critical logs
     return;
   }
 
   const timestamp = new Date().toISOString();
-  const logEntry = { timestamp, level, category, message, data };
+  const logEntry = {
+    timestamp,
+    level: normalizedLevel,
+    category,
+    message,
+    data,
+  };
 
-  const prefix = `[NIG-${level.toUpperCase()}]`;
+  const prefix = `[NIG-${normalizedLevel.toUpperCase()}]`;
   const categoryPrefix = `[${category}]`;
   const style = {
     error: "color: #ef4444",
     warn: "color: #f59e0b",
     debug: "color: #8b5cf6",
     info: "color: #6366f1",
-  }[level];
+  }[normalizedLevel];
 
-  if (data) {
-    console.log(`%c${prefix}`, style, categoryPrefix, message, data);
+  // Route to appropriate console method, ensuring critical visibility
+  const consoleMethod = (() => {
+    if (normalizedLevel === "error") {
+      return console.error;
+    }
+    if (normalizedLevel === "warn") {
+      return console.warn;
+    }
+    if (normalizedLevel === "info") {
+      return console.info;
+    }
+    if (normalizedLevel === "debug") {
+      return console.debug || console.log;
+    }
+    return console.log;
+  })();
+
+  if (data !== null && data !== undefined) {
+    consoleMethod(`%c${prefix}`, style, categoryPrefix, message, data);
   } else {
-    console.log(`%c${prefix}`, style, categoryPrefix, message);
+    consoleMethod(`%c${prefix}`, style, categoryPrefix, message);
   }
 
-  if (category === "ENHANCEMENT") {
+  // Persist enhancement-related logs for history when logging is enabled
+  if (loggingEnabled && category === "ENHANCEMENT") {
     enhancementLogHistory.unshift(logEntry);
     if (enhancementLogHistory.length > 50) {
       enhancementLogHistory = enhancementLogHistory.slice(0, 50);
@@ -1108,18 +1145,85 @@ function populateAIHordeSelect(select, models, selectedModel) {
 }
 
 /**
- * Checks if a model is free to use
+ * Checks if a model is free to use, based primarily on plan_requirements.
+ *
+ * New rules:
+ * - FREE if plan_requirements contains "free"
+ * - PAID if plan_requirements does NOT contain "free" but contains "basic" or any higher tier
+ * - Ignore intermediate tiers as separate categories; only free vs paid matters
+ *
+ * Robust handling:
+ * - If plan_requirements missing/empty/malformed → fall back to legacy fields for backward compatibility
+ *
+ * @param {object} model
+ * @returns {boolean} true if classified as free, false otherwise
  */
 function isModelFree(model) {
+  if (!model || typeof model !== "object") {
+    // Malformed data - safe default is paid
+    return false;
+  }
+
+  const tiersPriority = {
+    free: 0,
+    economy: 1,
+    basic: 2,
+    premium: 3,
+    pro: 4,
+    ultra: 5,
+    enterprise: 6,
+    admin: 7,
+  };
+
+  const hasValidPlanRequirements =
+    Object.prototype.hasOwnProperty.call(model, "plan_requirements") &&
+    Array.isArray(model.plan_requirements);
+
+  if (hasValidPlanRequirements) {
+    const normalized = model.plan_requirements
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t);
+
+    if (normalized.length > 0) {
+      if (normalized.includes("free")) {
+        return true;
+      }
+
+      // Detect if any basic-or-higher tier is present.
+      const hasBasicOrHigher = normalized.some((t) => {
+        const rank = tiersPriority[t];
+        return typeof rank === "number" && rank >= tiersPriority.basic;
+      });
+
+      if (hasBasicOrHigher) {
+        return false;
+      }
+
+      // If we reach here, plan_requirements existed but only contained unknown/low tiers
+      // that are not explicitly "free" and not mapped as paid → safe default is paid.
+      return false;
+    }
+    // If it's an array but empty, fall through to legacy logic.
+  }
+
+  // Legacy / backward-compatible behavior:
   if (typeof model.is_free === "boolean") {
     return model.is_free;
   }
   if (typeof model.premium_model === "boolean") {
     return !model.premium_model;
   }
-  if (Array.isArray(model.tiers) && model.tiers.includes("Free")) {
-    return true;
+  if (Array.isArray(model.tiers)) {
+    const normalizedTiers = model.tiers
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim().toLowerCase());
+    if (normalizedTiers.includes("free")) {
+      return true;
+    }
   }
+
+  // Default safe behavior when nothing else is conclusive: treat as paid.
   return false;
 }
 
@@ -2019,7 +2123,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
   margin-top: var(--nig-space-sm);
   max-height: 150px;
   overflow-y: auto;
-  word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   font-family: "Fira Code", Monaco, Consolas, monospace;
@@ -2035,7 +2138,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
   margin-top: var(--nig-space-lg);
   max-height: 200px;
   overflow-y: auto;
-  word-break: break-word;
+  overflow-wrap: break-word;
   font-family: "Fira Code", Monaco, Consolas, monospace;
   width: 100%;
   resize: vertical;
@@ -2176,8 +2279,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography and Font Loadin
   }
 }
 
-/* === High Contrast Mode Support === */
-@media (prefers-contrast: high) {
+/* === High Contrast Mode Support ===
+ * Use prefers-contrast: more for standards-aligned high contrast enhancement.
+ */
+@media (prefers-contrast: more) {
   :root {
     --nig-color-bg-primary: #000;
     --nig-color-bg-secondary: #1a1a1a;
@@ -3785,7 +3890,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.4;
 }
 
@@ -4036,7 +4141,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   color: var(--nig-color-text-secondary);
   max-height: 120px;
   overflow-y: auto;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
 }
 
@@ -4088,7 +4193,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   overflow: hidden;
   padding: 0 var(--nig-space-lg);
   border-top: 1px solid transparent;
-  word-break: break-word;
+  overflow-wrap: break-word;
   color: var(--nig-color-text-secondary);
   line-height: 1.6;
   transition: all var(--nig-transition-normal);
@@ -4112,7 +4217,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
  */
 #nig-prompt-text.nig-prompt-text {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 @keyframes nig-expand {
@@ -4683,20 +4788,10 @@ function isValidPrompt(prompt) {
  * @param {string} cleanedPrompt - The cleaned prompt
  * @param {string} context - Context where cleaning occurred
  */
-function logPromptCleaning(originalPrompt, cleanedPrompt, context) {
-  if (typeof window !== "undefined" && window.console) {
-    console.log(`[PROMPT-CLEANING] [${context}]`, {
-      originalLength: originalPrompt?.length || 0,
-      cleanedLength: cleanedPrompt?.length || 0,
-      wasCleaned: originalPrompt !== cleanedPrompt,
-      originalPreview:
-        originalPrompt?.substring(0, 100) +
-        (originalPrompt?.length > 100 ? "..." : ""),
-      cleanedPreview:
-        cleanedPrompt?.substring(0, 100) +
-        (cleanedPrompt?.length > 100 ? "..." : ""),
-    });
-  }
+function logPromptCleaning(_originalPrompt, _cleanedPrompt, _context) {
+  // Intentionally a no-op placeholder:
+  // - Callers may treat this as a debug hook.
+  // - Using underscored params keeps ESLint satisfied and documents intent.
 }
 
 /**
@@ -4905,6 +5000,7 @@ async function enhancePromptWithGemini(originalPrompt, config) {
     ...enhancementModelsFallback.filter((m) => m !== rawModel),
   ];
 
+  // High-level enhancement start: informational and toggle-controlled.
   (0,logger/* logInfo */.fH)("ENHANCEMENT", "Starting robust prompt enhancement with Gemini AI", {
     originalLength: originalPrompt.length,
     primaryModel: rawModel,
@@ -4959,7 +5055,9 @@ async function enhancePromptWithGemini(originalPrompt, config) {
         return enhancedText;
       } catch (error) {
         lastError = error;
-        (0,logger/* logError */.vV)(
+        // Routine enhancement attempt failure for a specific model/attempt.
+        // Use non-critical level so it respects the logging toggle while still being captured in enhancement logs when enabled.
+        (0,logger/* logInfo */.fH)(
           "ENHANCEMENT",
           `Enhancement failed for model ${model} (attempt ${attemptsForThisModel}/${enhancementMaxRetriesPerModel})`,
           {
@@ -4981,8 +5079,9 @@ async function enhancePromptWithGemini(originalPrompt, config) {
       }
     }
 
-    // If we exhausted retries for this model, try the next one
-    (0,logger/* logWarn */.JE)(
+    // If we exhausted retries for this model, try the next one.
+    // This is expected operational behavior, so keep it toggle-controlled.
+    (0,logger/* logInfo */.fH)(
       "ENHANCEMENT",
       `Exhausted retries for model ${model}, switching to next model`,
       {
@@ -5144,6 +5243,7 @@ function sleep(ms) {
 
 
 
+
 /**
  * Generates an image using the Google Imagen API.
  * @param {string} prompt - The generation prompt.
@@ -5178,7 +5278,8 @@ async function generate(prompt, { onSuccess, onFailure }) {
   // Apply prompt cleaning on the fully-formed FinalPrompt
   const cleanPrompt = getApiReadyPrompt(finalPrompt, "google_api_final");
 
-  console.log("[NIG-DEBUG] [GOOGLE] Prompt construction:", {
+  // Debug-only diagnostics respecting the global logging toggle
+  (0,logger/* logDebug */.MD)("GOOGLE", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,
@@ -5233,6 +5334,7 @@ var cache = __webpack_require__(168);
 
 
 
+
 /**
  * Generates an image using the Pollinations.ai API.
  * @param {string} prompt - The generation prompt.
@@ -5278,11 +5380,11 @@ async function pollinations_generate(
   const finalModel = model || "flux";
 
   // Debug logging to track model configuration and prompt construction
-  console.log("[NIG-DEBUG] [POLLINATIONS] Model configuration:", {
+  (0,logger/* logDebug */.MD)("POLLINATIONS", "Model configuration", {
     originalModel: model,
     finalModel: finalModel,
   });
-  console.log("[NIG-DEBUG] [POLLINATIONS] Prompt construction:", {
+  (0,logger/* logDebug */.MD)("POLLINATIONS", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,
@@ -5662,6 +5764,7 @@ async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) 
 
 
 
+
 /**
  * Detects if response content is HTML instead of JSON
  * @param {string} responseText - The response text to check
@@ -5762,7 +5865,8 @@ async function openAI_generate(
   // Apply prompt cleaning as a safety measure on the fully-formed FinalPrompt
   const cleanPrompt = getApiReadyPrompt(finalPrompt, "openai_api_final");
 
-  console.log("[NIG-DEBUG] [OPENAI-COMPAT] Prompt construction:", {
+  // Respect global logging toggle for debug-level diagnostics
+  (0,logger/* logDebug */.MD)("OPENAI-COMPAT", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,
@@ -6289,759 +6393,10 @@ function pollinationsAuthPrompt_show(errorMessage, failedPrompt, onRetry) {
     });
 }
 
-// EXTERNAL MODULE: ./src/config/defaults.js
-var defaults = __webpack_require__(753);
-;// ./src/config/styles.js
-const PROMPT_CATEGORIES = [
-  {
-    name: "None",
-    description: "No additional styling will be added to your prompt.",
-    subStyles: [],
-  },
-  {
-    name: "Anime",
-    description:
-      "Blends Japanese animation with global twists. Sub-styles often mix eras, genres, or crossovers for dynamic outputs.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Anime style, ...").',
-      },
-      {
-        name: "Studio Ghibli-Inspired",
-        description:
-          "Whimsical, nature-focused fantasy with soft lines and emotional depth.",
-        value: "Studio Ghibli style, ",
-      },
-      {
-        name: "Cyberpunk Anime",
-        description:
-          "Neon-lit dystopias with high-tech mechs and gritty urban vibes.",
-        value: "Cyberpunk anime style, ",
-      },
-      {
-        name: "Semi-Realistic Anime",
-        description:
-          "Blends lifelike proportions with expressive anime eyes and shading.",
-        value: "Semi-realistic anime style, ",
-      },
-      {
-        name: "Mecha",
-        description: "Giant robots and mechanical suits in epic battles.",
-        value: "Mecha anime style, ",
-      },
-      {
-        name: "Dynamic Action",
-        description:
-          "High-energy movements with power effects and intense expressions.",
-        value: "Dynamic action anime style, ",
-      },
-      {
-        name: "Soft Romantic",
-        description:
-          "Emotional interactions with gentle colors and sparkling accents.",
-        value: "Soft romantic anime style, ",
-      },
-      {
-        name: "Dark Fantasy Anime",
-        description: "Grim, horror-tinged worlds with demons and shadows.",
-        value: "Dark fantasy anime style, ",
-      },
-      {
-        name: "Retro 80s Anime",
-        description: "Vintage cel-shaded look with bold lines and synth vibes.",
-        value: "80s retro anime style, ",
-      },
-      {
-        name: "Portal Fantasy",
-        description:
-          "World-crossing elements with magical adaptations and RPG motifs.",
-        value: "Portal fantasy anime style, ",
-      },
-      {
-        name: "Slice-of-Life",
-        description:
-          "Everyday moments with relatable characters and cozy vibes.",
-        value: "Slice-of-life anime style, ",
-      },
-      {
-        name: "Serialized Narrative",
-        description: "Panel-like compositions for ongoing story flows.",
-        value: "Serialized narrative anime style, ",
-      },
-      {
-        name: "Group Dynamic",
-        description:
-          "Interactions among multiple characters with balanced focus.",
-        value: "Group dynamic anime style, ",
-      },
-    ],
-  },
-  {
-    name: "Realism/Photorealism",
-    description:
-      "Excels in portraits and scenes mimicking photography, with sub-styles varying by subject or technique.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Realism/Photorealism style, ...").',
-      },
-      {
-        name: "Hyperrealism",
-        description: "Ultra-detailed, almost tangible textures and lighting.",
-        value: "Hyperrealistic, ",
-      },
-      {
-        name: "Cinematic Realism",
-        description: "Film-like depth with dramatic angles and color grading.",
-        value: "Cinematic realism, ",
-      },
-      {
-        name: "Portrait Photorealism",
-        description: "Human faces with natural skin, eyes, and expressions.",
-        value: "Portrait photorealism, ",
-      },
-      {
-        name: "Architectural Realism",
-        description: "Precise building renders with environmental details.",
-        value: "Architectural realism, ",
-      },
-      {
-        name: "Nature Photorealism",
-        description: "Verdant landscapes with dew and foliage intricacies.",
-        value: "Nature photorealism, ",
-      },
-      {
-        name: "Close-Up Detail",
-        description: "Intimate views highlighting textures and fine elements.",
-        value: "Close-up realistic style, ",
-      },
-      {
-        name: "Historical Realism",
-        description: "Period-accurate clothing and settings with grit.",
-        value: "Historical realism, ",
-      },
-      {
-        name: "Urban Realism",
-        description: "Bustling city life with crowds and neon realism.",
-        value: "Urban realism, ",
-      },
-      {
-        name: "Stylized Realism",
-        description: "Subtle artistic tweaks on photoreal bases.",
-        value: "Stylized realism, ",
-      },
-      {
-        name: "Documentary Style",
-        description: "Raw, unpolished scenes like news photography.",
-        value: "Documentary photo style, ",
-      },
-      {
-        name: "Object Focus Realism",
-        description: "Clear, highlighted items with neutral lighting.",
-        value: "Object-focused realism, ",
-      },
-      {
-        name: "Wildlife Realism",
-        description: "Animals in habitats with fur and feather fidelity.",
-        value: "Wildlife realism, ",
-      },
-      {
-        name: "Detailed Portrait",
-        description: "Lifelike faces with expressive features.",
-        value: "Detailed portrait realism, ",
-      },
-      {
-        name: "Environmental Immersion",
-        description: "Rich settings enveloping subjects.",
-        value: "Environmental immersion realism, ",
-      },
-    ],
-  },
-  {
-    name: "Fantasy",
-    description:
-      "Epic worlds of magic and myth, with sub-styles spanning tones from whimsical to grim.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Fantasy style, ...").',
-      },
-      {
-        name: "High Fantasy",
-        description: "Medieval realms with elves, dragons, and quests.",
-        value: "High fantasy art, ",
-      },
-      {
-        name: "Dark Fantasy",
-        description: "Grimdark horror with undead and moral ambiguity.",
-        value: "Dark fantasy art, ",
-      },
-      {
-        name: "Urban Fantasy",
-        description: "Magic in modern cities, like hidden witches.",
-        value: "Urban fantasy art, ",
-      },
-      {
-        name: "Steampunk Fantasy",
-        description: "Victorian tech with gears and airships.",
-        value: "Steampunk fantasy style, ",
-      },
-      {
-        name: "Fairy Tale",
-        description: "Whimsical tales with enchanted woods and creatures.",
-        value: "Fairy tale illustration style, ",
-      },
-      {
-        name: "Heroic Adventure",
-        description: "Bold explorers with raw magic and ancient relics.",
-        value: "Heroic adventure fantasy art, ",
-      },
-      {
-        name: "Creature Emphasis",
-        description: "Fantastical beings in natural or enchanted environments.",
-        value: "Creature-focused fantasy art, ",
-      },
-      {
-        name: "Ethereal Grace",
-        description: "Elegant figures in luminous, forested settings.",
-        value: "Ethereal grace fantasy style, ",
-      },
-      {
-        name: "Rugged Craftsmanship",
-        description: "Stout builders in forged, underground realms.",
-        value: "Rugged craftsmanship fantasy style, ",
-      },
-      {
-        name: "Gothic Fantasy",
-        description: "Haunted castles with vampires and storms.",
-        value: "Gothic fantasy art, ",
-      },
-      {
-        name: "Beast Majesty",
-        description: "Powerful scaled creatures in dramatic poses.",
-        value: "Majestic beast fantasy art, ",
-      },
-      {
-        name: "Celestial Fantasy",
-        description: "Starry realms with gods and floating islands.",
-        value: "Celestial fantasy art, ",
-      },
-      {
-        name: "Oriental Myth",
-        description: "Asian folklore elements with harmonious nature.",
-        value: "Oriental myth fantasy style, ",
-      },
-      {
-        name: "Treasure Hunt Vibe",
-        description: "Exploratory scenes with hidden wonders.",
-        value: "Treasure hunt fantasy art, ",
-      },
-    ],
-  },
-  {
-    name: "Sci-Fi",
-    description:
-      "Futuristic visions from gritty cyber worlds to cosmic explorations.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Sci-Fi style, ...").',
-      },
-      {
-        name: "Cyberpunk",
-        description: "Neon dystopias with hackers and megacorps.",
-        value: "Cyberpunk style, ",
-      },
-      {
-        name: "Retro-Futurism",
-        description: "1950s optimism with ray guns and chrome.",
-        value: "Retro-futurism, ",
-      },
-      {
-        name: "Biopunk",
-        description: "Organic tech with genetic mutations.",
-        value: "Biopunk sci-fi style, ",
-      },
-      {
-        name: "Interstellar Epic",
-        description: "Vast cosmic tales with diverse species and ships.",
-        value: "Interstellar epic sci-fi art, ",
-      },
-      {
-        name: "Mechanical Suit",
-        description: "Armored machines in high-tech conflicts.",
-        value: "Mechanical suit sci-fi style, ",
-      },
-      {
-        name: "Post-Human",
-        description: "Cyborgs and AI in evolved societies.",
-        value: "Post-human sci-fi art, ",
-      },
-      {
-        name: "Hard Sci-Fi",
-        description: "Physics-based realism with tech schematics.",
-        value: "Hard sci-fi illustration, ",
-      },
-      {
-        name: "Dieselpunk",
-        description: "1930s grit with riveted machines.",
-        value: "Dieselpunk style, ",
-      },
-      {
-        name: "Astro-Mythology",
-        description: "Space gods and cosmic myths.",
-        value: "Astro-mythology art, ",
-      },
-      {
-        name: "Eco-Sci-Fi",
-        description: "Post-apocalypse with bio-domes.",
-        value: "Eco-sci-fi art, ",
-      },
-      {
-        name: "Survival Wasteland",
-        description: "Harsh, ruined landscapes with resilient figures.",
-        value: "Survival wasteland sci-fi style, ",
-      },
-      {
-        name: "Cosmic Discovery",
-        description: "Unknown worlds with exploratory tech.",
-        value: "Cosmic discovery sci-fi art, ",
-      },
-    ],
-  },
-  {
-    name: "Retro/Vintage",
-    description:
-      "Nostalgic aesthetics from bygone eras, revived with AI flair.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Retro/Vintage style, ...").',
-      },
-      {
-        name: "Art Deco",
-        description: "Geometric luxury with gold and symmetry.",
-        value: "Art Deco style, ",
-      },
-      {
-        name: "Art Nouveau",
-        description: "Flowing organic lines and floral motifs.",
-        value: "Art Nouveau style, ",
-      },
-      {
-        name: "Vintage Poster",
-        description: "Bold typography and illustrative ads.",
-        value: "Vintage poster style, ",
-      },
-      {
-        name: "Chromolithography",
-        description: "Vibrant, printed color layers from 1900s.",
-        value: "Chromolithography, ",
-      },
-      {
-        name: "Baroque",
-        description: "Ornate drama with rich drapery.",
-        value: "Baroque painting style, ",
-      },
-      {
-        name: "Ukiyo-e",
-        description: "Japanese woodblock prints with flat colors.",
-        value: "Ukiyo-e style, ",
-      },
-      {
-        name: "1950s Retro",
-        description: "Atomic age optimism with pastels.",
-        value: "1950s retro style, ",
-      },
-      {
-        name: "Playful Figure",
-        description: "Charming, stylized poses with vintage flair.",
-        value: "Playful vintage figure style, ",
-      },
-      {
-        name: "Edwardian",
-        description: "Lacy elegance with soft pastels.",
-        value: "Edwardian era style, ",
-      },
-      {
-        name: "Mid-Century Modern",
-        description: "Clean lines and bold geometrics.",
-        value: "Mid-century modern style, ",
-      },
-      {
-        name: "Ink Scroll",
-        description: "Brush-like lines evoking ancient manuscripts.",
-        value: "Ink scroll vintage style, ",
-      },
-    ],
-  },
-  {
-    name: "Surrealism",
-    description:
-      "Dreamlike distortions challenging reality, inspired by masters.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Surrealism style, ...").',
-      },
-      {
-        name: "Fluid Distortion",
-        description: "Melting forms and impossible blends.",
-        value: "Fluid distortion surrealism, ",
-      },
-      {
-        name: "Paradoxical Objects",
-        description: "Everyday items in illogical arrangements.",
-        value: "Paradoxical object surrealism, ",
-      },
-      {
-        name: "Ernst Collage Surreal",
-        description: "Layered fragments for uncanny narratives.",
-        value: "Ernst collage surrealism, ",
-      },
-      {
-        name: "Kahlo Autobiographical",
-        description: "Personal symbolism with thorny motifs.",
-        value: "Frida Kahlo style surrealism, ",
-      },
-      {
-        name: "Biomorphic Surreal",
-        description: "Organic, creature-like hybrids.",
-        value: "Biomorphic surrealism, ",
-      },
-      {
-        name: "Dreamlike Landscapes",
-        description: "Floating islands and inverted gravity.",
-        value: "Dreamlike surreal landscape, ",
-      },
-      {
-        name: "Freudian Symbolic",
-        description: "Subconscious icons like eyes and stairs.",
-        value: "Freudian symbolic surrealism, ",
-      },
-      {
-        name: "Pop Surrealism",
-        description: "Whimsical grotesquery with candy colors.",
-        value: "Pop surrealism, lowbrow art, ",
-      },
-      {
-        name: "Hyper-Surreal",
-        description: "Exaggerated distortions in vivid detail.",
-        value: "Hyper-surrealism, ",
-      },
-      {
-        name: "Eco-Surreal",
-        description: "Nature twisted with human elements.",
-        value: "Eco-surrealism, ",
-      },
-      {
-        name: "Mechanical Surreal",
-        description: "Machines fused with flesh.",
-        value: "Mechanical surrealism, ",
-      },
-      {
-        name: "Inner Vision",
-        description: "Symbolic inner thoughts with blended realities.",
-        value: "Inner vision surrealism, ",
-      },
-    ],
-  },
-  {
-    name: "Cartoon/Illustration",
-    description:
-      "Exaggerated, narrative-driven visuals for fun and storytelling.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Cartoon/Illustration style, ...").',
-      },
-      {
-        name: "Pixar 3D",
-        description: "Polished, expressive CG with emotional arcs.",
-        value: "Pixar 3D animation style, ",
-      },
-      {
-        name: "Disney Classic",
-        description: "Hand-drawn whimsy with fluid animation.",
-        value: "Classic Disney animation style, ",
-      },
-      {
-        name: "DreamWorks",
-        description: "Edgy humor with detailed backgrounds.",
-        value: "DreamWorks animation style, ",
-      },
-      {
-        name: "Adventure Time",
-        description: "Surreal candy lands with bold shapes.",
-        value: "Adventure Time cartoon style, ",
-      },
-      {
-        name: "Simpsons",
-        description: "Yellow-skinned satire with clean outlines.",
-        value: "The Simpsons cartoon style, ",
-      },
-      {
-        name: "Rick and Morty",
-        description: "Sci-fi absurdity with warped perspectives.",
-        value: "Rick and Morty cartoon style, ",
-      },
-      {
-        name: "Narrative Panel",
-        description: "Sequential art with shaded storytelling.",
-        value: "Narrative panel illustration style, ",
-      },
-      {
-        name: "Whimsical Illustration",
-        description: "Gentle, colorful drawings for light-hearted scenes.",
-        value: "Whimsical illustration style, ",
-      },
-      {
-        name: "Webtoon",
-        description: "Vertical scroll with vibrant digital ink.",
-        value: "Webtoon style, ",
-      },
-      {
-        name: "Manhua Flow",
-        description: "Dynamic lines and vibrant digital shading.",
-        value: "Manhua flow illustration style, ",
-      },
-      {
-        name: "Cover Art Focus",
-        description: "Striking compositions for thematic highlights.",
-        value: "Cover art illustration, ",
-      },
-    ],
-  },
-  {
-    name: "Traditional Painting",
-    description:
-      "Emulates historical mediums like oils and watercolors for timeless appeal.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Traditional Painting style, ...").',
-      },
-      {
-        name: "Impressionism",
-        description: "Loose brushstrokes capturing light moments.",
-        value: "Impressionist painting, ",
-      },
-      {
-        name: "Renaissance",
-        description: "Balanced compositions with chiaroscuro.",
-        value: "Renaissance painting style, ",
-      },
-      {
-        name: "Oil Painting",
-        description: "Rich, layered textures with glazing.",
-        value: "Oil painting, ",
-      },
-      {
-        name: "Watercolor",
-        description: "Translucent washes for ethereal softness.",
-        value: "Watercolor painting, ",
-      },
-      {
-        name: "Baroque",
-        description: "Dramatic tenebrism and opulent details.",
-        value: "Baroque painting, ",
-      },
-      {
-        name: "Romanticism",
-        description: "Emotional storms and heroic figures.",
-        value: "Romanticism painting, ",
-      },
-      {
-        name: "Pointillism",
-        description: "Dot-based color mixing for vibrancy.",
-        value: "Pointillism style, ",
-      },
-      {
-        name: "Fresco",
-        description: "Mural-like with aged plaster effects.",
-        value: "Fresco painting style, ",
-      },
-      {
-        name: "Encaustic",
-        description: "Waxy, heated layers for luminous depth.",
-        value: "Encaustic painting, ",
-      },
-      {
-        name: "Acrylic",
-        description: "Bold, matte finishes with quick drying.",
-        value: "Acrylic painting, ",
-      },
-      {
-        name: "Gouache",
-        description: "Opaque vibrancy like matte poster paint.",
-        value: "Gouache painting, ",
-      },
-      {
-        name: "Sumi-e",
-        description: "Minimalist ink washes for Zen simplicity.",
-        value: "Sumi-e ink wash painting, ",
-      },
-      {
-        name: "Oriental Brushwork",
-        description: "Minimalist inks for balanced compositions.",
-        value: "Oriental brushwork style, ",
-      },
-      {
-        name: "Era Line Art",
-        description: "Detailed etchings for historical depth.",
-        value: "Era line art traditional, ",
-      },
-    ],
-  },
-  {
-    name: "Digital Art",
-    description: "Modern, tech-infused creations from pixels to vectors.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Digital Art style, ...").',
-      },
-      {
-        name: "Vector Illustration",
-        description: "Scalable, flat colors with clean paths.",
-        value: "Vector illustration, ",
-      },
-      {
-        name: "Blended Landscape",
-        description: "Layered digital environments for immersive backdrops.",
-        value: "Blended digital landscape, ",
-      },
-      {
-        name: "Neon Glow",
-        description: "Vibrant outlines with electric luminescence.",
-        value: "Neon glow digital art, ",
-      },
-      {
-        name: "Holographic",
-        description: "Shimmering, 3D projections with refractions.",
-        value: "Holographic style, ",
-      },
-      {
-        name: "World-Building Sketch",
-        description: "Conceptual layers for expansive scenes.",
-        value: "World-building digital sketch, ",
-      },
-      {
-        name: "Community Render",
-        description: "Polished digital interpretations of characters.",
-        value: "Community render digital style, ",
-      },
-    ],
-  },
-  {
-    name: "Wuxia/Xianxia",
-    description:
-      "Eastern-inspired martial and spiritual themes with energy flows, ancient motifs, and harmonious or intense atmospheres.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Wuxia/Xianxia style, ...").',
-      },
-      {
-        name: "Qi Energy Flow",
-        description: "Subtle auras and internal power visualizations.",
-        value: "Qi energy flow style, ",
-      },
-      {
-        name: "Martial Grace",
-        description: "Fluid poses and disciplined movements.",
-        value: "Martial grace style, ",
-      },
-      {
-        name: "Spiritual Realm",
-        description: "Misty, elevated worlds with ethereal elements.",
-        value: "Spiritual realm style, ",
-      },
-      {
-        name: "Ancient Sect Aesthetic",
-        description: "Traditional architecture and robed figures.",
-        value: "Ancient sect aesthetic, ",
-      },
-      {
-        name: "Demonic Shadow",
-        description: "Darkened energies and mysterious silhouettes.",
-        value: "Demonic shadow style, ",
-      },
-      {
-        name: "Dynasty Elegance",
-        description: "Silk textures and jade accents in historical tones.",
-        value: "Dynasty elegance style, ",
-      },
-    ],
-  },
-  {
-    name: "Romance",
-    description:
-      "Tender or passionate human connections with soft lighting, expressions, and atmospheric details.",
-    subStyles: [
-      {
-        name: "None",
-        value: "none",
-        description:
-          'Use only the main style name as a prefix (e.g., "Romance style, ...").',
-      },
-      {
-        name: "Gentle Intimacy",
-        description: "Close, affectionate moments with warm hues.",
-        value: "Gentle intimacy romance style, ",
-      },
-      {
-        name: "Urban Affection",
-        description: "Modern settings with subtle romantic gestures.",
-        value: "Urban affection style, ",
-      },
-      {
-        name: "Enchanted Bond",
-        description: "Magical elements enhancing emotional ties.",
-        value: "Enchanted bond romance style, ",
-      },
-      {
-        name: "Tension Build",
-        description: "Subtle conflicts leading to connection.",
-        value: "Tension build romance style, ",
-      },
-      {
-        name: "Blushing Softness",
-        description: "Delicate emotions with pastel accents.",
-        value: "Blushing softness style, ",
-      },
-      {
-        name: "Melancholic Yearning",
-        description: "Poignant separations with evocative moods.",
-        value: "Melancholic yearning romance art, ",
-      },
-    ],
-  },
-];
-
 // EXTERNAL MODULE: ./src/utils/file.js
 var file = __webpack_require__(322);
+// EXTERNAL MODULE: ./src/config/defaults.js
+var defaults = __webpack_require__(753);
 ;// ./src/components/enhancementPanel.js
 // --- IMPORTS ---
 
@@ -7896,6 +7251,755 @@ function setupEnhancementEventListeners(panelElement) {
 
 // EXTERNAL MODULE: ./src/api/models.js + 1 modules
 var models = __webpack_require__(189);
+;// ./src/config/styles.js
+const PROMPT_CATEGORIES = [
+  {
+    name: "None",
+    description: "No additional styling will be added to your prompt.",
+    subStyles: [],
+  },
+  {
+    name: "Anime",
+    description:
+      "Blends Japanese animation with global twists. Sub-styles often mix eras, genres, or crossovers for dynamic outputs.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Anime style, ...").',
+      },
+      {
+        name: "Studio Ghibli-Inspired",
+        description:
+          "Whimsical, nature-focused fantasy with soft lines and emotional depth.",
+        value: "Studio Ghibli style, ",
+      },
+      {
+        name: "Cyberpunk Anime",
+        description:
+          "Neon-lit dystopias with high-tech mechs and gritty urban vibes.",
+        value: "Cyberpunk anime style, ",
+      },
+      {
+        name: "Semi-Realistic Anime",
+        description:
+          "Blends lifelike proportions with expressive anime eyes and shading.",
+        value: "Semi-realistic anime style, ",
+      },
+      {
+        name: "Mecha",
+        description: "Giant robots and mechanical suits in epic battles.",
+        value: "Mecha anime style, ",
+      },
+      {
+        name: "Dynamic Action",
+        description:
+          "High-energy movements with power effects and intense expressions.",
+        value: "Dynamic action anime style, ",
+      },
+      {
+        name: "Soft Romantic",
+        description:
+          "Emotional interactions with gentle colors and sparkling accents.",
+        value: "Soft romantic anime style, ",
+      },
+      {
+        name: "Dark Fantasy Anime",
+        description: "Grim, horror-tinged worlds with demons and shadows.",
+        value: "Dark fantasy anime style, ",
+      },
+      {
+        name: "Retro 80s Anime",
+        description: "Vintage cel-shaded look with bold lines and synth vibes.",
+        value: "80s retro anime style, ",
+      },
+      {
+        name: "Portal Fantasy",
+        description:
+          "World-crossing elements with magical adaptations and RPG motifs.",
+        value: "Portal fantasy anime style, ",
+      },
+      {
+        name: "Slice-of-Life",
+        description:
+          "Everyday moments with relatable characters and cozy vibes.",
+        value: "Slice-of-life anime style, ",
+      },
+      {
+        name: "Serialized Narrative",
+        description: "Panel-like compositions for ongoing story flows.",
+        value: "Serialized narrative anime style, ",
+      },
+      {
+        name: "Group Dynamic",
+        description:
+          "Interactions among multiple characters with balanced focus.",
+        value: "Group dynamic anime style, ",
+      },
+    ],
+  },
+  {
+    name: "Realism/Photorealism",
+    description:
+      "Excels in portraits and scenes mimicking photography, with sub-styles varying by subject or technique.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Realism/Photorealism style, ...").',
+      },
+      {
+        name: "Hyperrealism",
+        description: "Ultra-detailed, almost tangible textures and lighting.",
+        value: "Hyperrealistic, ",
+      },
+      {
+        name: "Cinematic Realism",
+        description: "Film-like depth with dramatic angles and color grading.",
+        value: "Cinematic realism, ",
+      },
+      {
+        name: "Portrait Photorealism",
+        description: "Human faces with natural skin, eyes, and expressions.",
+        value: "Portrait photorealism, ",
+      },
+      {
+        name: "Architectural Realism",
+        description: "Precise building renders with environmental details.",
+        value: "Architectural realism, ",
+      },
+      {
+        name: "Nature Photorealism",
+        description: "Verdant landscapes with dew and foliage intricacies.",
+        value: "Nature photorealism, ",
+      },
+      {
+        name: "Close-Up Detail",
+        description: "Intimate views highlighting textures and fine elements.",
+        value: "Close-up realistic style, ",
+      },
+      {
+        name: "Historical Realism",
+        description: "Period-accurate clothing and settings with grit.",
+        value: "Historical realism, ",
+      },
+      {
+        name: "Urban Realism",
+        description: "Bustling city life with crowds and neon realism.",
+        value: "Urban realism, ",
+      },
+      {
+        name: "Stylized Realism",
+        description: "Subtle artistic tweaks on photoreal bases.",
+        value: "Stylized realism, ",
+      },
+      {
+        name: "Documentary Style",
+        description: "Raw, unpolished scenes like news photography.",
+        value: "Documentary photo style, ",
+      },
+      {
+        name: "Object Focus Realism",
+        description: "Clear, highlighted items with neutral lighting.",
+        value: "Object-focused realism, ",
+      },
+      {
+        name: "Wildlife Realism",
+        description: "Animals in habitats with fur and feather fidelity.",
+        value: "Wildlife realism, ",
+      },
+      {
+        name: "Detailed Portrait",
+        description: "Lifelike faces with expressive features.",
+        value: "Detailed portrait realism, ",
+      },
+      {
+        name: "Environmental Immersion",
+        description: "Rich settings enveloping subjects.",
+        value: "Environmental immersion realism, ",
+      },
+    ],
+  },
+  {
+    name: "Fantasy",
+    description:
+      "Epic worlds of magic and myth, with sub-styles spanning tones from whimsical to grim.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Fantasy style, ...").',
+      },
+      {
+        name: "High Fantasy",
+        description: "Medieval realms with elves, dragons, and quests.",
+        value: "High fantasy art, ",
+      },
+      {
+        name: "Dark Fantasy",
+        description: "Grimdark horror with undead and moral ambiguity.",
+        value: "Dark fantasy art, ",
+      },
+      {
+        name: "Urban Fantasy",
+        description: "Magic in modern cities, like hidden witches.",
+        value: "Urban fantasy art, ",
+      },
+      {
+        name: "Steampunk Fantasy",
+        description: "Victorian tech with gears and airships.",
+        value: "Steampunk fantasy style, ",
+      },
+      {
+        name: "Fairy Tale",
+        description: "Whimsical tales with enchanted woods and creatures.",
+        value: "Fairy tale illustration style, ",
+      },
+      {
+        name: "Heroic Adventure",
+        description: "Bold explorers with raw magic and ancient relics.",
+        value: "Heroic adventure fantasy art, ",
+      },
+      {
+        name: "Creature Emphasis",
+        description: "Fantastical beings in natural or enchanted environments.",
+        value: "Creature-focused fantasy art, ",
+      },
+      {
+        name: "Ethereal Grace",
+        description: "Elegant figures in luminous, forested settings.",
+        value: "Ethereal grace fantasy style, ",
+      },
+      {
+        name: "Rugged Craftsmanship",
+        description: "Stout builders in forged, underground realms.",
+        value: "Rugged craftsmanship fantasy style, ",
+      },
+      {
+        name: "Gothic Fantasy",
+        description: "Haunted castles with vampires and storms.",
+        value: "Gothic fantasy art, ",
+      },
+      {
+        name: "Beast Majesty",
+        description: "Powerful scaled creatures in dramatic poses.",
+        value: "Majestic beast fantasy art, ",
+      },
+      {
+        name: "Celestial Fantasy",
+        description: "Starry realms with gods and floating islands.",
+        value: "Celestial fantasy art, ",
+      },
+      {
+        name: "Oriental Myth",
+        description: "Asian folklore elements with harmonious nature.",
+        value: "Oriental myth fantasy style, ",
+      },
+      {
+        name: "Treasure Hunt Vibe",
+        description: "Exploratory scenes with hidden wonders.",
+        value: "Treasure hunt fantasy art, ",
+      },
+    ],
+  },
+  {
+    name: "Sci-Fi",
+    description:
+      "Futuristic visions from gritty cyber worlds to cosmic explorations.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Sci-Fi style, ...").',
+      },
+      {
+        name: "Cyberpunk",
+        description: "Neon dystopias with hackers and megacorps.",
+        value: "Cyberpunk style, ",
+      },
+      {
+        name: "Retro-Futurism",
+        description: "1950s optimism with ray guns and chrome.",
+        value: "Retro-futurism, ",
+      },
+      {
+        name: "Biopunk",
+        description: "Organic tech with genetic mutations.",
+        value: "Biopunk sci-fi style, ",
+      },
+      {
+        name: "Interstellar Epic",
+        description: "Vast cosmic tales with diverse species and ships.",
+        value: "Interstellar epic sci-fi art, ",
+      },
+      {
+        name: "Mechanical Suit",
+        description: "Armored machines in high-tech conflicts.",
+        value: "Mechanical suit sci-fi style, ",
+      },
+      {
+        name: "Post-Human",
+        description: "Cyborgs and AI in evolved societies.",
+        value: "Post-human sci-fi art, ",
+      },
+      {
+        name: "Hard Sci-Fi",
+        description: "Physics-based realism with tech schematics.",
+        value: "Hard sci-fi illustration, ",
+      },
+      {
+        name: "Dieselpunk",
+        description: "1930s grit with riveted machines.",
+        value: "Dieselpunk style, ",
+      },
+      {
+        name: "Astro-Mythology",
+        description: "Space gods and cosmic myths.",
+        value: "Astro-mythology art, ",
+      },
+      {
+        name: "Eco-Sci-Fi",
+        description: "Post-apocalypse with bio-domes.",
+        value: "Eco-sci-fi art, ",
+      },
+      {
+        name: "Survival Wasteland",
+        description: "Harsh, ruined landscapes with resilient figures.",
+        value: "Survival wasteland sci-fi style, ",
+      },
+      {
+        name: "Cosmic Discovery",
+        description: "Unknown worlds with exploratory tech.",
+        value: "Cosmic discovery sci-fi art, ",
+      },
+    ],
+  },
+  {
+    name: "Retro/Vintage",
+    description:
+      "Nostalgic aesthetics from bygone eras, revived with AI flair.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Retro/Vintage style, ...").',
+      },
+      {
+        name: "Art Deco",
+        description: "Geometric luxury with gold and symmetry.",
+        value: "Art Deco style, ",
+      },
+      {
+        name: "Art Nouveau",
+        description: "Flowing organic lines and floral motifs.",
+        value: "Art Nouveau style, ",
+      },
+      {
+        name: "Vintage Poster",
+        description: "Bold typography and illustrative ads.",
+        value: "Vintage poster style, ",
+      },
+      {
+        name: "Chromolithography",
+        description: "Vibrant, printed color layers from 1900s.",
+        value: "Chromolithography, ",
+      },
+      {
+        name: "Baroque",
+        description: "Ornate drama with rich drapery.",
+        value: "Baroque painting style, ",
+      },
+      {
+        name: "Ukiyo-e",
+        description: "Japanese woodblock prints with flat colors.",
+        value: "Ukiyo-e style, ",
+      },
+      {
+        name: "1950s Retro",
+        description: "Atomic age optimism with pastels.",
+        value: "1950s retro style, ",
+      },
+      {
+        name: "Playful Figure",
+        description: "Charming, stylized poses with vintage flair.",
+        value: "Playful vintage figure style, ",
+      },
+      {
+        name: "Edwardian",
+        description: "Lacy elegance with soft pastels.",
+        value: "Edwardian era style, ",
+      },
+      {
+        name: "Mid-Century Modern",
+        description: "Clean lines and bold geometrics.",
+        value: "Mid-century modern style, ",
+      },
+      {
+        name: "Ink Scroll",
+        description: "Brush-like lines evoking ancient manuscripts.",
+        value: "Ink scroll vintage style, ",
+      },
+    ],
+  },
+  {
+    name: "Surrealism",
+    description:
+      "Dreamlike distortions challenging reality, inspired by masters.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Surrealism style, ...").',
+      },
+      {
+        name: "Fluid Distortion",
+        description: "Melting forms and impossible blends.",
+        value: "Fluid distortion surrealism, ",
+      },
+      {
+        name: "Paradoxical Objects",
+        description: "Everyday items in illogical arrangements.",
+        value: "Paradoxical object surrealism, ",
+      },
+      {
+        name: "Ernst Collage Surreal",
+        description: "Layered fragments for uncanny narratives.",
+        value: "Ernst collage surrealism, ",
+      },
+      {
+        name: "Kahlo Autobiographical",
+        description: "Personal symbolism with thorny motifs.",
+        value: "Frida Kahlo style surrealism, ",
+      },
+      {
+        name: "Biomorphic Surreal",
+        description: "Organic, creature-like hybrids.",
+        value: "Biomorphic surrealism, ",
+      },
+      {
+        name: "Dreamlike Landscapes",
+        description: "Floating islands and inverted gravity.",
+        value: "Dreamlike surreal landscape, ",
+      },
+      {
+        name: "Freudian Symbolic",
+        description: "Subconscious icons like eyes and stairs.",
+        value: "Freudian symbolic surrealism, ",
+      },
+      {
+        name: "Pop Surrealism",
+        description: "Whimsical grotesquery with candy colors.",
+        value: "Pop surrealism, lowbrow art, ",
+      },
+      {
+        name: "Hyper-Surreal",
+        description: "Exaggerated distortions in vivid detail.",
+        value: "Hyper-surrealism, ",
+      },
+      {
+        name: "Eco-Surreal",
+        description: "Nature twisted with human elements.",
+        value: "Eco-surrealism, ",
+      },
+      {
+        name: "Mechanical Surreal",
+        description: "Machines fused with flesh.",
+        value: "Mechanical surrealism, ",
+      },
+      {
+        name: "Inner Vision",
+        description: "Symbolic inner thoughts with blended realities.",
+        value: "Inner vision surrealism, ",
+      },
+    ],
+  },
+  {
+    name: "Cartoon/Illustration",
+    description:
+      "Exaggerated, narrative-driven visuals for fun and storytelling.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Cartoon/Illustration style, ...").',
+      },
+      {
+        name: "Pixar 3D",
+        description: "Polished, expressive CG with emotional arcs.",
+        value: "Pixar 3D animation style, ",
+      },
+      {
+        name: "Disney Classic",
+        description: "Hand-drawn whimsy with fluid animation.",
+        value: "Classic Disney animation style, ",
+      },
+      {
+        name: "DreamWorks",
+        description: "Edgy humor with detailed backgrounds.",
+        value: "DreamWorks animation style, ",
+      },
+      {
+        name: "Adventure Time",
+        description: "Surreal candy lands with bold shapes.",
+        value: "Adventure Time cartoon style, ",
+      },
+      {
+        name: "Simpsons",
+        description: "Yellow-skinned satire with clean outlines.",
+        value: "The Simpsons cartoon style, ",
+      },
+      {
+        name: "Rick and Morty",
+        description: "Sci-fi absurdity with warped perspectives.",
+        value: "Rick and Morty cartoon style, ",
+      },
+      {
+        name: "Narrative Panel",
+        description: "Sequential art with shaded storytelling.",
+        value: "Narrative panel illustration style, ",
+      },
+      {
+        name: "Whimsical Illustration",
+        description: "Gentle, colorful drawings for light-hearted scenes.",
+        value: "Whimsical illustration style, ",
+      },
+      {
+        name: "Webtoon",
+        description: "Vertical scroll with vibrant digital ink.",
+        value: "Webtoon style, ",
+      },
+      {
+        name: "Manhua Flow",
+        description: "Dynamic lines and vibrant digital shading.",
+        value: "Manhua flow illustration style, ",
+      },
+      {
+        name: "Cover Art Focus",
+        description: "Striking compositions for thematic highlights.",
+        value: "Cover art illustration, ",
+      },
+    ],
+  },
+  {
+    name: "Traditional Painting",
+    description:
+      "Emulates historical mediums like oils and watercolors for timeless appeal.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Traditional Painting style, ...").',
+      },
+      {
+        name: "Impressionism",
+        description: "Loose brushstrokes capturing light moments.",
+        value: "Impressionist painting, ",
+      },
+      {
+        name: "Renaissance",
+        description: "Balanced compositions with chiaroscuro.",
+        value: "Renaissance painting style, ",
+      },
+      {
+        name: "Oil Painting",
+        description: "Rich, layered textures with glazing.",
+        value: "Oil painting, ",
+      },
+      {
+        name: "Watercolor",
+        description: "Translucent washes for ethereal softness.",
+        value: "Watercolor painting, ",
+      },
+      {
+        name: "Baroque",
+        description: "Dramatic tenebrism and opulent details.",
+        value: "Baroque painting, ",
+      },
+      {
+        name: "Romanticism",
+        description: "Emotional storms and heroic figures.",
+        value: "Romanticism painting, ",
+      },
+      {
+        name: "Pointillism",
+        description: "Dot-based color mixing for vibrancy.",
+        value: "Pointillism style, ",
+      },
+      {
+        name: "Fresco",
+        description: "Mural-like with aged plaster effects.",
+        value: "Fresco painting style, ",
+      },
+      {
+        name: "Encaustic",
+        description: "Waxy, heated layers for luminous depth.",
+        value: "Encaustic painting, ",
+      },
+      {
+        name: "Acrylic",
+        description: "Bold, matte finishes with quick drying.",
+        value: "Acrylic painting, ",
+      },
+      {
+        name: "Gouache",
+        description: "Opaque vibrancy like matte poster paint.",
+        value: "Gouache painting, ",
+      },
+      {
+        name: "Sumi-e",
+        description: "Minimalist ink washes for Zen simplicity.",
+        value: "Sumi-e ink wash painting, ",
+      },
+      {
+        name: "Oriental Brushwork",
+        description: "Minimalist inks for balanced compositions.",
+        value: "Oriental brushwork style, ",
+      },
+      {
+        name: "Era Line Art",
+        description: "Detailed etchings for historical depth.",
+        value: "Era line art traditional, ",
+      },
+    ],
+  },
+  {
+    name: "Digital Art",
+    description: "Modern, tech-infused creations from pixels to vectors.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Digital Art style, ...").',
+      },
+      {
+        name: "Vector Illustration",
+        description: "Scalable, flat colors with clean paths.",
+        value: "Vector illustration, ",
+      },
+      {
+        name: "Blended Landscape",
+        description: "Layered digital environments for immersive backdrops.",
+        value: "Blended digital landscape, ",
+      },
+      {
+        name: "Neon Glow",
+        description: "Vibrant outlines with electric luminescence.",
+        value: "Neon glow digital art, ",
+      },
+      {
+        name: "Holographic",
+        description: "Shimmering, 3D projections with refractions.",
+        value: "Holographic style, ",
+      },
+      {
+        name: "World-Building Sketch",
+        description: "Conceptual layers for expansive scenes.",
+        value: "World-building digital sketch, ",
+      },
+      {
+        name: "Community Render",
+        description: "Polished digital interpretations of characters.",
+        value: "Community render digital style, ",
+      },
+    ],
+  },
+  {
+    name: "Wuxia/Xianxia",
+    description:
+      "Eastern-inspired martial and spiritual themes with energy flows, ancient motifs, and harmonious or intense atmospheres.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Wuxia/Xianxia style, ...").',
+      },
+      {
+        name: "Qi Energy Flow",
+        description: "Subtle auras and internal power visualizations.",
+        value: "Qi energy flow style, ",
+      },
+      {
+        name: "Martial Grace",
+        description: "Fluid poses and disciplined movements.",
+        value: "Martial grace style, ",
+      },
+      {
+        name: "Spiritual Realm",
+        description: "Misty, elevated worlds with ethereal elements.",
+        value: "Spiritual realm style, ",
+      },
+      {
+        name: "Ancient Sect Aesthetic",
+        description: "Traditional architecture and robed figures.",
+        value: "Ancient sect aesthetic, ",
+      },
+      {
+        name: "Demonic Shadow",
+        description: "Darkened energies and mysterious silhouettes.",
+        value: "Demonic shadow style, ",
+      },
+      {
+        name: "Dynasty Elegance",
+        description: "Silk textures and jade accents in historical tones.",
+        value: "Dynasty elegance style, ",
+      },
+    ],
+  },
+  {
+    name: "Romance",
+    description:
+      "Tender or passionate human connections with soft lighting, expressions, and atmospheric details.",
+    subStyles: [
+      {
+        name: "None",
+        value: "none",
+        description:
+          'Use only the main style name as a prefix (e.g., "Romance style, ...").',
+      },
+      {
+        name: "Gentle Intimacy",
+        description: "Close, affectionate moments with warm hues.",
+        value: "Gentle intimacy romance style, ",
+      },
+      {
+        name: "Urban Affection",
+        description: "Modern settings with subtle romantic gestures.",
+        value: "Urban affection style, ",
+      },
+      {
+        name: "Enchanted Bond",
+        description: "Magical elements enhancing emotional ties.",
+        value: "Enchanted bond romance style, ",
+      },
+      {
+        name: "Tension Build",
+        description: "Subtle conflicts leading to connection.",
+        value: "Tension build romance style, ",
+      },
+      {
+        name: "Blushing Softness",
+        description: "Delicate emotions with pastel accents.",
+        value: "Blushing softness style, ",
+      },
+      {
+        name: "Melancholic Yearning",
+        description: "Poignant separations with evocative moods.",
+        value: "Melancholic yearning romance art, ",
+      },
+    ],
+  },
+];
+
 ;// ./src/config/configManager.js
 // --- IMPORTS ---
 
@@ -8710,7 +8814,7 @@ async function handleHistoryDaysChange(event) {
   if (!isNaN(days) && days >= 1 && days <= 365) {
     try {
       await storage/* setHistoryDays */.qH(days);
-      console.log(`History days setting saved: ${days}`);
+      // History days saved; no console output to respect logging toggle
       // Refresh the history tab to reflect the new setting
       const panelElement = document.getElementById("nig-config-panel");
       if (
@@ -8729,7 +8833,6 @@ async function handleHistoryDaysChange(event) {
 
 ;// ./src/components/configPanelEvents.js
 // --- IMPORTS ---
-
 
 
 
@@ -9649,7 +9752,6 @@ function createPanelElement() {
 
 
 
-
 // --- MODULE STATE ---
 let panelElement = null;
 let initializeCallbacks = {};
@@ -10288,7 +10390,9 @@ async function configPanel_saveConfig() {
             enhancementInFlightCount > 0
               ? ` (Queue: ${enhancementInFlightCount})`
               : "";
-          logger/* logError */.vV(
+          // External enhancement failure is expected to gracefully fall back.
+          // Log as non-critical ENHANCEMENT info so it respects the logging toggle.
+          logger/* logInfo */.fH(
             "ENHANCEMENT",
             "External AI enhancement failed, falling back to original",
             { error: error.message },

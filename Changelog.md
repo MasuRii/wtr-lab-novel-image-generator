@@ -4,6 +4,39 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.6] - 2025-11-10
+
+### 🐞 Fixed
+- Console logging now strictly respects the "Toggle Console Logging & Enhancement Logs" setting:
+  - All debug and informational logs (including `[NIG-DEBUG]` prompt construction and provider traces) are routed through the centralized logger in [`src/utils/logger.js`](src/utils/logger.js:1) and suppressed when logging is disabled.
+  - Enhancement-related operational messages (per-attempt failures, quota/retry details, and model retry exhaustion) are logged with the `ENHANCEMENT` category at toggle-controlled levels, preventing console spam when logging is disabled.
+- Enhancement failure noise reduced:
+  - Non-terminal messages such as:
+    - `Enhancement failed for model gemini-2.5-pro (attempt N/M)`
+    - `Exhausted retries for model gemini-2.5-pro, switching to next model`
+    - `External AI enhancement failed, falling back to original`
+  - are now emitted as informational `ENHANCEMENT` logs that follow the console logging toggle, while critical terminal failures remain visible.
+- Stylelint compliance issues resolved:
+  - Updated prefers-contrast media query in [`src/styles/base.css`](src/styles/base.css:92) to use a standards-aligned value to satisfy the configured rules.
+  - Replaced deprecated `word-break: break-word` with `overflow-wrap: break-word` in:
+    - [`src/styles/layout.css`](src/styles/layout.css:181)
+    - [`src/styles/layout.css`](src/styles/layout.css:489)
+    - [`src/styles/themes.css`](src/styles/themes.css:257)
+  - Ensures `npm run build` completes successfully across Prettier, ESLint, Stylelint, and Webpack.
+
+### 🏆 Improved
+- Logging robustness and safety:
+  - Centralized logger behavior ensures that disabling console logs never suppresses critical diagnostics:
+    - Error/warn levels and `SECURITY`, `ERROR`, `APP`, `CONFIG_IMPORT` categories remain always-on for reliable troubleshooting.
+    - `ENHANCEMENT` logs are persisted only when logging is enabled, providing a dedicated enhancement log history without leaking sensitive runtime details when disabled.
+- OpenAI-compatible model classification:
+  - Enhanced `isModelFree` implementation in [`src/api/models.js`](src/api/models.js:198) to:
+    - Prefer the `plan_requirements` field for determining free vs paid:
+      - Treat models as free when `"free"` is present.
+      - Treat models as paid when they require `"basic"` or higher tiers.
+    - Gracefully handle missing, malformed, or non-array `plan_requirements` by falling back to existing properties (`is_free`, `premium_model`, `tiers`) and safe defaults.
+  - Ensures consistent, backward-compatible free vs paid model grouping across all UI surfaces and integrations, while remaining resilient to future or unknown plan tiers.
+
 ## [6.0.5] - 2025-11-10
 
 ### ✨ Added

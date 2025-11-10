@@ -247,7 +247,6 @@
   margin-top: var(--nig-space-sm);
   max-height: 150px;
   overflow-y: auto;
-  word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   font-family: "Fira Code", Monaco, Consolas, monospace;
@@ -263,7 +262,7 @@
   margin-top: var(--nig-space-lg);
   max-height: 200px;
   overflow-y: auto;
-  word-break: break-word;
+  overflow-wrap: break-word;
   font-family: "Fira Code", Monaco, Consolas, monospace;
   width: 100%;
   resize: vertical;

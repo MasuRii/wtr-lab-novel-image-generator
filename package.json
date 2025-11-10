@@ -1,13 +1,27 @@
 {
   "name": "wtr-lab-novel-image-generator",
-  "version": "6.0.5",
+  "version": "6.0.6",
   "description": "A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.",
+  "author": "MasuRii",
+  "license": "MIT",
   "private": true,
+  "main": "dist/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MasuRii/wtr-lab-novel-image-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MasuRii/wtr-lab-novel-image-generator/issues"
+  },
+  "files": [
+    "dist/",
+    "src/"
+  ],
   "scripts": {
-    "build": "npm run format && npm run lint:check && npm run version:update && webpack --mode=production",
-    "build:performance": "npm run format && npm run lint:check && webpack --config webpack.config.js --mode=production",
-    "build:greasyfork": "npm run format && npm run lint:check && webpack --config webpack.config.js --mode=production",
-    "build:devbundle": "npm run format && npm run lint:check && webpack --config webpack.config.js --mode=development",
+    "build": "npm run format && npm run lint:fix && npm run version:update && webpack --mode=production",
+    "build:performance": "npm run format && npm run lint:fix && webpack --config webpack.config.js --mode=production",
+    "build:greasyfork": "npm run format && npm run lint:fix && webpack --config webpack.config.js --mode=production",
+    "build:devbundle": "npm run format && npm run lint:fix && webpack --config webpack.config.js --mode=development",
     "dev": "webpack serve --config webpack.config.js --mode=development",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:check": "npm run lint:js && npm run lint:css",
@@ -22,19 +36,17 @@
     "version:banner": "node scripts/update-versions.js banner",
     "version:header": "node scripts/update-versions.js header"
   },
-  "author": "MasuRii",
-  "license": "MIT",
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-import": "^2.29.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.6.2",
     "style-loader": "^4.0.0",
-    "stylelint": "^15.11.0",
-    "stylelint-config-prettier": "^9.0.5",
-    "stylelint-config-standard": "^34.0.0",
+    "stylelint": "^16.25.0",
+    "stylelint-prettier": "^5.0.3",
+    "stylelint-config-standard": "^39.0.1",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2",

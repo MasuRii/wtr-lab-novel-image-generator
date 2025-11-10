@@ -1,16 +1,11 @@
 // --- IMPORTS ---
 import {
-  _updateVisibleSettings,
-  _updateSubStyles,
   populateConfigForm,
   saveConfig as saveConfigToStorage,
-  _exportConfig,
-  _handleImportFile,
 } from "../config/configManager.js";
-import { _populateHistoryTab } from "./historyManager.js";
+import { saveProviderConfigs, populateProviderForms } from "../api/models.js";
+import * as storage from "../utils/storage.js";
 import {
-  _toggleEnhancementSettings,
-  _updateEnhancementUI,
   populateEnhancementSettings,
   saveEnhancementConfig,
   setupEnhancementEventListeners,
@@ -25,12 +20,7 @@ import {
   setupCustomStyleEventListeners,
   setupProviderEnhancementListener,
 } from "./configPanelEvents.js";
-import {
-  createPanelElement,
-  _getConfigPanelHTML,
-} from "./configPanelTemplate.js";
-import { saveProviderConfigs, populateProviderForms } from "../api/models.js";
-import * as storage from "../utils/storage.js";
+import { createPanelElement } from "./configPanelTemplate.js";
 
 // --- MODULE STATE ---
 let panelElement = null;

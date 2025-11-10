@@ -89,8 +89,10 @@
   }
 }
 
-/* === High Contrast Mode Support === */
-@media (prefers-contrast: high) {
+/* === High Contrast Mode Support ===
+ * Use prefers-contrast: more for standards-aligned high contrast enhancement.
+ */
+@media (prefers-contrast: more) {
   :root {
     --nig-color-bg-primary: #000;
     --nig-color-bg-secondary: #1a1a1a;

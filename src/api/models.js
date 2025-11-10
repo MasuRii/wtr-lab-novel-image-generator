@@ -182,18 +182,85 @@ function populateAIHordeSelect(select, models, selectedModel) {
 }
 
 /**
- * Checks if a model is free to use
+ * Checks if a model is free to use, based primarily on plan_requirements.
+ *
+ * New rules:
+ * - FREE if plan_requirements contains "free"
+ * - PAID if plan_requirements does NOT contain "free" but contains "basic" or any higher tier
+ * - Ignore intermediate tiers as separate categories; only free vs paid matters
+ *
+ * Robust handling:
+ * - If plan_requirements missing/empty/malformed → fall back to legacy fields for backward compatibility
+ *
+ * @param {object} model
+ * @returns {boolean} true if classified as free, false otherwise
  */
 function isModelFree(model) {
+  if (!model || typeof model !== "object") {
+    // Malformed data - safe default is paid
+    return false;
+  }
+
+  const tiersPriority = {
+    free: 0,
+    economy: 1,
+    basic: 2,
+    premium: 3,
+    pro: 4,
+    ultra: 5,
+    enterprise: 6,
+    admin: 7,
+  };
+
+  const hasValidPlanRequirements =
+    Object.prototype.hasOwnProperty.call(model, "plan_requirements") &&
+    Array.isArray(model.plan_requirements);
+
+  if (hasValidPlanRequirements) {
+    const normalized = model.plan_requirements
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim().toLowerCase())
+      .filter((t) => t);
+
+    if (normalized.length > 0) {
+      if (normalized.includes("free")) {
+        return true;
+      }
+
+      // Detect if any basic-or-higher tier is present.
+      const hasBasicOrHigher = normalized.some((t) => {
+        const rank = tiersPriority[t];
+        return typeof rank === "number" && rank >= tiersPriority.basic;
+      });
+
+      if (hasBasicOrHigher) {
+        return false;
+      }
+
+      // If we reach here, plan_requirements existed but only contained unknown/low tiers
+      // that are not explicitly "free" and not mapped as paid → safe default is paid.
+      return false;
+    }
+    // If it's an array but empty, fall through to legacy logic.
+  }
+
+  // Legacy / backward-compatible behavior:
   if (typeof model.is_free === "boolean") {
     return model.is_free;
   }
   if (typeof model.premium_model === "boolean") {
     return !model.premium_model;
   }
-  if (Array.isArray(model.tiers) && model.tiers.includes("Free")) {
-    return true;
+  if (Array.isArray(model.tiers)) {
+    const normalizedTiers = model.tiers
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim().toLowerCase());
+    if (normalizedTiers.includes("free")) {
+      return true;
+    }
   }
+
+  // Default safe behavior when nothing else is conclusive: treat as paid.
   return false;
 }
 

@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator [DEV]
 // @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.0.5-dev.2025-11-10T09:52:01.337Z
+// @version 6.0.6-dev.2025-11-10T22:51:12.964Z
 // @author MasuRii
+// @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
 // @connect *
 // @grant GM_setValue
