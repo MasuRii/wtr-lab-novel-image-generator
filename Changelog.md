@@ -4,436 +4,156 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.5] - 2025-11-10
+
+### ✨ Added
+- Multi-config webpack build system with three target configurations
+  - `performance`: Production-optimized bundle (`wtr-lab-novel-image-generator.user.js`)
+  - `greasyfork`: GreasyFork-compliant bundle with stable filenames
+  - `dev`: Development configuration with proxy script
+- Centralized versioning system in [`config/versions.js`](config/versions.js:1)
+- Automated documentation updates via [`scripts/update-versions.js`](scripts/update-versions.js:1)
+- Enhanced configuration import normalization and backward compatibility
+- Provider-specific prompt handling aligned with 5.7.0 behavior
+- User-created enhancement presets with Tampermonkey persistence
+- API key show/hide toggles for all provider credential fields
+- Style-respecting Gemini enhancement with merged template system
+
+### 🛠️ Changed
+- Build process: `npm run build` now updates all targets simultaneously
+- NPM scripts updated to integrate centralized versioning
+- Enhancement template presets curated to top 5 options
+- Error modal structure consolidated with unified "Reason" section
+- History tab prompt display improvements with full-width truncation
+- Prompt container animation with smooth expand/collapse transitions
+
+### 🐞 Fixed
+- Resolved 82 ESLint violations and 75 Stylelint errors
+- CSS cascade conflict affecting checkbox styling
+- Configuration import flow persistence and UI synchronization
+- Gemini enhancement logging with proper `logWarn` import
+- History prompt tooltips with quote escaping
+- Empty/invalid prompt handling with fallback states
+- Negative prompt safety across all providers
+
+### 🏆 Improved
+- Build success verification with all target assets generated
+- Backward compatibility hardening for legacy configurations
+- Quality assurance compliance without rule changes
+- Enhanced prompt construction and routing logging
+- Mobile-friendly preview layout and responsive styling
+- Robust error handling and resilience throughout
+
 ## [6.0.4] - 2025-11-09
 
-### 🛠️ Maintenance & UX Polish
+### ✨ Added
+- Enhanced configuration import/export normalization between legacy (5.7.x) and 6.x formats
 
-- 🧹 Fixed History Tab Cleaner layout, including mobile alignment and input width behavior.
-- 🖼️ Improved image viewer modal stacking and close button hit area for more reliable access above other UI layers.
-- 🔄 Implemented robust configuration import/export normalization to ensure compatibility between legacy (5.7.x) and 6.x configurations.
-- 🎯 Corrected global negative prompt handling for AI Horde so it is only applied via supported `negative_prompt` fields.
-- 🚀 Clarified AI Prompt Enhancement queue behavior and surfaced enhancement queue state more clearly in the status widget.
-- ⚡ Ensured AI Prompt Enhancement indicators update immediately following configuration import.
-- 📏 Standardized Pollinations dimension input UI for a consistent and predictable experience.
-- 📝 Fixed persistence of custom enhancement templates across save/reload, example loading, and reset flows.
+### 🐞 Fixed
+- History Tab Cleaner layout and mobile alignment
+- Image viewer modal stacking and close button hit area
+- Global negative prompt handling for AI Horde with proper `negative_prompt` fields
+- AI Prompt Enhancement queue behavior and status widget updates
+- Pollinations dimension input UI standardization
+- Custom enhancement template persistence across workflows
 
-**Status**: Recommended. Focused on reliability, clarity, and compatibility without breaking existing workflows.
+### 🏆 Improved
+- User experience polish and reliability
+- Clearer enhancement queue state indication
+- Consistent and predictable UI behavior
 
 ## [6.0.3] - 2025-11-08
 
-### 🏗️ MINOR: UI/UX Improvements and Feature Enhancements
+### ✨ Added
+- Enhanced Z-index hierarchy (Image viewer: 99999, Config panel: 99998, Status widget: 1020, Navigation: 1030)
+- Flexible Status Widget positioning for better mobile responsive behavior
+- Reorganized download file naming: ScriptName_Provider_Model_PromptSnippet_Index
 
-This release includes significant UI improvements, better positioning systems, animation enhancements, and improved functionality for a more polished user experience.
+### 🐞 Fixed
+- Mobile button animation hover movement causing rightward shift
+- Clean button text corruption in expired link detection
+- Model information flow from generation to download functionality
 
-#### 🆕 New Features
-
-- **Enhanced Z-Index Hierarchy**: Improved UI element layering with proper z-index hierarchy (Image viewer: 99999, Config panel: 99998, Status widget: 1020, Navigation: 1030)
-- **Flexible Status Widget Positioning**: Removed fixed "right" property for better mobile responsive behavior
-- **Reorganized Download File Naming**: Enhanced filename structure: ScriptName_Provider_Model_PromptSnippet_Index for better file organization
-
-#### 🔧 Bug Fixes
-
-- **Mobile Button Animation Fix**: Fixed mobile button hover movement issue that caused rightward shift
-- **Button Text Corruption**: Fixed Clean button text corruption issue in expired link detection
-- **Model Information Flow**: Fixed model information flow from generation to download functionality
-
-#### 🎯 Improvements
-
-- **Smooth Prompt Container Animation**: Added smooth expand/collapse transitions replacing jarring display toggle with max-height and opacity transitions
-- **Automatic Link Cleaning**: Added expired image link detection and removal functionality
-- **Enhanced Clean Button**: Improved Clean button to remove broken URLs (403, expired, etc.) with detailed user feedback
-- **Mobile Responsive Design**: Improved mobile-specific hover states to prevent visual shifts while maintaining feedback
-
-#### 🧪 Quality Assurance
-
-- **Testing**: Comprehensive testing of all UI components, animations, and positioning systems
-- **Cross-Platform Compatibility**: Verified functionality across desktop and mobile browsers
-- **Performance**: Optimized animations and positioning for better performance
-
-**Status**: Ready for production - all improvements tested and validated
+### 🏆 Improved
+- Smooth prompt container animation with max-height and opacity transitions
+- Expired image link detection and automatic removal
+- Enhanced Clean button for broken URL removal (403, expired, etc.)
+- Mobile responsive design with improved hover states
 
 ## [6.0.2] - 2025-11-08
 
-### 🏗️ MINOR: UI/UX Enhancements and Bug Fixes
+### ✨ Added
+- Provider logo integration for better visual identification and branding
 
-This release includes several user interface improvements and bug fixes to enhance the overall user experience and resolve display issues.
+### 🐞 Fixed
+- Retry generation button display on API key validation errors
+- Prompt enhancement preset formatting to flowing paragraph format
+- Configuration save message deduplication
+- History list padding removal for layout consistency
 
-#### 🆕 New Features
-
-- **Provider Logo Integration**: Added logos to provider header sections for better visual identification and branding consistency
-
-#### 🔧 Bug Fixes
-
-- **Retry Generation Button Display Fix**: Fixed retry button not appearing on API key validation errors, improving error recovery workflow
-- **Prompt Enhancement Preset Formatting**: Standardized all enhancement presets to flowing paragraph format for better readability
-- **Configuration Save Message Deduplication**: Eliminated duplicate save notification messages to reduce visual clutter
-- **History List Padding Removal**: Removed specified padding from CSS selectors to improve layout consistency
-
-#### 🎯 Improvements
-
-- **Visual Consistency**: Enhanced overall UI consistency across all components
-- **User Experience**: Streamlined user interactions and feedback mechanisms
-- **Performance**: Optimized CSS selectors for better rendering performance
-
-#### 🧪 Quality Assurance
-
-- **Testing**: Comprehensive testing of all UI components and interactions
-- **Cross-Browser Compatibility**: Verified functionality across major browsers
-- **Responsive Design**: Ensured proper display on various screen sizes
-
-**Status**: Ready for production - all improvements tested and validated
+### 🏆 Improved
+- Visual consistency across all components
+- User interaction and feedback mechanisms
+- CSS selector optimization for better rendering performance
 
 ## [6.0.1] - 2025-11-08
 
-### 🏗️ MAJOR: JavaScript and CSS Project Modularization Initiative
+### ⚠️ Important Notice
+This version contains potential bugs due to extensive refactoring and requires further testing.
 
-This release represents the completion of the **JavaScript and CSS Project Modularization Initiative**, building upon the v6.0.0 architecture transformation. This is primarily a **refactoring release** with enhanced modularization.
+### ✨ Added
+- **JavaScript Modularization (6 New Modules)**:
+  - `src/components/configPanel.js`: Configuration panel component
+  - `src/components/configPanelEvents.js`: Configuration panel event handlers  
+  - `src/components/configPanelTemplate.js`: Configuration panel template system
+  - `src/components/enhancementPanel.js`: Enhancement panel component
+  - `src/components/historyManager.js`: History management component
+  - `src/components/statusWidget.js`: Status widget component
+- **CSS Modularization (5 New Modules)**:
+  - `src/styles/base.css`: Base styling and resets
+  - `src/styles/components.css`: Component-specific styles
+  - `src/styles/layout.css`: Layout and positioning styles
+  - `src/styles/themes.css`: Theme and color scheme definitions
+  - `src/styles/utilities.css`: Utility classes and helpers
 
-#### ⚠️ Important Notice
-
-**🔴 WARNING: This version contains potential bugs due to extensive refactoring and requires further testing.**
-
-#### 🆕 New Modularization Features
-
-**JavaScript Modularization (6 New Modules)**:
-
-- **src/components/configPanel.js**: Configuration panel component
-- **src/components/configPanelEvents.js**: Configuration panel event handlers
-- **src/components/configPanelTemplate.js**: Configuration panel template system
-- **src/components/enhancementPanel.js**: Enhancement panel component
-- **src/components/historyManager.js**: History management component
-- **src/components/statusWidget.js**: Status widget component
-
-**CSS Modularization (5 New Modules)**:
-
-- **src/styles/base.css**: Base styling and resets
-- **src/styles/components.css**: Component-specific styles
-- **src/styles/layout.css**: Layout and positioning styles
-- **src/styles/themes.css**: Theme and color scheme definitions
-- **src/styles/utilities.css**: Utility classes and helpers
-
-#### 🔧 Changes Made
-
-- **Enhanced JavaScript Modularization**: Further decomposed monolithic components into smaller, focused modules
-- **CSS Architecture Restructuring**: Split monolithic CSS into logical, maintainable modules
-- **Build Verification**: Verified webpack bundling and optimization with new modular structure
-- **Component Separation**: Improved separation of concerns between UI components
-- **Style Organization**: Better organization of stylesheets for maintainability
-
-#### 🧪 Testing & Quality Assurance
-
-- **Build Process Verification**: Confirmed webpack build process works with new modular structure
-- **Module Integration Testing**: Verified inter-module communication and dependencies
-- **Cross-Browser Compatibility**: Basic compatibility testing across major browsers
-- **Performance Validation**: Confirmed no significant performance regressions
-
-#### ⚠️ Known Issues & Limitations
-
-- **Potential Bugs**: Due to extensive refactoring, some functionality may not work as expected
-- **Testing Required**: This version requires extensive user testing to identify and resolve issues
-- **Feature Parity**: Some advanced features may need validation in the new modular structure
-- **Migration Notes**: Users upgrading from v6.0.0 may experience temporary issues
-
-#### 🔄 Migration Guide
-
-**For Users**: This is a maintenance update building on v6.0.0. All existing functionality should work, but please report any issues found.
-
-**For Developers**: The new modular structure provides better organization but requires careful attention to module dependencies and imports.
-
-### 🏆 Release Summary
-
-- **Architecture**: Enhanced JavaScript and CSS modularization
-- **Modules Added**: 11 new modules (6 JS + 5 CSS)
-- **Focus**: Refactoring and maintainability improvements
-- **Status**: Potential bugs present - further testing required
-
-**⚠️ Recommendation**: Use with caution and report any issues for the next patch release.
+### 🏆 Improved
+- Enhanced JavaScript modularization with smaller, focused modules
+- CSS architecture restructuring into logical, maintainable modules
+- Separation of concerns between UI components
+- Build verification with new modular structure
 
 ## [6.0.0] - 2025-11-08
 
-### 🏗️ MAJOR: Complete Modular Architecture Transformation
-
-This release represents a **complete architectural overhaul** of the WTR Lab Novel Image Generator, transforming from a single 5,000-line monolith (v5.7.1) to a professional, maintainable modular codebase.
-
-#### 🎯 Migration from Monolith to Modular
-
-**Previous Architecture (v5.7.1)**:
-
-- Single JavaScript file: ~5,000 lines of code
-- Tightly coupled functionality
-- Difficult to maintain and debug
-- Hard to extend with new features
-- No separation of concerns
-
-**New Architecture (v6.0.0)**:
-
-- **Modular Directory Structure**: Organized into logical modules
-- **Separation of Concerns**: Each module has specific responsibilities
-- **Professional Development Experience**: Industry-standard architecture
-- **Enhanced Maintainability**: Easy to understand, modify, and extend
-- **Improved Scalability**: Add features without affecting existing code
-
-### 🚀 New Modular Structure
-
-```
-src/
-├── api/              # AI provider integrations
-│   ├── aiHorde.js    # Community-powered AI generation
-│   ├── gemini.js     # Google Gemini enhancement
-│   ├── google.js     # Google Imagen API
-│   ├── openAI.js     # OpenAI compatible APIs
-│   └── pollinations.js # Pollinations.ai integration
-├── components/       # User interface components
-│   ├── configPanel.js # Settings and configuration UI
-│   ├── errorModal.js  # Error display and handling
-│   ├── googleApiPrompt.js # Google API authentication
-│   ├── imageViewer.js # Image display and interaction
-│   ├── pollinationsAuthPrompt.js # Pollinations authentication
-│   └── statusWidget.js # Status indicators and progress
-├── config/          # Configuration management
-│   ├── defaults.js   # Application default settings
-│   ├── models.js     # AI model configurations
-│   └── styles.js     # Style definitions and themes
-├── core/            # Core application logic
-│   ├── app.js       # Main application controller
-│   └── events.js    # Event management system
-├── styles/          # Stylesheets and theming
-│   └── main.css     # Main application styles
-└── utils/           # Utility functions and helpers
-    ├── cache.js      # Caching system for performance
-    ├── error.js      # Error handling utilities
-    ├── file.js       # File operations and management
-    ├── logger.js     # Logging system for debugging
-    ├── promptUtils.js # Prompt processing and enhancement
-    └── storage.js    # Local storage management
-```
-
-### 🛠️ Major Stability & Enhancement Fixes
-
-This release includes **14 major stability and enhancement fixes** that significantly improve reliability, performance, and user experience:
-
-#### ✅ Stability Improvements
-
-1. **AI Prompt Enhancement Fallback Mechanism**
-
-   - Implemented robust fallback system for enhanced prompts
-   - Ensures users can always generate images even if enhancement fails
-   - Graceful degradation with clear user feedback
-
-2. **Persistent History Management System**
-
-   - Completely rewritten history management using new storage utils
-   - Improved data persistence and reliability
-   - Better organization and retrieval of generation history
-
-3. **OpenAI Compatible Provider Error Handling**
-
-   - Enhanced error categorization for OpenAI-compatible APIs
-   - Better error messages and recovery suggestions
-   - Improved handling of network timeouts and rate limits
-
-4. **IP Address Mismatch Retry Functionality**
-
-   - Smart retry logic for IP address conflicts
-   - Automatic provider switching when issues detected
-   - User-friendly error communication during retries
-
-5. **JSON Parsing Error Resolution**
-
-   - Enhanced error handling for malformed JSON responses
-   - Better data validation and sanitization
-   - Graceful handling of API response format changes
-
-6. **Configuration Tab Functionality Restoration**
-
-   - Fixed and enhanced configuration panel accessibility
-   - Improved settings management and persistence
-   - Better provider-specific configuration options
-
-7. **Complete Logo System Simplification**
-   - Streamlined visual branding system
-   - Consistent icon usage across all components
-   - Improved loading and display of provider logos
-
-#### 🎨 User Experience Enhancements
-
-8. **CSS Alignment and Styling Improvements**
-
-   - Professional UI design with improved visual hierarchy
-   - Better responsive design for mobile and desktop
-   - Enhanced button and modal styling
-   - Improved accessibility and visual feedback
-
-9. **Enhancement Template Interface Updates**
-
-   - Improved template management system
-   - Better preview functionality for enhancement styles
-   - Enhanced template customization options
-
-10. **Unified Image Modal for Base64 and URL Images**
-
-    - Single modal system for all image types
-    - Improved image loading and display
-    - Better handling of different image formats and sources
-
-11. **Clean Prompt Formatting Before Transmission**
-
-    - Enhanced text preprocessing and cleaning
-    - Better handling of special characters and formatting
-    - Improved prompt quality and consistency
-
-12. **Provider Icons/Logos Updates**
-
-    - Modern visual identity improvements
-    - Better logo resolution and display
-    - Consistent visual branding across all providers
-
-13. **Additional Styling Fixes**
-
-    - Comprehensive UI polish and consistency improvements
-    - Better spacing, typography, and visual elements
-    - Enhanced user interface responsiveness
-
-14. **Comprehensive Testing and Stability Validation**
-    - Extensive automated testing implementation
-    - Cross-browser compatibility validation
-    - Performance optimization and validation
-    - Security and privacy improvements
-
-### 🏗️ Technical Improvements
-
-#### Build System Enhancements
-
-- **Webpack 5 Integration**: Modern bundling with improved optimization
-- **Code Splitting**: Efficient modular code organization
-- **CSS Processing**: Advanced styling with CSS loaders
-- **Production Optimization**: Minified and optimized builds
-
-#### Error Handling & Recovery
-
-- **Categorized Error System**: Proper error classification throughout the application
-- **Smart Recovery Logic**: Automatic recovery from temporary failures
-- **User-Friendly Communication**: Clear, actionable error messages
-- **Fallback Mechanisms**: Graceful degradation when services are unavailable
-
-#### Performance Optimizations
-
-- **Enhanced Caching**: Smart caching strategies for improved response times
-- **Background Processing**: Non-blocking image generation queues
-- **Resource Management**: Optimized memory and network usage
-- **Cross-Platform Consistency**: Uniform performance across all browsers
-
-### 📊 Architecture Benefits
-
-#### For Developers
-
-- **🎯 Clear Separation**: Each module has a specific, well-defined responsibility
-- **🔧 Easy Maintenance**: Issues can be located and resolved quickly
-- **📈 Enhanced Scalability**: New features can be added without affecting existing code
-- **🧪 Improved Testability**: Individual modules can be tested in isolation
-- **👥 Team Collaboration**: Multiple developers can work on different modules simultaneously
-
-#### For Users
-
-- **🚀 Improved Performance**: Better resource management and optimization
-- **🛡️ Enhanced Reliability**: Robust error handling and recovery systems
-- **📱 Better Mobile Experience**: Improved responsive design and mobile optimization
-- **⚡ Faster Response Times**: Optimized caching and processing systems
-- **🎨 Professional UI**: Modern, clean, and intuitive user interface
-
-### 🔄 Migration Guide
-
-#### For End Users
-
-No action required! The new modular architecture is completely transparent to end users. All existing functionality remains the same, but with improved performance and reliability.
-
-#### For Developers/Contributors
-
-The codebase has been completely restructured:
-
-**Before (v5.7.1)**:
-
-- Single main file with all functionality
-- Direct DOM manipulation throughout
-- Mixed concerns and responsibilities
-
-**After (v6.0.0)**:
-
-- Modular architecture with clear separation
-- Component-based UI management
-- Dedicated utilities for common operations
-- Professional error handling and logging
-
-### 🧪 Quality Assurance
-
-Version 6.0.0 underwent extensive testing and validation:
-
-- **✅ Functional Testing**: All features tested across multiple browsers and platforms
-- **✅ Integration Testing**: Provider APIs tested for stability and reliability
-- **✅ Performance Testing**: Load testing and optimization validation completed
-- **✅ Error Handling Testing**: Comprehensive error scenario testing and validation
-- **✅ Cross-Platform Testing**: Desktop and mobile compatibility thoroughly verified
-- **✅ Security Testing**: Privacy and data protection validation completed
-
-### 📈 Performance Improvements
-
-- **⚡ Loading Speed**: 40% faster initial page load
-- **💾 Memory Usage**: 25% reduction in memory consumption
-- **🚀 Generation Speed**: 15% improvement in image generation response times
-- **📱 Mobile Performance**: Significant improvements in mobile user experience
-- **🔄 Caching Efficiency**: Enhanced caching system for faster repeat operations
-
-### 🌟 User Experience Improvements
-
-- **🎨 Visual Design**: Modern, professional interface with improved aesthetics
-- **📱 Mobile Optimization**: Enhanced mobile experience with better touch interactions
-- **🛠️ Configuration**: Streamlined settings management with better organization
-- **📊 Error Communication**: Clearer, more helpful error messages and guidance
-- **⚙️ Provider Management**: Improved provider switching and configuration options
-
-### 🏆 Achievement Summary
-
-This release represents one of the most significant improvements in the project's history:
-
-- **🏗️ Architecture**: Complete transformation from monolith to professional modular structure
-- **🛠️ Stability**: 14 major fixes addressing reliability, performance, and user experience
-- **🚀 Performance**: Comprehensive optimization for speed and resource efficiency
-- **🎨 User Interface**: Professional design improvements with mobile-first approach
-- **🔧 Maintainability**: Clean, documented, and extensible codebase for future development
-- **📈 Scalability**: Foundation for rapid feature development and easy maintenance
-
----
+### 🏗️ Major Architecture Transformation
+Complete transformation from single 5,000-line monolith to professional modular codebase with:
+
+### ✨ Added
+- **Modular Directory Structure**: Organized into logical modules with clear separation of concerns
+- **14 Major Stability & Enhancement Fixes**:
+  1. AI Prompt Enhancement fallback mechanism
+  2. Persistent history management system
+  3. OpenAI Compatible provider error handling
+  4. IP address mismatch retry functionality
+  5. JSON parsing error resolution
+  6. Configuration tab functionality restoration
+  7. Complete logo system simplification
+  8. CSS alignment and styling improvements
+  9. Enhancement template interface updates
+  10. Unified image modal for base64 and URL images
+  11. Clean prompt formatting before transmission
+  12. Provider icons/logos updates
+  13. Additional styling fixes
+  14. Comprehensive testing and stability validation
+
+### 🏆 Improved
+- **Performance**: 40% faster loading, 25% memory reduction, 15% generation speed improvement
+- **User Experience**: Modern professional UI, mobile optimization, clearer error communication
+- **Developer Experience**: Clear module separation, easy maintenance, enhanced scalability, improved testability
+- **Technical Infrastructure**: Webpack 5 integration, code splitting, CSS processing, production optimization
 
 ## [5.7.1] - Previous Release
 
-_Note: Previous versions (5.7.1 and earlier) were implemented as a single monolithic JavaScript file. Detailed changelog information for these versions is available in the GreasyFork version history._
-
-### Previous Architecture (Monolith)
-
-- Single JavaScript userscript file
-- ~5,000 lines of code in one file
-- All functionality tightly coupled
-- Difficult to maintain and debug
-- Limited scalability for new features
-
----
-
-## Future Roadmap
-
-### Planned Features for Future Releases
-
-- 🔄 **Enhanced Provider Support**: Additional AI providers and models
-- 🎨 **Advanced Styling Options**: More art styles and customization
-- 📊 **Analytics Dashboard**: Usage statistics and performance metrics
-- 🔄 **Batch Processing**: Multiple image generation capabilities
-- 🌐 **Multi-Language Support**: Internationalization for global users
-
-### Architecture Evolution
-
-- 🧪 **Unit Testing Framework**: Comprehensive test coverage
-- 📦 **Plugin System**: Extensible architecture for third-party integrations
-- 🔒 **Enhanced Security**: Advanced privacy and security features
-- 📱 **Progressive Web App**: PWA capabilities for offline usage
+Monolithic architecture note: Previous versions (5.7.1 and earlier) were implemented as a single monolithic JavaScript file (~5,000 lines) with tightly coupled functionality. Detailed changelog information for these versions is available in the GreasyFork version history.
 
 ---
 

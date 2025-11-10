@@ -5,7 +5,6 @@
 // @author MasuRii
 // @match https://wtr-lab.com/en/novel/*/*/*
 // @connect *
-// @downloadURL https://update.greasyfork.org/scripts/553073/WTR%20LAB%20Novel%20Image%20Generator.user.js
 // @grant GM_setValue
 // @grant GM_getValue
 // @grant GM_xmlhttpRequest
@@ -13,5 +12,4 @@
 // @icon https://www.google.com/s2/favicons?sz=64&domain=wtr-lab.com
 // @license MIT
 // @namespace http://tampermonkey.net/
-// @updateURL https://update.greasyfork.org/scripts/553073/WTR%20LAB%20Novel%20Image%20Generator.meta.js
 // ==/UserScript==

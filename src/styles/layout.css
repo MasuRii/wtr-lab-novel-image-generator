@@ -1,519 +1,554 @@
 /* === Tab System === */
 .nig-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--nig-color-border);
-    margin-bottom: var(--nig-space-xl);
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  display: flex;
+  border-bottom: 1px solid var(--nig-color-border);
+  margin-bottom: var(--nig-space-xl);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .nig-tabs::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .nig-tab {
-    padding: var(--nig-space-md) var(--nig-space-xl);
-    cursor: pointer;
-    border-radius: var(--nig-radius-md) var(--nig-radius-md) 0 0;
-    background: transparent;
-    color: var(--nig-color-text-secondary);
-    font-size: var(--nig-font-size-sm);
-    font-weight: 500;
-    transition: all var(--nig-transition-fast);
-    white-space: nowrap;
-    border: 1px solid transparent;
-    border-bottom: none;
+  padding: var(--nig-space-md) var(--nig-space-xl);
+  cursor: pointer;
+  border-radius: var(--nig-radius-md) var(--nig-radius-md) 0 0;
+  background: transparent;
+  color: var(--nig-color-text-secondary);
+  font-size: var(--nig-font-size-sm);
+  font-weight: 500;
+  transition: all var(--nig-transition-fast);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-bottom: none;
 }
 
 .nig-tab:hover {
-    background: var(--nig-color-bg-tertiary);
-    color: var(--nig-color-text-primary);
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
 }
 
 .nig-tab.active {
-    background: var(--nig-color-bg-tertiary);
-    color: var(--nig-color-text-primary);
-    border: 1px solid var(--nig-color-border);
-    border-bottom: 1px solid var(--nig-color-bg-tertiary);
-    box-shadow: 0 -2px 0 var(--nig-color-accent-primary) inset;
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
+  border: 1px solid var(--nig-color-border);
+  border-bottom: 1px solid var(--nig-color-bg-tertiary);
+  box-shadow: 0 -2px 0 var(--nig-color-accent-primary) inset;
 }
 
 .nig-tab-content {
-    display: none;
-    animation: nig-content-fade 0.2s ease-out;
+  display: none;
+  animation: nig-content-fade 0.2s ease-out;
 }
 
 .nig-tab-content.active {
-    display: block;
+  display: block;
 }
 
 @keyframes nig-content-fade {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* === Image Gallery === */
 .nig-image-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--nig-space-xl);
-    margin-top: var(--nig-space-xl);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--nig-space-xl);
+  margin-top: var(--nig-space-xl);
 }
 
 .nig-image-container {
-    position: relative;
-    border-radius: var(--nig-radius-lg);
-    overflow: hidden;
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    transition: all var(--nig-transition-normal);
+  position: relative;
+  border-radius: var(--nig-radius-lg);
+  overflow: hidden;
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  transition: all var(--nig-transition-normal);
 }
 
 .nig-image-container:hover {
-    box-shadow: var(--nig-shadow-lg);
-    transform: translateY(-2px);
+  box-shadow: var(--nig-shadow-lg);
+  transform: translateY(-2px);
 }
 
 .nig-image-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-    transition: transform var(--nig-transition-slow);
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform var(--nig-transition-slow);
 }
 
 .nig-image-container:hover img {
-    transform: scale(1.02);
+  transform: scale(1.02);
 }
 
 .nig-image-actions {
-    position: absolute;
-    top: var(--nig-space-md);
-    right: var(--nig-space-md);
-    display: flex;
-    gap: var(--nig-space-sm);
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    padding: var(--nig-space-sm);
-    border-radius: var(--nig-radius-md);
-    opacity: 0;
-    transition: opacity var(--nig-transition-normal);
+  position: absolute;
+  top: var(--nig-space-md);
+  right: var(--nig-space-md);
+  display: flex;
+  gap: var(--nig-space-sm);
+  background: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(10px);
+  padding: var(--nig-space-sm);
+  border-radius: var(--nig-radius-md);
+  opacity: 0;
+  transition: opacity var(--nig-transition-normal);
 }
 
 .nig-image-container:hover .nig-image-actions {
-    opacity: 1;
+  opacity: 1;
 }
 
 .nig-image-actions button {
-    background: rgba(0, 0, 0, 0.8);
-    border: none;
-    border-radius: var(--nig-radius-md);
-    width: 36px;
-    height: 36px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--nig-font-size-base);
-    color: white;
-    transition: all var(--nig-transition-fast);
+  background: rgb(0 0 0 / 80%);
+  border: none;
+  border-radius: var(--nig-radius-md);
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--nig-font-size-base);
+  color: white;
+  transition: all var(--nig-transition-fast);
 }
 
 .nig-image-actions button:hover {
-    background: white;
-    transform: scale(1.1);
+  background: white;
+  transform: scale(1.1);
 }
 
 /* === URL Link Button Styling === */
 .nig-image-actions button[title="Open Image URL"] {
-    background: rgba(99, 102, 241, 0.9);
+  background: rgb(99 102 241 / 90%);
 }
 
 .nig-image-actions button[title="Open Image URL"]:hover {
-    background: var(--nig-color-accent-primary);
+  background: var(--nig-color-accent-primary);
 }
 
 /* === History System === */
 .nig-history-list {
-    list-style: none;
-    padding: 0;
-    max-height: 400px;
-    overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .nig-history-item {
-    background: var(--nig-color-bg-tertiary);
-    padding: var(--nig-space-lg);
-    border-radius: var(--nig-radius-md);
-    margin-bottom: var(--nig-space-md);
-    border: 1px solid var(--nig-color-border);
-    transition: all var(--nig-transition-fast);
+  background: var(--nig-color-bg-tertiary);
+  padding: var(--nig-space-lg);
+  border-radius: var(--nig-radius-md);
+  margin-bottom: var(--nig-space-md);
+  border: 1px solid var(--nig-color-border);
+  transition: all var(--nig-transition-fast);
 }
 
 .nig-history-item:hover {
-    border-color: var(--nig-color-border-light);
-    box-shadow: var(--nig-shadow-sm);
+  border-color: var(--nig-color-border-light);
+  box-shadow: var(--nig-shadow-sm);
 }
 
 .nig-history-item small {
-    display: block;
-    color: var(--nig-color-text-muted);
-    margin-bottom: var(--nig-space-sm);
-    font-size: var(--nig-font-size-xs);
+  display: block;
+  color: var(--nig-color-text-muted);
+  margin-bottom: var(--nig-space-sm);
+  font-size: var(--nig-font-size-xs);
 }
 
 .nig-history-item a {
-    color: var(--nig-color-accent-primary);
-    text-decoration: none;
-    word-break: break-all;
-    font-weight: 500;
-    transition: color var(--nig-transition-fast);
+  color: var(--nig-color-accent-primary);
+  text-decoration: none;
+  word-break: break-all;
+  font-weight: 500;
+  transition: color var(--nig-transition-fast);
+}
+
+/* History prompt: use up to 2 lines, full width, then ellipsis */
+.nig-history-prompt {
+  margin-bottom: var(--nig-space-xs);
+  font-size: var(--nig-font-size-sm);
+
+  /* Use a dedicated dark color specific to history prompts only */
+  color: #d0d0d0a6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.nig-history-prompt-empty {
+  color: var(--nig-color-text-muted);
+  font-style: italic;
 }
 
 .nig-history-item a:hover {
-    color: var(--nig-color-hover-primary);
+  color: var(--nig-color-hover-primary);
 }
 
 /* === Panel Configuration Grid Layout === */
 .nig-config-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--nig-space-xl);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--nig-space-xl);
 }
 
 .nig-config-section {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-xl);
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-xl);
 }
 
 .nig-provider-container {
-    display: grid;
-    gap: var(--nig-space-lg);
+  display: grid;
+  gap: var(--nig-space-lg);
 }
 
 .nig-provider-header {
-    margin-bottom: var(--nig-space-lg);
-    padding-bottom: var(--nig-space-lg);
-    border-bottom: 1px solid var(--nig-color-border);
+  margin-bottom: var(--nig-space-lg);
+  padding-bottom: var(--nig-space-lg);
+  border-bottom: 1px solid var(--nig-color-border);
 }
 
 .nig-provider-header h3 {
-    margin: 0 0 var(--nig-space-sm) 0;
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-lg);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: var(--nig-space-sm);
+  margin: 0 0 var(--nig-space-sm) 0;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-lg);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
 }
 
 .nig-provider-header p {
-    margin: 0;
-    color: var(--nig-color-text-secondary);
-    font-size: var(--nig-font-size-sm);
-    line-height: 1.5;
+  margin: 0;
+  color: var(--nig-color-text-secondary);
+  font-size: var(--nig-font-size-sm);
+  line-height: 1.5;
 }
 
 .nig-provider-controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--nig-space-lg);
-    margin-bottom: var(--nig-space-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--nig-space-lg);
+  margin-bottom: var(--nig-space-lg);
 }
 
 .nig-provider-settings {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-xl);
-    transition: all var(--nig-transition-normal);
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-xl);
+  transition: all var(--nig-transition-normal);
 }
 
 .nig-provider-settings:hover {
-    border-color: var(--nig-color-border-light);
-    box-shadow: var(--nig-shadow-sm);
+  border-color: var(--nig-color-border-light);
+  box-shadow: var(--nig-shadow-sm);
 }
 
 .nig-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--nig-space-lg);
-    margin-bottom: var(--nig-space-lg);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--nig-space-lg);
+  margin-bottom: var(--nig-space-lg);
 }
 
 /* === Styling Tab Layout === */
 .nig-styling-container {
-    display: grid;
-    gap: var(--nig-space-xl);
+  display: grid;
+  gap: var(--nig-space-xl);
 }
 
 .nig-styling-intro {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-lg);
-    margin-bottom: var(--nig-space-lg);
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-lg);
+  margin-bottom: var(--nig-space-lg);
 }
 
 .nig-styling-intro p {
-    margin: 0;
-    color: var(--nig-color-text-secondary);
-    font-size: var(--nig-font-size-sm);
-    line-height: 1.6;
+  margin: 0;
+  color: var(--nig-color-text-secondary);
+  font-size: var(--nig-font-size-sm);
+  line-height: 1.6;
 }
 
 .nig-style-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--nig-space-xl);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--nig-space-xl);
 }
 
 .nig-style-section {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-xl);
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-xl);
 }
 
 .nig-section-header {
-    margin-bottom: var(--nig-space-lg);
-    padding-bottom: var(--nig-space-lg);
-    border-bottom: 1px solid var(--nig-color-border);
+  margin-bottom: var(--nig-space-lg);
+  padding-bottom: var(--nig-space-lg);
+  border-bottom: 1px solid var(--nig-color-border);
 }
 
 .nig-section-header h4 {
-    margin: 0;
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-lg);
-    font-weight: 600;
+  margin: 0;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-lg);
+  font-weight: 600;
 }
 
 /* === History Tab Layout === */
 .nig-history-container {
-    display: grid;
-    gap: var(--nig-space-xl);
+  display: grid;
+  gap: var(--nig-space-xl);
 }
 
 .nig-history-cleanup {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-xl);
-    display: grid;
-    gap: var(--nig-space-lg);
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-xl);
+  display: grid;
+  gap: var(--nig-space-lg);
 }
 
 .nig-cleanup-info h4 {
-    margin: 0 0 var(--nig-space-sm) 0;
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-lg);
-    font-weight: 600;
+  margin: 0 0 var(--nig-space-sm) 0;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-lg);
+  font-weight: 600;
 }
 
 .nig-cleanup-info p {
-    margin: 0;
-    color: var(--nig-color-text-secondary);
-    font-size: var(--nig-font-size-sm);
-    line-height: 1.5;
+  margin: 0;
+  color: var(--nig-color-text-secondary);
+  font-size: var(--nig-font-size-sm);
+  line-height: 1.5;
 }
 
 .nig-cleanup-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--nig-space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-md);
 }
 
 .nig-cleanup-controls label {
-    color: var(--nig-color-text-primary);
-    font-weight: 500;
-    font-size: var(--nig-font-size-sm);
+  color: var(--nig-color-text-primary);
+  font-weight: 500;
+  font-size: var(--nig-font-size-sm);
 }
 
 .nig-cleanup-controls input[type="number"] {
-    width: 80px;
-    padding: var(--nig-space-sm);
-    background: var(--nig-color-bg-primary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-md);
-    color: var(--nig-color-text-primary);
+  width: 80px;
+  padding: var(--nig-space-sm);
+  background: var(--nig-color-bg-primary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-md);
+  color: var(--nig-color-text-primary);
 }
 
 /* === Provider Priority Info === */
 .nig-provider-priority-info {
-    background: var(--nig-color-bg-primary);
-    border: 1px solid var(--nig-color-accent-warning);
-    border-radius: var(--nig-radius-lg);
-     padding: var(--nig-space-lg);
-    margin-bottom: var(--nig-space-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--nig-space-md);
+  background: var(--nig-color-bg-primary);
+  border: 1px solid var(--nig-color-accent-warning);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-lg);
+  margin-bottom: var(--nig-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nig-space-md);
 }
 
 .nig-priority-header {
-    display: flex;
-    align-items: center;
-    gap: var(--nig-space-sm);
-    color: var(--nig-color-accent-warning);
-    font-weight: 600;
-    font-size: var(--nig-font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
+  color: var(--nig-color-accent-warning);
+  font-weight: 600;
+  font-size: var(--nig-font-size-sm);
 }
 
 /* === Enhancement Preview Layout === */
 .nig-enhancement-preview {
-    background: var(--nig-color-bg-primary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-lg);
-    padding: var(--nig-space-lg);
-    margin-top: var(--nig-space-lg);
+  background: var(--nig-color-bg-primary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-lg);
+  padding: var(--nig-space-lg);
+  margin-top: var(--nig-space-lg);
 }
 
 .nig-preview-container {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: var(--nig-space-lg);
-    align-items: start;
-    margin-bottom: var(--nig-space-lg);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--nig-space-lg);
+  align-items: start;
+  margin-bottom: var(--nig-space-lg);
 }
 
 .nig-preview-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--nig-space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nig-space-sm);
 }
 
 .nig-preview-section h5 {
-    margin: 0;
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-sm);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+  margin: 0;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .nig-preview-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--nig-color-accent-primary);
-    padding: var(--nig-space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nig-color-accent-primary);
+  padding: var(--nig-space-sm);
 }
 
 .nig-prompt-display {
-    background: var(--nig-color-bg-tertiary);
-    border: 1px solid var(--nig-color-border);
-    border-radius: var(--nig-radius-md);
-    padding: var(--nig-space-md);
-    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-    font-size: var(--nig-font-size-xs);
-    line-height: 1.4;
-    color: var(--nig-color-text-secondary);
-    max-height: 120px;
-    overflow-y: auto;
-    word-wrap: break-word;
-    white-space: pre-wrap;
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-md);
+  font-family: "Fira Code", Monaco, Consolas, monospace;
+  font-size: var(--nig-font-size-xs);
+  line-height: 1.4;
+  color: var(--nig-color-text-secondary);
+  max-height: 120px;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* === Prompt Container === */
 .nig-prompt-container {
-    background: var(--nig-color-bg-tertiary);
-    border-radius: var(--nig-radius-md);
-    margin-bottom: var(--nig-space-lg);
-    border: 1px solid var(--nig-color-border);
-    transition: all var(--nig-transition-normal);
-    overflow: hidden;
+  background: var(--nig-color-bg-tertiary);
+  border-radius: var(--nig-radius-md);
+  margin-bottom: var(--nig-space-lg);
+  border: 1px solid var(--nig-color-border);
+  transition: all var(--nig-transition-normal);
+  overflow: hidden;
 }
 
 .nig-prompt-header {
-    padding: var(--nig-space-lg);
-    cursor: pointer;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    user-select: none;
-    color: var(--nig-color-text-primary);
-    transition: all var(--nig-transition-fast);
-    position: relative;
-    z-index: 1;
+  padding: var(--nig-space-lg);
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  color: var(--nig-color-text-primary);
+  transition: all var(--nig-transition-fast);
+  position: relative;
+  z-index: 1;
 }
 
 .nig-prompt-header:hover {
-    color: var(--nig-color-accent-primary);
-    background: var(--nig-color-bg-primary);
+  color: var(--nig-color-accent-primary);
+  background: var(--nig-color-bg-primary);
 }
 
 .nig-prompt-header::before {
-    content: '▸';
-    margin-right: var(--nig-space-md);
-    transition: all var(--nig-transition-normal);
-    color: var(--nig-color-text-muted);
-    font-size: 14px;
-    display: inline-block;
+  content: "▸";
+  margin-right: var(--nig-space-md);
+  transition: all var(--nig-transition-normal);
+  color: var(--nig-color-text-muted);
+  font-size: 14px;
+  display: inline-block;
 }
 
 .nig-prompt-container.expanded .nig-prompt-header::before {
-    transform: rotate(90deg);
-    color: var(--nig-color-accent-primary);
+  transform: rotate(90deg);
+  color: var(--nig-color-accent-primary);
 }
 
 .nig-prompt-text {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    padding: 0 var(--nig-space-lg);
-    border-top: 1px solid transparent;
-    word-break: break-word;
-    color: var(--nig-color-text-secondary);
-    line-height: 1.6;
-    transition: all var(--nig-transition-normal);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 var(--nig-space-lg);
+  border-top: 1px solid transparent;
+  word-break: break-word;
+  color: var(--nig-color-text-secondary);
+  line-height: 1.6;
+  transition: all var(--nig-transition-normal);
 }
 
+/* When expanded, show full prompt inside a scrollable area.
+ * - Uses a fixed max-height with overflow-y: auto to avoid truncation.
+ * - Keeps existing look-and-feel and arrow behavior.
+ * - Allows mouse wheel, touch, and keyboard scrolling within the prompt area.
+ */
 .nig-prompt-container.expanded .nig-prompt-text {
-    max-height: 300px;
-    opacity: 1;
-    padding: var(--nig-space-lg);
-    border-top-color: var(--nig-color-border);
+  max-height: 260px;
+  opacity: 1;
+  padding: var(--nig-space-lg);
+  border-top-color: var(--nig-color-border);
+  overflow-y: auto;
+}
+
+/* Ensure prompt text uses pre-wrap so multi-line prompts (with newlines) are preserved,
+ * and that very long tokens still wrap without breaking layout.
+ */
+#nig-prompt-text.nig-prompt-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 @keyframes nig-expand {
-    from {
-        opacity: 0;
-        max-height: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        max-height: 300px;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    max-height: 300px;
+    transform: translateY(0);
+  }
 }
 
 /* === Additional Layout Utilities === */
-.nig-provider-settings {
-    display: none;
-}
 
 .nig-api-prompt-link {
-    color: var(--nig-color-accent-primary);
-    text-decoration: none;
-    transition: color var(--nig-transition-fast);
+  color: var(--nig-color-accent-primary);
+  text-decoration: none;
+  transition: color var(--nig-transition-fast);
 }
 
 .nig-api-prompt-link:hover {
-    color: var(--nig-color-hover-primary);
-    text-decoration: underline;
+  color: var(--nig-color-hover-primary);
+  text-decoration: underline;
 }
+
 /* Override for History Tab Cleaner number input width on mobile.
    Ensures #nig-history-clean-days remains compact even if external CSS applies width: 100%. */
-@media (max-width: 767px) {
+@media (width <= 767px) {
   .nig-history-cleanup input[type="number"]#nig-history-clean-days {
     width: 80px;
   }

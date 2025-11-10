@@ -1,137 +1,144 @@
+/* === Base Typography and Font Loading === */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap");
+
 /* === CSS Custom Properties (Design Tokens) === */
 :root {
-    /* Color Palette - Modern Dark Theme */
-    --nig-color-bg-primary: #1a1a1e;
-    --nig-color-bg-secondary: #2d2d32;
-    --nig-color-bg-tertiary: #3a3a40;
-    --nig-color-bg-elevated: #404046;
-    --nig-color-text-primary: #f0f0f0;
-    --nig-color-text-secondary: #b4b4b8;
-    --nig-color-text-muted: #8a8a8e;
-    --nig-color-border: #55555a;
-    --nig-color-border-light: #6a6a6e;
+  /* Color Palette - Modern Dark Theme */
+  --nig-color-bg-primary: #1a1a1e;
+  --nig-color-bg-secondary: #2d2d32;
+  --nig-color-bg-tertiary: #3a3a40;
+  --nig-color-bg-elevated: #404046;
+  --nig-color-text-primary: #f0f0f0;
+  --nig-color-text-secondary: #b4b4b8;
+  --nig-color-text-muted: #8a8a8e;
+  --nig-color-border: #55555a;
+  --nig-color-border-light: #6a6a6e;
 
-    /* Accent Colors */
-    --nig-color-accent-primary: #6366f1;
-    --nig-color-accent-secondary: #8b5cf6;
-    --nig-color-accent-success: #10b981;
-    --nig-color-accent-warning: #f59e0b;
-    --nig-color-accent-error: #ef4444;
+  /* Accent Colors */
+  --nig-color-accent-primary: #6366f1;
+  --nig-color-accent-secondary: #8b5cf6;
+  --nig-color-accent-success: #10b981;
+  --nig-color-accent-warning: #f59e0b;
+  --nig-color-accent-error: #ef4444;
 
-    /* Interactive States */
-    --nig-color-hover-primary: #5855eb;
-    --nig-color-hover-secondary: #7c3aed;
-    --nig-color-hover-success: #059669;
-    --nig-color-hover-error: #dc2626;
+  /* Interactive States */
+  --nig-color-hover-primary: #5855eb;
+  --nig-color-hover-secondary: #7c3aed;
+  --nig-color-hover-success: #059669;
+  --nig-color-hover-error: #dc2626;
 
-    /* Spacing Scale */
-    --nig-space-xs: 0.25rem;
-    --nig-space-sm: 0.5rem;
-    --nig-space-md: 0.75rem;
-    --nig-space-lg: 1rem;
-    --nig-space-xl: 1.5rem;
-    --nig-space-2xl: 2rem;
-    --nig-space-3xl: 3rem;
+  /* Spacing Scale */
+  --nig-space-xs: 0.25rem;
+  --nig-space-sm: 0.5rem;
+  --nig-space-md: 0.75rem;
+  --nig-space-lg: 1rem;
+  --nig-space-xl: 1.5rem;
+  --nig-space-2xl: 2rem;
+  --nig-space-3xl: 3rem;
 
-    /* Typography Scale */
-    --nig-font-size-xs: 0.75rem;
-    --nig-font-size-sm: 0.875rem;
-    --nig-font-size-base: 1rem;
-    --nig-font-size-lg: 1.125rem;
-    --nig-font-size-xl: 1.25rem;
-    --nig-font-size-2xl: 1.5rem;
-    --nig-font-size-3xl: 1.875rem;
+  /* Typography Scale */
+  --nig-font-size-xs: 0.75rem;
+  --nig-font-size-sm: 0.875rem;
+  --nig-font-size-base: 1rem;
+  --nig-font-size-lg: 1.125rem;
+  --nig-font-size-xl: 1.25rem;
+  --nig-font-size-2xl: 1.5rem;
+  --nig-font-size-3xl: 1.875rem;
 
-    /* Border Radius */
-    --nig-radius-sm: 0.375rem;
-    --nig-radius-md: 0.5rem;
-    --nig-radius-lg: 0.75rem;
-    --nig-radius-xl: 1rem;
+  /* Border Radius */
+  --nig-radius-sm: 0.375rem;
+  --nig-radius-md: 0.5rem;
+  --nig-radius-lg: 0.75rem;
+  --nig-radius-xl: 1rem;
 
-    /* Shadows */
-    --nig-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --nig-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    --nig-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-    --nig-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  /* Shadows */
+  --nig-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 30%);
+  --nig-shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 40%), 0 2px 4px -1px rgb(0 0 0 / 30%);
+  --nig-shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 50%), 0 4px 6px -2px rgb(0 0 0 / 40%);
+  --nig-shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 60%), 0 10px 10px -5px rgb(0 0 0 / 50%);
 
-    /* Transitions */
-    --nig-transition-fast: 0.15s ease-out;
-    --nig-transition-normal: 0.2s ease-out;
-    --nig-transition-slow: 0.3s ease-out;
+  /* Transitions */
+  --nig-transition-fast: 0.15s ease-out;
+  --nig-transition-normal: 0.2s ease-out;
+  --nig-transition-slow: 0.3s ease-out;
 
-    /* Breakpoints */
-    --nig-breakpoint-sm: 640px;
-    --nig-breakpoint-md: 768px;
-    --nig-breakpoint-lg: 1024px;
-    --nig-breakpoint-xl: 1280px;
+  /* Breakpoints */
+  --nig-breakpoint-sm: 640px;
+  --nig-breakpoint-md: 768px;
+  --nig-breakpoint-lg: 1024px;
+  --nig-breakpoint-xl: 1280px;
 }
-
-/* === Base Typography and Font Loading === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
 
 /* === Print Styles === */
 @media print {
-    .nig-modal-overlay,
-    .nig-status-widget,
-    .nig-button {
-        display: none !important;
-    }
+  .nig-modal-overlay,
+  .nig-status-widget,
+  .nig-button {
+    display: none !important;
+  }
 
-    .nig-modal-content {
-        box-shadow: none;
-        border: 1px solid #000;
-        background: white;
-        color: black;
-    }
+  .nig-modal-content {
+    box-shadow: none;
+    border: 1px solid #000;
+    background: white;
+    color: black;
+  }
 }
 
 /* === High Contrast Mode Support === */
 @media (prefers-contrast: high) {
-    :root {
-        --nig-color-bg-primary: #000000;
-        --nig-color-bg-secondary: #1a1a1a;
-        --nig-color-bg-tertiary: #2a2a2a;
-        --nig-color-text-primary: #ffffff;
-        --nig-color-border: #666666;
-    }
+  :root {
+    --nig-color-bg-primary: #000;
+    --nig-color-bg-secondary: #1a1a1a;
+    --nig-color-bg-tertiary: #2a2a2a;
+    --nig-color-text-primary: #fff;
+    --nig-color-border: #666;
+  }
 }
 
 /* === Reduced Motion Support === */
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* === Material Symbols Import === */
 .material-symbols-outlined {
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    font-size: 18px;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  font-size: 18px;
 }
 
 /* === File Input Styling === */
 input[type="file"] {
-    border: 2px dashed var(--nig-color-border);
-    background: var(--nig-color-bg-primary);
-    padding: var(--nig-space-xl);
-    border-radius: var(--nig-radius-lg);
-    color: var(--nig-color-text-secondary);
-    transition: all var(--nig-transition-normal);
-    cursor: pointer;
+  border: 2px dashed var(--nig-color-border);
+  background: var(--nig-color-bg-primary);
+  padding: var(--nig-space-xl);
+  border-radius: var(--nig-radius-lg);
+  color: var(--nig-color-text-secondary);
+  transition: all var(--nig-transition-normal);
+  cursor: pointer;
 }
 
 input[type="file"]:hover {
-    border-color: var(--nig-color-accent-primary);
-    background: var(--nig-color-bg-elevated);
+  border-color: var(--nig-color-accent-primary);
+  background: var(--nig-color-bg-elevated);
 }
 
 input[type="file"]:focus {
-    outline: none;
-    border-color: var(--nig-color-accent-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+  border-color: var(--nig-color-accent-primary);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
 }

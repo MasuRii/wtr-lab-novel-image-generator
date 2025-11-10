@@ -1,376 +1,496 @@
 /* === Base Components === */
 .nig-button {
-    position: absolute;
-    z-index: 99998;
-    background: var(--nig-color-accent-primary);
-    color: white;
-    border: none;
-    border-radius: var(--nig-radius-md);
-    padding: var(--nig-space-sm) var(--nig-space-md);
-    font-size: var(--nig-font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-    box-shadow: var(--nig-shadow-md);
-    display: none;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    transition: all var(--nig-transition-normal);
-    transform: translateY(0);
+  position: absolute;
+  z-index: 99998;
+  background: var(--nig-color-accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  font-size: var(--nig-font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--nig-shadow-md);
+  display: none;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all var(--nig-transition-normal);
+  transform: translateY(0);
 }
+
 .nig-button:hover {
-    background: var(--nig-color-hover-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--nig-shadow-lg);
+  background: var(--nig-color-hover-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--nig-shadow-lg);
 }
+
 .nig-button:active {
-    transform: translateY(0);
-    box-shadow: var(--nig-shadow-sm);
+  transform: translateY(0);
+  box-shadow: var(--nig-shadow-sm);
 }
 
 /* === Modal Components === */
 .nig-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: var(--nig-space-lg);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--nig-space-lg);
 }
 
 .nig-modal-content {
-    background: var(--nig-color-bg-secondary);
-    color: var(--nig-color-text-primary);
-    padding: var(--nig-space-2xl);
-    border-radius: var(--nig-radius-xl);
-    box-shadow: var(--nig-shadow-xl);
-    width: 100%;
-    max-width: 900px;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    border: 1px solid var(--nig-color-border);
-    animation: nig-modal-appear 0.2s ease-out;
+  background: var(--nig-color-bg-secondary);
+  color: var(--nig-color-text-primary);
+  padding: var(--nig-space-2xl);
+  border-radius: var(--nig-radius-xl);
+  box-shadow: var(--nig-shadow-xl);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  border: 1px solid var(--nig-color-border);
+  animation: nig-modal-appear 0.2s ease-out;
 }
 
 @keyframes nig-modal-appear {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
 
-.nig-modal-content ul {
-}
-
-/* History list alignment fix - remove excessive padding for history results */
-#nig-history-list {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .nig-modal-content li {
-    margin-bottom: var(--nig-space-md);
+  margin-bottom: var(--nig-space-md);
 }
 
 .nig-close-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 10;
-    font-size: var(--nig-font-size-2xl);
-    font-weight: 300;
-    cursor: pointer;
-    color: var(--nig-color-text-muted);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--nig-radius-md);
-    transition: all var(--nig-transition-fast);
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  font-size: var(--nig-font-size-2xl);
+  font-weight: 300;
+  cursor: pointer;
+  color: var(--nig-color-text-muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--nig-radius-md);
+  transition: all var(--nig-transition-fast);
 }
 
 .nig-close-btn:hover {
-    color: var(--nig-color-text-primary);
-    background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
+  background: var(--nig-color-bg-tertiary);
 }
 
 .nig-modal-content h2 {
-    margin-top: 0;
-    border-bottom: 1px solid var(--nig-color-border);
-    padding-bottom: var(--nig-space-lg);
-    font-size: var(--nig-font-size-2xl);
-    font-weight: 600;
-    letter-spacing: -0.025em;
+  margin-top: 0;
+  border-bottom: 1px solid var(--nig-color-border);
+  padding-bottom: var(--nig-space-lg);
+  font-size: var(--nig-font-size-2xl);
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 /* === Form Elements === */
 .nig-form-group {
-    margin-bottom: var(--nig-space-xl);
+  margin-bottom: var(--nig-space-xl);
 }
 
 .nig-form-group label {
-    display: block;
-    margin-bottom: var(--nig-space-sm);
-    font-weight: 500;
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-sm);
+  display: block;
+  margin-bottom: var(--nig-space-sm);
+  font-weight: 500;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
 }
 
 .nig-form-group small.nig-hint {
-    color: var(--nig-color-text-muted);
-    font-weight: normal;
-    display: block;
-    margin-top: var(--nig-space-sm);
-    margin-bottom: var(--nig-space-sm);
-    min-height: 1.2em;
-    font-size: var(--nig-font-size-xs);
-    line-height: 1.4;
+  color: var(--nig-color-text-muted);
+  font-weight: normal;
+  display: block;
+  margin-top: var(--nig-space-sm);
+  margin-bottom: var(--nig-space-sm);
+  min-height: 1.2em;
+  font-size: var(--nig-font-size-xs);
+  line-height: 1.4;
 }
 
 .nig-form-group input,
 .nig-form-group select,
 .nig-form-group textarea {
-    width: 100%;
-    padding: var(--nig-space-sm) var(--nig-space-md);
-    border-radius: var(--nig-radius-md);
-    border: 1px solid var(--nig-color-border);
-    background: var(--nig-color-bg-tertiary);
-    color: var(--nig-color-text-primary);
-    font-size: var(--nig-font-size-sm);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    transition: all var(--nig-transition-fast);
-    outline: none;
-}
-
-.nig-form-group input:focus,
-.nig-form-group select:focus,
-.nig-form-group textarea:focus {
-    border-color: var(--nig-color-accent-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    background: var(--nig-color-bg-elevated);
-}
-
-.nig-form-group select:disabled {
-    background: var(--nig-color-bg-tertiary);
-    color: var(--nig-color-text-muted);
-    cursor: not-allowed;
-}
-
-.nig-form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-    line-height: 1.5;
-}
-
-.nig-form-group-inline {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--nig-space-lg);
-    align-items: end;
-}
-
-.nig-form-group-inline label {
-    margin-bottom: var(--nig-space-sm);
+  width: 100%;
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  border-radius: var(--nig-radius-md);
+  border: 1px solid var(--nig-color-border);
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all var(--nig-transition-fast);
+  outline: none;
 }
 
 .nig-checkbox-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--nig-space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nig-space-lg);
 }
 
 .nig-checkbox-group label {
-    display: flex;
-    align-items: center;
-    margin-right: 0;
-    font-weight: normal;
-    cursor: pointer;
-    color: var(--nig-color-text-secondary);
+  display: flex;
+  align-items: center;
+  margin-right: 0;
+  font-weight: normal;
+  cursor: pointer;
+  color: var(--nig-color-text-secondary);
 }
 
-.nig-checkbox-group input {
-    width: auto;
-    margin-right: var(--nig-space-sm);
-    margin-bottom: 0;
-    transform: scale(1.1);
+.nig-checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: var(--nig-space-sm);
+  margin-bottom: 0;
+  transform: scale(1.1);
+}
+
+.nig-form-group input:focus {
+  border-color: var(--nig-color-accent-primary);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
+  background: var(--nig-color-bg-elevated);
+}
+
+.nig-form-group textarea:focus {
+  border-color: var(--nig-color-accent-primary);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
+  background: var(--nig-color-bg-elevated);
+}
+
+.nig-form-group select:disabled {
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-muted);
+  cursor: not-allowed;
+}
+
+.nig-form-group-inline {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--nig-space-lg);
+  align-items: end;
+}
+
+.nig-form-group-inline label {
+  margin-bottom: var(--nig-space-sm);
+}
+
+/* Password / API key visibility wrapper */
+.nig-password-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
+}
+
+.nig-password-wrapper input[type="password"],
+.nig-password-wrapper input[type="text"] {
+  flex: 1;
+}
+
+.nig-password-toggle {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--nig-color-text-muted);
+  transition:
+    color var(--nig-transition-fast),
+    transform var(--nig-transition-fast);
+}
+
+.nig-password-toggle:hover,
+.nig-password-toggle:focus-visible {
+  color: var(--nig-color-accent-primary);
+  transform: scale(1.05);
+  outline: none;
+}
+
+.nig-password-toggle .material-symbols-outlined {
+  font-size: 20px;
 }
 
 /* === Button Components === */
 .nig-save-btn {
-    background: var(--nig-color-accent-success);
-    color: white;
-    padding: var(--nig-space-md) var(--nig-space-xl);
-    border: none;
-    border-radius: var(--nig-radius-md);
-    cursor: pointer;
-    font-size: var(--nig-font-size-base);
-    font-weight: 500;
-    transition: all var(--nig-transition-normal);
-    box-shadow: var(--nig-shadow-sm);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--nig-space-sm);
+  background: var(--nig-color-accent-success);
+  color: white;
+  padding: var(--nig-space-md) var(--nig-space-xl);
+  border: none;
+  border-radius: var(--nig-radius-md);
+  cursor: pointer;
+  font-size: var(--nig-font-size-base);
+  font-weight: 500;
+  transition: all var(--nig-transition-normal);
+  box-shadow: var(--nig-shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nig-space-sm);
 }
 
 .nig-save-btn:hover {
-    background: var(--nig-color-hover-success);
-    transform: translateY(-1px);
-    box-shadow: var(--nig-shadow-md);
+  background: var(--nig-color-hover-success);
+  transform: translateY(-1px);
+  box-shadow: var(--nig-shadow-md);
 }
 
 .nig-fetch-models-btn {
-    padding: var(--nig-space-sm) var(--nig-space-md);
-    margin-left: 0;
-    border-radius: var(--nig-radius-md);
-    border: 1px solid var(--nig-color-border);
-    background: var(--nig-color-accent-primary);
-    color: white;
-    cursor: pointer;
-    font-size: var(--nig-font-size-sm);
-    font-weight: 500;
-    transition: all var(--nig-transition-normal);
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  margin-left: 0;
+  border-radius: var(--nig-radius-md);
+  border: 1px solid var(--nig-color-border);
+  background: var(--nig-color-accent-primary);
+  color: white;
+  cursor: pointer;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 500;
+  transition: all var(--nig-transition-normal);
 }
 
 .nig-fetch-models-btn:hover {
-    background: var(--nig-color-hover-primary);
-    transform: translateY(-1px);
+  background: var(--nig-color-hover-primary);
+  transform: translateY(-1px);
 }
 
 .nig-delete-btn {
-    padding: var(--nig-space-sm) var(--nig-space-md);
-    margin-left: 0;
-    border-radius: var(--nig-radius-md);
-    border: 1px solid var(--nig-color-border);
-    background: var(--nig-color-accent-error);
-    color: white;
-    cursor: pointer;
-    font-size: var(--nig-font-size-sm);
-    font-weight: 500;
-    transition: all var(--nig-transition-normal);
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  margin-left: 0;
+  border-radius: var(--nig-radius-md);
+  border: 1px solid var(--nig-color-border);
+  background: var(--nig-color-accent-error);
+  color: white;
+  cursor: pointer;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 500;
+  transition: all var(--nig-transition-normal);
 }
 
 .nig-delete-btn:hover {
-    background: var(--nig-color-hover-error);
-    transform: translateY(-1px);
+  background: var(--nig-color-hover-error);
+  transform: translateY(-1px);
 }
 
 .nig-history-cleanup-btn {
-    background: var(--nig-color-accent-error);
-    color: white;
-    padding: var(--nig-space-sm) var(--nig-space-md);
-    border: none;
-    border-radius: var(--nig-radius-md);
-    cursor: pointer;
-    font-size: var(--nig-font-size-sm);
-    font-weight: 500;
-    transition: all var(--nig-transition-normal);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--nig-space-sm);
+  background: var(--nig-color-accent-error);
+  color: white;
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  border: none;
+  border-radius: var(--nig-radius-md);
+  cursor: pointer;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 500;
+  transition: all var(--nig-transition-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nig-space-sm);
 }
 
 .nig-history-cleanup-btn:hover {
-    background: var(--nig-color-hover-error);
-    transform: translateY(-1px);
+  background: var(--nig-color-hover-error);
+  transform: translateY(-1px);
 }
 
 .nig-retry-btn {
-    background: var(--nig-color-accent-primary);
-    color: white;
-    padding: var(--nig-space-md) var(--nig-space-xl);
-    border: none;
-    border-radius: var(--nig-radius-md);
-    cursor: pointer;
-    font-size: var(--nig-font-size-base);
-    font-weight: 500;
-    transition: all var(--nig-transition-normal);
-    box-shadow: var(--nig-shadow-sm);
+  background: var(--nig-color-accent-primary);
+  color: white;
+  padding: var(--nig-space-md) var(--nig-space-xl);
+  border: none;
+  border-radius: var(--nig-radius-md);
+  cursor: pointer;
+  font-size: var(--nig-font-size-base);
+  font-weight: 500;
+  transition: all var(--nig-transition-normal);
+  box-shadow: var(--nig-shadow-sm);
 }
 
 .nig-retry-btn:hover {
-    background: var(--nig-color-hover-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--nig-shadow-md);
+  background: var(--nig-color-hover-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--nig-shadow-md);
 }
 
 .nig-override-btn {
-    background: var(--nig-color-accent-primary);
-    color: white;
-    border: none;
-    border-radius: var(--nig-radius-md);
-     padding: var(--nig-space-sm) var(--nig-space-md);
-    font-size: var(--nig-font-size-sm);
-    cursor: pointer;
-    transition: all var(--nig-transition-normal);
-    align-self: flex-start;
+  background: var(--nig-color-accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  font-size: var(--nig-font-size-sm);
+  cursor: pointer;
+  transition: all var(--nig-transition-normal);
+  align-self: flex-start;
 }
 
 .nig-override-btn:hover {
-    background: var(--nig-color-hover-primary);
-    transform: translateY(-1px);
+  background: var(--nig-color-hover-primary);
+  transform: translateY(-1px);
 }
 
 .nig-test-enhancement-btn {
-    background: var(--nig-color-accent-primary);
-    color: white;
-    border: none;
-    border-radius: var(--nig-radius-md);
-    padding: var(--nig-space-sm) var(--nig-space-lg);
-    font-size: var(--nig-font-size-sm);
-    cursor: pointer;
-    transition: all var(--nig-transition-normal);
-    display: flex;
-    align-items: center;
-    gap: var(--nig-space-sm);
-    width: 100%;
-    justify-content: center;
-}
-
-.nig-test-enhancement-btn:hover:not(:disabled) {
-    background: var(--nig-color-hover-primary);
-    transform: translateY(-1px);
+  background: var(--nig-color-accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-sm) var(--nig-space-lg);
+  font-size: var(--nig-font-size-sm);
+  cursor: pointer;
+  transition: all var(--nig-transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
+  width: 100%;
+  justify-content: center;
 }
 
 .nig-test-enhancement-btn:disabled {
-    background: var(--nig-color-bg-tertiary);
-    color: var(--nig-color-text-muted);
-    cursor: not-allowed;
-    transform: none;
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nig-test-enhancement-btn:hover:not(:disabled) {
+  background: var(--nig-color-hover-primary);
+  transform: translateY(-1px);
 }
 
 .nig-template-btn {
-    background: var(--nig-color-bg-elevated);
-    border: 1px solid var(--nig-color-border);
-    color: var(--nig-color-text-secondary);
-    border-radius: var(--nig-radius-md);
-    padding: var(--nig-space-xs) var(--nig-space-sm);
-    font-size: var(--nig-font-size-xs);
-    cursor: pointer;
-    transition: all var(--nig-transition-fast);
+  background: var(--nig-color-bg-elevated);
+  border: 1px solid var(--nig-color-border);
+  color: var(--nig-color-text-secondary);
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-xs) var(--nig-space-sm);
+  font-size: var(--nig-font-size-xs);
+  cursor: pointer;
+  transition: all var(--nig-transition-fast);
 }
 
 .nig-template-btn:hover {
-    background: var(--nig-color-accent-primary);
-    color: white;
-    border-color: var(--nig-color-accent-primary);
+  background: var(--nig-color-accent-primary);
+  color: white;
+  border-color: var(--nig-color-accent-primary);
 }
 
 /* === Button Footer === */
 .nig-button-footer {
-    margin-top: var(--nig-space-3xl);
-    padding-top: var(--nig-space-xl);
-    border-top: 1px solid var(--nig-color-border);
-    text-align: center;
+  margin-top: var(--nig-space-3xl);
+  padding-top: var(--nig-space-xl);
+  border-top: 1px solid var(--nig-color-border);
+  text-align: center;
+}
+
+/* === Enhancement Preview Layout === */
+.nig-preview-container {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nig-space-md);
+  margin-top: var(--nig-space-sm);
+}
+
+.nig-preview-section {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nig-space-xs);
+}
+
+.nig-preview-section h5 {
+  margin: 0 0 var(--nig-space-xs) 0;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 600;
+  color: var(--nig-color-text-secondary);
+}
+
+/* Ensure both original and enhanced prompt areas share consistent sizing */
+#nig-original-prompt,
+#nig-enhanced-prompt,
+.nig-prompt-display {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--nig-color-bg-tertiary);
+  border: 1px solid var(--nig-color-border);
+  border-radius: var(--nig-radius-md);
+  padding: var(--nig-space-md);
+  font-family: var(--nig-font-family-mono, "Fira Code", monospace);
+  font-size: var(--nig-font-size-sm);
+  color: var(--nig-color-text-primary);
+  min-height: 120px;
+  max-height: 260px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+/* Editable textarea (original) */
+#nig-original-prompt {
+  resize: vertical;
+}
+
+/* Read-only enhanced prompt display */
+#nig-enhanced-prompt {
+  resize: none;
+}
+
+/* Center the arrow between the two sections */
+.nig-preview-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--nig-space-xs);
+  color: var(--nig-color-text-muted);
+}
+
+.nig-preview-arrow .material-symbols-outlined {
+  font-size: 28px;
+}
+
+/* Responsive layout: stack vertically on small screens */
+@media (width <= 600px) {
+  .nig-preview-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nig-preview-arrow {
+    padding: var(--nig-space-xs) 0;
+    transform: rotate(90deg);
+  }
 }

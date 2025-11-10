@@ -1,5 +1,5 @@
-import { getConfig } from '../utils/storage.js';
-import * as logger from '../utils/logger.js';
+import { getConfig } from "../utils/storage.js";
+import * as logger from "../utils/logger.js";
 
 let modalElement = null;
 let retryCallback = () => {};
@@ -12,21 +12,23 @@ let dismissCallback = () => {};
  * @param {function} callbacks.onDismiss - Function to call when the user dismisses the modal.
  */
 export function init({ onRetry, onDismiss }) {
-    retryCallback = onRetry;
-    dismissCallback = onDismiss;
+  retryCallback = onRetry;
+  dismissCallback = onDismiss;
 }
 
 /**
  * Creates the error modal DOM element and appends it to the body.
  */
 export function create() {
-    if (modalElement) return;
+  if (modalElement) {
+    return;
+  }
 
-    modalElement = document.createElement('div');
-    modalElement.id = 'nig-error-modal';
-    modalElement.className = 'nig-modal-overlay';
-    modalElement.style.display = 'none';
-    modalElement.innerHTML = `
+  modalElement = document.createElement("div");
+  modalElement.id = "nig-error-modal";
+  modalElement.className = "nig-modal-overlay";
+  modalElement.style.display = "none";
+  modalElement.innerHTML = `
         <div class="nig-modal-content">
             <span class="nig-close-btn">&times;</span>
             <h2>Generation Failed</h2>
@@ -41,23 +43,25 @@ export function create() {
             </div>
             <div id="nig-error-actions" class="nig-error-actions"></div>
         </div>`;
-    document.body.appendChild(modalElement);
+  document.body.appendChild(modalElement);
 
-    modalElement.querySelector('.nig-close-btn').addEventListener('click', () => hide());
+  modalElement
+    .querySelector(".nig-close-btn")
+    .addEventListener("click", () => hide());
 }
 
 /**
  * Hides the error modal and calls the dismiss callback.
  */
 export function hide() {
-    if (modalElement) {
-        modalElement.style.display = 'none';
-    }
-    
-    // Call the dismiss callback if provided
-    if (typeof dismissCallback === 'function') {
-        dismissCallback();
-    }
+  if (modalElement) {
+    modalElement.style.display = "none";
+  }
+
+  // Call the dismiss callback if provided
+  if (typeof dismissCallback === "function") {
+    dismissCallback();
+  }
 }
 
 /**
@@ -65,150 +69,190 @@ export function hide() {
  * @param {object} errorDetails - The details of the error.
  */
 export async function show(errorDetails) {
-    if (!modalElement) create();
+  if (!modalElement) {
+    create();
+  }
 
-    document.getElementById('nig-error-reason').textContent = errorDetails.reason.message;
-    const promptTextarea = document.getElementById('nig-error-prompt');
-    promptTextarea.value = errorDetails.prompt;
+  const reasonContainer = document.getElementById("nig-error-reason");
+  const promptTextarea = document.getElementById("nig-error-prompt");
+  promptTextarea.value = errorDetails.prompt;
 
-    const providerSelect = document.getElementById('nig-retry-provider-select');
-    providerSelect.innerHTML = '';
-    const config = await getConfig();
-    const providers = ['Pollinations', 'AIHorde', 'Google'];
-    providers.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p;
-        option.textContent = p;
-        providerSelect.appendChild(option);
-    });
-    Object.keys(config.openAICompatProfiles).forEach(url => {
-        const option = document.createElement('option');
-        option.value = `OpenAICompat::${url}`;
-        option.textContent = `OpenAI: ${url.replace('https://', '').split('/')[0]}`;
-        providerSelect.appendChild(option);
-    });
+  const providerSelect = document.getElementById("nig-retry-provider-select");
+  providerSelect.innerHTML = "";
+  const config = await getConfig();
+  const providers = ["Pollinations", "AIHorde", "Google"];
+  providers.forEach((p) => {
+    const option = document.createElement("option");
+    option.value = p;
+    option.textContent = p;
+    providerSelect.appendChild(option);
+  });
+  Object.keys(config.openAICompatProfiles).forEach((url) => {
+    const option = document.createElement("option");
+    option.value = `OpenAICompat::${url}`;
+    option.textContent = `OpenAI: ${url.replace("https://", "").split("/")[0]}`;
+    providerSelect.appendChild(option);
+  });
 
-    let failedProviderValue = errorDetails.provider;
-    if (errorDetails.provider === 'OpenAICompat' && errorDetails.providerProfileUrl) {
-        failedProviderValue = `OpenAICompat::${errorDetails.providerProfileUrl}`;
+  let failedProviderValue = errorDetails.provider;
+  if (
+    errorDetails.provider === "OpenAICompat" &&
+    errorDetails.providerProfileUrl
+  ) {
+    failedProviderValue = `OpenAICompat::${errorDetails.providerProfileUrl}`;
+  }
+  if (
+    Array.from(providerSelect.options).some(
+      (opt) => opt.value === failedProviderValue,
+    )
+  ) {
+    providerSelect.value = failedProviderValue;
+  }
+
+  // Defensive normalization for backward compatibility and robustness
+  const reason = errorDetails && errorDetails.reason ? errorDetails.reason : {};
+  const baseMessage =
+    typeof reason.message === "string" && reason.message.trim().length > 0
+      ? reason.message.trim()
+      : "An unknown error occurred during image generation. Please review your configuration and try again.";
+
+  const errorType = reason.errorType || null;
+
+  // Build a single coherent Reason block with structured guidance
+  const reasonParts = [];
+
+  // Always start with the base parsed message
+  reasonParts.push(baseMessage);
+
+  // Append structured guidance based on errorType while avoiding duplication
+  if (errorType === "authentication") {
+    reasonParts.push(
+      "Authentication Issue: Please check your API key configuration for this OpenAI-compatible provider. Ensure the key is valid, correctly scoped, and not expired before retrying.",
+    );
+  } else if (errorType === "api_key_validation") {
+    reasonParts.push(
+      "API Key Validation Issue: For AIHorde or the relevant provider, verify that your API key is correctly configured and that you have completed any required registration. You may try a different provider or update your API key in settings.",
+    );
+  } else if (errorType === "model_access") {
+    // Avoid repeating essentially the same provider/tier guidance text; keep this concise and generic.
+    if (
+      !baseMessage.toLowerCase().includes("model") &&
+      !baseMessage.toLowerCase().includes("plan") &&
+      !baseMessage.toLowerCase().includes("tier") &&
+      !baseMessage.toLowerCase().includes("subscription")
+    ) {
+      reasonParts.push(
+        "Model Access Restriction: The selected model is not available for your current plan. Switch to a supported model or upgrade your account according to your provider’s tier documentation.",
+      );
     }
-    if (Array.from(providerSelect.options).some(opt => opt.value === failedProviderValue)) {
-        providerSelect.value = failedProviderValue;
+  } else if (errorType === "image_conversion") {
+    reasonParts.push(
+      "Image Conversion Issue: The provider returned image data that could not be converted. This is often a temporary provider issue. You can try again or switch to a different provider.",
+    );
+  } else if (errorType === "ip_mismatch") {
+    const discordLink = reason.discordLink || "https://discord.gg/zukijourney";
+    const resetipCommand = reason.resetipCommand || "/user resetip";
+    reasonParts.push(
+      "IP Address Mismatch: Your current IP does not match the one registered to your account. " +
+        "To resolve this, join the provider’s Discord server at " +
+        discordLink +
+        ', run the command "' +
+        resetipCommand +
+        '", or upgrade to a plan that supports multiple IPs. ' +
+        "You can retry generation after the IP lock is reset.",
+    );
+  } else if (errorType === "html_response") {
+    reasonParts.push(
+      "Endpoint Configuration Issue: The API endpoint returned HTML instead of JSON. This usually indicates an incorrect endpoint URL, an authentication problem, or an endpoint that does not support the requested operation. " +
+        "Check your OpenAI-compatible provider Base URL, path, and API key configuration.",
+    );
+  } else if (errorType === "malformed_json") {
+    reasonParts.push(
+      "Server Response Issue: The API returned malformed or invalid JSON data. This is typically a temporary server-side issue. " +
+        "You can try again later or switch to another provider if the problem persists.",
+    );
+  } else if (errorType === "json_parse_error") {
+    reasonParts.push(
+      "JSON Parsing Error: The response from the provider could not be parsed. This may indicate an intermittent server issue or unexpected response format. " +
+        "You can retry the request or use a different provider.",
+    );
+  }
+
+  // In case multiple signals exist, ensure uniqueness and readability
+  const uniqueReasonParts = Array.from(new Set(reasonParts.filter(Boolean)));
+  reasonContainer.innerHTML = uniqueReasonParts
+    .map((part) => `<p>${part}</p>`)
+    .join("");
+
+  // Reset prompt text
+  promptTextarea.value =
+    errorDetails && typeof errorDetails.prompt === "string"
+      ? errorDetails.prompt
+      : errorDetails && errorDetails.prompt !== undefined
+        ? String(errorDetails.prompt)
+        : "";
+
+  const actionsContainer = document.getElementById("nig-error-actions");
+  actionsContainer.innerHTML = "";
+
+  // Check if this is a non-retryable error (authentication errors or explicitly marked as non-retryable)
+  const isNonRetryableError =
+    Boolean(reason.isNonRetryable) ||
+    errorType === "authentication" ||
+    (!reason.retryable && !errorType);
+
+  // Create retry button
+  const retryBtn = document.createElement("button");
+  retryBtn.textContent = "Retry Generation";
+  retryBtn.className = "nig-retry-btn";
+  retryBtn.onclick = () => {
+    const editedPrompt = promptTextarea.value.trim();
+    if (!editedPrompt) {
+      alert("Prompt cannot be empty.");
+      return;
     }
 
-    const actionsContainer = document.getElementById('nig-error-actions');
-    actionsContainer.innerHTML = '';
+    const selectedProviderValue = providerSelect.value;
+    let provider;
+    let providerProfileUrl;
+    if (
+      selectedProviderValue &&
+      selectedProviderValue.startsWith("OpenAICompat::")
+    ) {
+      provider = "OpenAICompat";
+      providerProfileUrl = selectedProviderValue.split("::")[1] || null;
+    } else {
+      provider = selectedProviderValue || errorDetails.provider || null;
+      providerProfileUrl = null;
+    }
 
-    // Check if this is a non-retryable error (authentication errors or explicitly marked as non-retryable)
-    const isNonRetryableError = errorDetails.reason.isNonRetryable ||
-                               errorDetails.reason.errorType === 'authentication' ||
-                               (!errorDetails.reason.retryable && !errorDetails.reason.errorType);
+    try {
+      retryCallback(editedPrompt, provider, providerProfileUrl);
+    } catch (e) {
+      // Fail gracefully without breaking the modal
+      logger.logError("ERROR_MODAL", "Retry callback threw an error", {
+        error: e && e.message,
+      });
+    }
+    hide();
+  };
 
-    // Create retry button
-    const retryBtn = document.createElement('button');
-    retryBtn.textContent = 'Retry Generation';
-    retryBtn.className = 'nig-retry-btn';
-    retryBtn.onclick = () => {
-        const editedPrompt = promptTextarea.value.trim();
-        if (!editedPrompt) {
-            alert('Prompt cannot be empty.');
-            return;
+  // Handle retry button visibility based on error type
+  if (!isNonRetryableError) {
+    if (reason.retryable) {
+      // Show retry button immediately for retryable errors
+      actionsContainer.appendChild(retryBtn);
+    } else {
+      // For non-retryable errors, only show retry if user modifies prompt or changes provider
+      const showRetryButton = () => {
+        if (!actionsContainer.contains(retryBtn)) {
+          actionsContainer.appendChild(retryBtn);
         }
-        
-        const selectedProviderValue = providerSelect.value;
-        let provider, providerProfileUrl;
-        if (selectedProviderValue.startsWith('OpenAICompat::')) {
-            provider = 'OpenAICompat';
-            providerProfileUrl = selectedProviderValue.split('::')[1];
-        } else {
-            provider = selectedProviderValue;
-            providerProfileUrl = null;
-        }
-        
-        retryCallback(editedPrompt, provider, providerProfileUrl);
-        hide();
-    };
-
-    // Handle retry button visibility based on error type
-    if (!isNonRetryableError) {
-        if (errorDetails.reason.retryable) {
-            // Show retry button immediately for retryable errors
-            actionsContainer.appendChild(retryBtn);
-        } else {
-            // For non-retryable errors, only show retry if user modifies prompt or changes provider
-            const showRetryButton = () => {
-                if (!actionsContainer.contains(retryBtn)) {
-                    actionsContainer.appendChild(retryBtn);
-                }
-            };
-            promptTextarea.oninput = showRetryButton;
-            providerSelect.onchange = showRetryButton;
-        }
+      };
+      promptTextarea.oninput = showRetryButton;
+      providerSelect.onchange = showRetryButton;
     }
+  }
 
-    // Add specific messaging for authentication errors
-    if (errorDetails.reason.errorType === 'authentication') {
-        const authWarning = document.createElement('div');
-        authWarning.className = 'nig-auth-warning';
-        authWarning.style.cssText = 'color: #d63384; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        authWarning.innerHTML = '<strong>Authentication Issue:</strong> Please check your API key configuration in the settings before retrying.';
-        actionsContainer.appendChild(authWarning);
-    }
-
-    // Add specific messaging for API key validation errors
-    if (errorDetails.reason.errorType === 'api_key_validation') {
-        const apiKeyWarning = document.createElement('div');
-        apiKeyWarning.className = 'nig-api-key-warning';
-        apiKeyWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        apiKeyWarning.innerHTML = '<strong>API Key Issue:</strong> Please check your API key configuration and ensure you have registered with the provider. You can try a different provider or update your API key in settings.';
-        actionsContainer.appendChild(apiKeyWarning);
-    }
-
-    // Add specific messaging for image conversion errors
-    if (errorDetails.reason.errorType === 'image_conversion') {
-        const conversionInfo = document.createElement('div');
-        conversionInfo.className = 'nig-conversion-info';
-        conversionInfo.style.cssText = 'color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        conversionInfo.innerHTML = '<strong>Image Conversion Issue:</strong> This may be a temporary problem with the provider. You can try again or use a different provider.';
-        actionsContainer.appendChild(conversionInfo);
-    }
-    // Add specific messaging for IP mismatch errors
-    if (errorDetails.reason.errorType === 'ip_mismatch') {
-        const ipWarning = document.createElement('div');
-        ipWarning.className = 'nig-ip-warning';
-        ipWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        const discordLink = errorDetails.reason.discordLink || 'https://discord.gg/zukijourney';
-        const resetipCommand = errorDetails.reason.resetipCommand || '/user resetip';
-        ipWarning.innerHTML = '<strong>IP Address Mismatch:</strong> Your current IP address doesn\'t match the one registered to your account.<br><br><strong>To resolve this:</strong><br>• Join the Discord server: <a href="' + discordLink + '" target="_blank" rel="noopener noreferrer" style="color: #856404; text-decoration: underline;">' + discordLink + '</a><br>• Use the command: <code style="background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-family: monospace;">' + resetipCommand + '</code><br>• Or upgrade to premium for multi-IP support<br><br><em>You can retry this generation after resetting your IP lock.</em>';
-        actionsContainer.appendChild(ipWarning);
-    }
-
-    // Add specific messaging for HTML response errors
-    if (errorDetails.reason.errorType === 'html_response') {
-        const htmlWarning = document.createElement('div');
-        htmlWarning.className = 'nig-html-warning';
-        htmlWarning.style.cssText = 'color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        htmlWarning.innerHTML = '<strong>Endpoint Configuration Issue:</strong> The API endpoint returned HTML instead of JSON, which usually indicates:<br>• Invalid or incorrect endpoint URL<br>• Authentication problems<br>• Endpoint not supporting image generation<br><br>Please check your OpenAI-compatible provider configuration in settings.';
-        actionsContainer.appendChild(htmlWarning);
-    }
-
-    // Add specific messaging for malformed JSON errors
-    if (errorDetails.reason.errorType === 'malformed_json') {
-        const jsonWarning = document.createElement('div');
-        jsonWarning.className = 'nig-json-warning';
-        jsonWarning.style.cssText = 'color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        jsonWarning.innerHTML = '<strong>Server Response Issue:</strong> The API returned malformed JSON data. This is typically a temporary server issue with the provider. You can try again or use a different provider.';
-        actionsContainer.appendChild(jsonWarning);
-    }
-
-    // Add specific messaging for generic JSON parse errors
-    if (errorDetails.reason.errorType === 'json_parse_error') {
-        const parseWarning = document.createElement('div');
-        parseWarning.className = 'nig-parse-warning';
-        parseWarning.style.cssText = 'color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 4px; margin-top: 10px;';
-        parseWarning.innerHTML = '<strong>JSON Parsing Error:</strong> Unable to parse the API response. This may be a temporary issue with the provider. You can try again or switch to a different provider.';
-        actionsContainer.appendChild(parseWarning);
-    }
-
-    modalElement.style.display = 'flex';
+  modalElement.style.display = "flex";
 }

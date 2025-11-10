@@ -11,14 +11,14 @@
  * @returns {string} - The cleaned prompt suitable for API transmission
  */
 export function cleanPromptForApi(prompt) {
-    if (!prompt || typeof prompt !== 'string') {
-        return prompt;
-    }
-    
-    return prompt
-        .replace(/\n{3,}/g, '\n\n') // Replace 3+ newlines with 2 newlines
-        .replace(/^\n+|\n+$/g, '') // Remove leading and trailing newlines
-        .trim();
+  if (!prompt || typeof prompt !== "string") {
+    return prompt;
+  }
+
+  return prompt
+    .replace(/\n{3,}/g, "\n\n") // Replace 3+ newlines with 2 newlines
+    .replace(/^\n+|\n+$/g, "") // Remove leading and trailing newlines
+    .trim();
 }
 
 /**
@@ -28,16 +28,16 @@ export function cleanPromptForApi(prompt) {
  * @returns {string} - The prompt with normalized newlines for display
  */
 export function preserveDisplayFormatting(prompt) {
-    if (!prompt || typeof prompt !== 'string') {
-        return prompt;
-    }
-    
-    return prompt
-        .replace(/\r\n/g, '\n') // Convert Windows newlines to Unix newlines
-        .replace(/\r/g, '\n') // Convert Mac newlines to Unix newlines
-        .replace(/[ \t]+\n/g, '\n') // Remove trailing spaces/tabs before newlines
-        .replace(/\n{3,}/g, '\n\n\n') // Ensure at most 3 newlines for display
-        .trim();
+  if (!prompt || typeof prompt !== "string") {
+    return prompt;
+  }
+
+  return prompt
+    .replace(/\r\n/g, "\n") // Convert Windows newlines to Unix newlines
+    .replace(/\r/g, "\n") // Convert Mac newlines to Unix newlines
+    .replace(/[ \t]+\n/g, "\n") // Remove trailing spaces/tabs before newlines
+    .replace(/\n{3,}/g, "\n\n\n") // Ensure at most 3 newlines for display
+    .trim();
 }
 
 /**
@@ -46,21 +46,22 @@ export function preserveDisplayFormatting(prompt) {
  * @returns {boolean} - True if prompt is valid
  */
 export function isValidPrompt(prompt) {
-    if (!prompt || typeof prompt !== 'string') {
-        return false;
-    }
-    
-    // Check for minimum length
-    if (prompt.trim().length === 0) {
-        return false;
-    }
-    
-    // Check for maximum length (reasonable limit for API calls)
-    if (prompt.length > 32000) { // 32K character limit
-        return false;
-    }
-    
-    return true;
+  if (!prompt || typeof prompt !== "string") {
+    return false;
+  }
+
+  // Check for minimum length
+  if (prompt.trim().length === 0) {
+    return false;
+  }
+
+  // Check for maximum length (reasonable limit for API calls)
+  if (prompt.length > 32000) {
+    // 32K character limit
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -70,15 +71,19 @@ export function isValidPrompt(prompt) {
  * @param {string} context - Context where cleaning occurred
  */
 export function logPromptCleaning(originalPrompt, cleanedPrompt, context) {
-    if (typeof window !== 'undefined' && window.console) {
-        console.log(`[PROMPT-CLEANING] [${context}]`, {
-            originalLength: originalPrompt?.length || 0,
-            cleanedLength: cleanedPrompt?.length || 0,
-            wasCleaned: originalPrompt !== cleanedPrompt,
-            originalPreview: originalPrompt?.substring(0, 100) + (originalPrompt?.length > 100 ? '...' : ''),
-            cleanedPreview: cleanedPrompt?.substring(0, 100) + (cleanedPrompt?.length > 100 ? '...' : '')
-        });
-    }
+  if (typeof window !== "undefined" && window.console) {
+    console.log(`[PROMPT-CLEANING] [${context}]`, {
+      originalLength: originalPrompt?.length || 0,
+      cleanedLength: cleanedPrompt?.length || 0,
+      wasCleaned: originalPrompt !== cleanedPrompt,
+      originalPreview:
+        originalPrompt?.substring(0, 100) +
+        (originalPrompt?.length > 100 ? "..." : ""),
+      cleanedPreview:
+        cleanedPrompt?.substring(0, 100) +
+        (cleanedPrompt?.length > 100 ? "..." : ""),
+    });
+  }
 }
 
 /**
@@ -88,20 +93,20 @@ export function logPromptCleaning(originalPrompt, cleanedPrompt, context) {
  * @param {string} context - Context for logging (e.g., 'generate', 'enhance')
  * @returns {string} - The cleaned prompt
  */
-export function getApiReadyPrompt(prompt, context = 'api') {
-    if (!isValidPrompt(prompt)) {
-        return prompt || '';
-    }
-    
-    const originalPrompt = prompt;
-    const cleanedPrompt = cleanPromptForApi(prompt);
-    
-    // Log if prompt was actually cleaned
-    if (originalPrompt !== cleanedPrompt) {
-        logPromptCleaning(originalPrompt, cleanedPrompt, context);
-    }
-    
-    return cleanedPrompt;
+export function getApiReadyPrompt(prompt, context = "api") {
+  if (!isValidPrompt(prompt)) {
+    return prompt || "";
+  }
+
+  const originalPrompt = prompt;
+  const cleanedPrompt = cleanPromptForApi(prompt);
+
+  // Log if prompt was actually cleaned
+  if (originalPrompt !== cleanedPrompt) {
+    logPromptCleaning(originalPrompt, cleanedPrompt, context);
+  }
+
+  return cleanedPrompt;
 }
 
 /**
@@ -111,11 +116,11 @@ export function getApiReadyPrompt(prompt, context = 'api') {
  * @returns {string} - The display-ready prompt
  */
 export function getDisplayReadyPrompt(prompt) {
-    if (!isValidPrompt(prompt)) {
-        return prompt || '';
-    }
-    
-    return preserveDisplayFormatting(prompt);
+  if (!isValidPrompt(prompt)) {
+    return prompt || "";
+  }
+
+  return preserveDisplayFormatting(prompt);
 }
 
 /**
@@ -125,23 +130,23 @@ export function getDisplayReadyPrompt(prompt) {
  * @param {string} context - Context for logging
  * @returns {object} - Object containing original, cleaned, and display versions
  */
-export function processPrompt(prompt, useCase = 'both', context = 'general') {
-    const originalPrompt = prompt || '';
-    
-    if (!isValidPrompt(originalPrompt)) {
-        return {
-            original: originalPrompt,
-            cleaned: originalPrompt,
-            display: originalPrompt
-        };
-    }
-    
-    const cleaned = getApiReadyPrompt(originalPrompt, context);
-    const display = getDisplayReadyPrompt(originalPrompt);
-    
+export function processPrompt(prompt, useCase = "both", context = "general") {
+  const originalPrompt = prompt || "";
+
+  if (!isValidPrompt(originalPrompt)) {
     return {
-        original: originalPrompt,
-        cleaned: useCase === 'display' ? originalPrompt : cleaned,
-        display: useCase === 'api' ? cleaned : display
+      original: originalPrompt,
+      cleaned: originalPrompt,
+      display: originalPrompt,
     };
+  }
+
+  const cleaned = getApiReadyPrompt(originalPrompt, context);
+  const display = getDisplayReadyPrompt(originalPrompt);
+
+  return {
+    original: originalPrompt,
+    cleaned: useCase === "display" ? originalPrompt : cleaned,
+    display: useCase === "api" ? cleaned : display,
+  };
 }

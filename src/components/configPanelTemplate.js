@@ -4,7 +4,7 @@
  * Gets the complete HTML template for the configuration panel
  */
 export function getConfigPanelHTML() {
-    return `
+  return `
         <div class="nig-modal-content">
             <span class="nig-close-btn">&times;</span>
             <h2>Image Generator Configuration</h2>
@@ -66,7 +66,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-pollinations-token">API Token (Optional)</label>
-                                <input type="password" id="nig-pollinations-token" placeholder="Enter token for premium models">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-pollinations-token" placeholder="Enter token for premium models">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-pollinations-token"
+                                        aria-label="Show API token"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                                 <small class="nig-hint">Get a token from <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
                             </div>
                         </div>
@@ -78,7 +89,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-horde-api-key">AI Horde API Key</label>
-                                <input type="password" id="nig-horde-api-key" placeholder="Defaults to '0000000000'">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-horde-api-key" placeholder="Defaults to '0000000000'">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-horde-api-key"
+                                        aria-label="Show AI Horde API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                                 <small>Use anonymous key or get your own from <a href="https://aihorde.net/" target="_blank" class="nig-api-prompt-link">AI Horde</a> for higher priority.</small>
                             </div>
                             <div class="nig-provider-controls">
@@ -146,7 +168,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-google-api-key">Gemini API Key</label>
-                                <input type="password" id="nig-google-api-key">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-google-api-key">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-google-api-key"
+                                        aria-label="Show Gemini API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-model">Imagen Model</label>
@@ -207,7 +240,18 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-openai-compat-api-key">API Key</label>
-                                <input type="password" id="nig-openai-compat-api-key">
+                                <div class="nig-password-wrapper">
+                                    <input type="password" id="nig-openai-compat-api-key">
+                                    <button
+                                        type="button"
+                                        class="nig-password-toggle"
+                                        data-target="nig-openai-compat-api-key"
+                                        aria-label="Show OpenAI compatible API key"
+                                        aria-pressed="false"
+                                    >
+                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-openai-compat-model">Model</label>
@@ -282,7 +326,18 @@ export function getConfigPanelHTML() {
                                 <div class="nig-enhancement-settings disabled" id="nig-enhancement-settings">
                                     <div class="nig-form-group">
                                         <label for="nig-gemini-api-key">Gemini API Key</label>
-                                        <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                        <div class="nig-password-wrapper">
+                                            <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                            <button
+                                                type="button"
+                                                class="nig-password-toggle"
+                                                data-target="nig-gemini-api-key"
+                                                aria-label="Show Gemini API key for enhancement"
+                                                aria-pressed="false"
+                                            >
+                                                <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+                                            </button>
+                                        </div>
                                         <small class="nig-hint">Get a free API key from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a></small>
                                     </div>
 
@@ -304,24 +359,34 @@ export function getConfigPanelHTML() {
                                             <div class="nig-form-group">
                                                 <label for="nig-enhancement-template-select">Enhancement Template</label>
                                                 <select id="nig-enhancement-template-select">
-                                                    <option value="standard">Standard Enhancement - Default enhancement that improves prompt quality</option>
-                                                    <option value="safety">Safety Enhancement - Enhances prompts while removing harmful content</option>
-                                                    <option value="artistic">Artistic Enhancement - Focuses on artistic and creative elements</option>
-                                                    <option value="technical">Technical Enhancement - Emphasizes technical accuracy and detail</option>
-                                                    <option value="character">Character Enhancement - Focuses on character development</option>
-                                                    <option value="environment">Environment Enhancement - Enhances environmental descriptions</option>
-                                                    <option value="composition">Composition Enhancement - Focuses on composition and visual structure</option>
-                                                    <option value="clean">Clean Enhancement - Removes potentially harmful elements</option>
-                                                    <option value="custom">Custom Enhancement Prompt</option>
+                                                    <optgroup label="User Presets" data-group="user-presets"></optgroup>
+                                                    <optgroup label="Default Presets" data-group="default-presets">
+                                                        <option value="standard">Standard Enhancement - General-purpose, balanced enhancement</option>
+                                                        <option value="safety">Safety Enhancement - Safe, policy-aligned enhancement</option>
+                                                        <option value="artistic">Artistic Enhancement - Emphasizes creative visual style</option>
+                                                        <option value="technical">Technical Enhancement - Emphasizes realism and technical detail</option>
+                                                        <option value="character">Character Enhancement - Focuses on character detail and personality</option>
+                                                    </optgroup>
+                                                    <option value="custom">Custom (one-off)</option>
                                                 </select>
-                                                <small class="nig-hint">Choose a preset enhancement prompt or select 'Custom' to create your own. Preset prompts include safety features to remove harmful content.</small>
+                                                <small class="nig-hint">
+                                                    Select from your saved presets or the curated defaults.
+                                                    "Custom (one-off)" uses the current text without saving as a preset.
+                                                    Legacy preset selections remain supported and are mapped safely.
+                                                </small>
                                             </div>
-                                            <textarea id="nig-enhancement-template" rows="3" placeholder="Enter custom enhancement instructions..."></textarea>
+                                            <textarea id="nig-enhancement-template" rows="3" placeholder="Enter enhancement instructions to save as a preset or use ad-hoc."></textarea>
                                             <div class="nig-form-group-inline">
-                                                <button class="nig-template-btn" id="nig-template-reset">Reset to Preset</button>
+                                                <button class="nig-template-btn" id="nig-template-save-preset">Save as Preset</button>
+                                                <button class="nig-template-btn nig-btn-danger" id="nig-template-delete-preset">Delete Selected User Preset</button>
+                                                <button class="nig-template-btn" id="nig-template-reset">Reset to Selected Preset</button>
                                                 <button class="nig-template-btn" id="nig-template-example">Load Example</button>
                                             </div>
-                                            <small class="nig-hint">Customize how the AI enhances prompts. Leave empty for intelligent enhancement.</small>
+                                            <small class="nig-hint">
+                                                Saved presets appear under "User Presets" and persist via Tampermonkey storage.
+                                                Default presets remain under "Default Presets" and are stable across updates.
+                                                Use "Delete Selected User Preset" to remove a user-defined preset (only works for entries under User Presets).
+                                            </small>
                                         </div>
                                     </div>
 
@@ -329,7 +394,7 @@ export function getConfigPanelHTML() {
                                         <div class="nig-preview-container">
                                             <div class="nig-preview-section">
                                                 <h5>Original Prompt</h5>
-                                                <div class="nig-prompt-display" id="nig-original-prompt"></div>
+                                                <textarea id="nig-original-prompt" class="nig-prompt-display" rows="4" placeholder="A rich narrative-style prompt will appear here for testing. You can edit or replace it with your own text before running Test Enhancement."></textarea>
                                             </div>
                                             <div class="nig-preview-arrow">
                                                 <span class="material-symbols-outlined">arrow_forward</span>
@@ -471,11 +536,11 @@ export function getConfigPanelHTML() {
  * Creates the panel element with the template
  */
 export function createPanelElement() {
-    const panelElement = document.createElement('div');
-    panelElement.id = 'nig-config-panel';
-    panelElement.className = 'nig-modal-overlay';
-    panelElement.style.display = 'none';
-    panelElement.innerHTML = getConfigPanelHTML();
-    
-    return panelElement;
+  const panelElement = document.createElement("div");
+  panelElement.id = "nig-config-panel";
+  panelElement.className = "nig-modal-overlay";
+  panelElement.style.display = "none";
+  panelElement.innerHTML = getConfigPanelHTML();
+
+  return panelElement;
 }
