@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator
 // @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.0.6
+// @version 6.1.0
 // @author MasuRii
 // @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
@@ -914,7 +914,9 @@ async function clearCachedOpenAICompatModels() {
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
   CB: () => (/* binding */ deleteSelectedOpenAIProfile),
+  cG: () => (/* binding */ fetchGoogleModels),
   VM: () => (/* binding */ fetchOpenAICompatModels),
+  YE: () => (/* binding */ loadCachedGoogleModels),
   tH: () => (/* binding */ loadSelectedOpenAIProfile),
   populateProviderForms: () => (/* binding */ populateProviderForms),
   Yl: () => (/* binding */ saveProviderConfigs)
@@ -968,6 +970,88 @@ var logger = __webpack_require__(103);
 
 
 // --- PUBLIC FUNCTIONS ---
+
+/**
+ * Fetches Google models from the API
+ * @param {string} apiKey - The Google API Key
+ * @returns {Promise<Array>} - The list of models
+ */
+async function fetchGoogleModels(apiKey) {
+  return new Promise((resolve, reject) => {
+    logger/* logInfo */.fH("NETWORK", "Fetching Google models from API");
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      onload: async (response) => {
+        try {
+          const data = JSON.parse(response.responseText);
+          if (!data.models) {
+            throw new Error("Invalid response format from Google API");
+          }
+
+          const legacyIds = [
+            "imagegeneration@006",
+            "imagen-3.0-generate-002",
+            "imagen-4.0-generate-001",
+            "imagen-4.0-ultra-generate-001",
+            "imagen-4.0-fast-generate-001",
+            "gemini-2.5-flash-image",
+            "gemini-3-pro-image-preview",
+          ];
+
+          const filteredModels = data.models.filter((model) => {
+            const name = (model.displayName || model.name).toLowerCase();
+            const id = model.name.split("/").pop(); // model.name is usually "models/some-id"
+            return name.includes("image") || legacyIds.includes(id);
+          });
+
+          const models = filteredModels.map((model) => ({
+            id: model.name.split("/").pop(),
+            name: model.displayName || model.name,
+          }));
+
+          // Sort models: Prefer those starting with "imagen" or "gemini"
+          models.sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            if (aName.includes("imagen") && !bName.includes("imagen")) {
+              return -1;
+            }
+            if (!aName.includes("imagen") && bName.includes("imagen")) {
+              return 1;
+            }
+            return aName.localeCompare(bName);
+          });
+
+          await cache/* setCachedModels */.Hg("google", models);
+          logger/* logInfo */.fH("NETWORK", "Fetched and cached Google models", {
+            count: models.length,
+          });
+          resolve(models);
+        } catch (e) {
+          logger/* logError */.vV("NETWORK", "Failed to parse Google models", {
+            error: e.message,
+          });
+          reject(e);
+        }
+      },
+      onerror: (error) => {
+        logger/* logError */.vV("NETWORK", "Failed to fetch Google models", {
+          error: error,
+        });
+        reject(error);
+      },
+    });
+  });
+}
+
+/**
+ * Loads cached Google models
+ * @returns {Promise<Array|null>} - The list of cached models or null
+ */
+async function loadCachedGoogleModels() {
+  return await cache/* getCachedModelsForProvider */.bu("google");
+}
 
 /**
  * Fetches Pollinations models and populates the dropdown
@@ -5290,41 +5374,105 @@ async function generate(prompt, { onSuccess, onFailure }) {
       cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
   });
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
-  const parameters = {
-    sampleCount: parseInt(numberOfImages, 10),
-    aspectRatio,
-    personGeneration,
-  };
-  if (!model.includes("fast")) {
-    parameters.imageSize = parseInt(imageSize, 10);
-  }
+  if (model.startsWith("gemini-")) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const payload = {
+      contents: [{ parts: [{ text: cleanPrompt }] }],
+      generationConfig: {
+        responseModalities: ["IMAGE"],
+        candidateCount: parseInt(numberOfImages, 10),
+        imageConfig: {
+          aspectRatio: aspectRatio,
+        },
+      },
+    };
 
-  GM_xmlhttpRequest({
-    method: "POST",
-    url,
-    headers: {
-      "x-goog-api-key": googleApiKey,
-      "Content-Type": "application/json",
-    },
-    data: JSON.stringify({ instances: [{ prompt: cleanPrompt }], parameters }),
-    onload: (response) => {
-      try {
-        const data = JSON.parse(response.responseText);
-        if (data.error) {
-          throw new Error(JSON.stringify(data.error));
+    GM_xmlhttpRequest({
+      method: "POST",
+      url,
+      headers: {
+        "x-goog-api-key": googleApiKey,
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify(payload),
+      onload: (response) => {
+        try {
+          const data = JSON.parse(response.responseText);
+          if (data.error) {
+            throw new Error(JSON.stringify(data.error));
+          }
+          if (
+            !data.candidates ||
+            !data.candidates[0] ||
+            !data.candidates[0].content ||
+            !data.candidates[0].content.parts
+          ) {
+            throw new Error("No image data found in response");
+          }
+          const imageUrls = data.candidates[0].content.parts
+            .filter((p) => p.inlineData && p.inlineData.data)
+            .map(
+              (p) =>
+                `data:${p.inlineData.mimeType || "image/png"};base64,${p.inlineData.data}`,
+            );
+          onSuccess(imageUrls, cleanPrompt, "Google", model);
+        } catch (e) {
+          onFailure(e.message, prompt, "Google");
         }
-        const imageUrls = data.predictions.map(
-          (p) => `data:image/png;base64,${p.bytesB64Encoded}`,
-        );
-        // Pass the exact FinalPrompt string used for the API to the viewer/history
-        onSuccess(imageUrls, cleanPrompt, "Google", model);
-      } catch (e) {
-        onFailure(e.message, prompt, "Google");
-      }
-    },
-    onerror: (error) => onFailure(JSON.stringify(error), prompt, "Google"),
-  });
+      },
+      onerror: (error) => onFailure(JSON.stringify(error), prompt, "Google"),
+    });
+  } else {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
+    const parameters = {
+      sampleCount: parseInt(numberOfImages, 10),
+      aspectRatio,
+      personGeneration,
+    };
+
+    const isNewImagen =
+      model.startsWith("imagen-3") || model.startsWith("imagen-4");
+
+    if (model.includes("fast")) {
+      // Fast models don't support imageSize
+    } else if (isNewImagen) {
+      // New Standard/Ultra models require string "1K" or "2K"
+      const sizeNum = parseInt(imageSize, 10);
+      parameters.imageSize = sizeNum >= 2048 ? "2K" : "1K";
+    } else {
+      // Legacy models expect number
+      parameters.imageSize = parseInt(imageSize, 10);
+    }
+
+    GM_xmlhttpRequest({
+      method: "POST",
+      url,
+      headers: {
+        "x-goog-api-key": googleApiKey,
+        "Content-Type": "application/json",
+      },
+      data: JSON.stringify({
+        instances: [{ prompt: cleanPrompt }],
+        parameters,
+      }),
+      onload: (response) => {
+        try {
+          const data = JSON.parse(response.responseText);
+          if (data.error) {
+            throw new Error(JSON.stringify(data.error));
+          }
+          const imageUrls = data.predictions.map(
+            (p) => `data:image/png;base64,${p.bytesB64Encoded}`,
+          );
+          // Pass the exact FinalPrompt string used for the API to the viewer/history
+          onSuccess(imageUrls, cleanPrompt, "Google", model);
+        } catch (e) {
+          onFailure(e.message, prompt, "Google");
+        }
+      },
+      onerror: (error) => onFailure(JSON.stringify(error), prompt, "Google"),
+    });
+  }
 }
 
 // EXTERNAL MODULE: ./src/utils/cache.js
@@ -8842,6 +8990,7 @@ async function handleHistoryDaysChange(event) {
 
 
 
+
 /**
  * Initialize show/hide toggles for all password-like API key fields.
  * This is UI-only and does not affect storage, validation, or submission behavior.
@@ -8955,6 +9104,33 @@ function setupProviderEventListeners(panelElement) {
     .querySelector("#nig-provider")
     .addEventListener("change", (_e) => {
       updateVisibleSettings();
+    });
+
+  // Google fetch models
+  panelElement
+    .querySelector("#nig-google-fetch-models")
+    .addEventListener("click", async () => {
+      const apiKey = document.getElementById("nig-google-api-key").value.trim();
+      if (!apiKey) {
+        alert("Please enter a Gemini API Key first.");
+        return;
+      }
+
+      const btn = document.getElementById("nig-google-fetch-models");
+      const originalText = btn.textContent;
+      btn.textContent = "Fetching...";
+      btn.disabled = true;
+
+      try {
+        const fetchedModels = await models/* fetchGoogleModels */.cG(apiKey);
+        populateGoogleModelsSelect(fetchedModels);
+        alert(`Successfully fetched ${fetchedModels.length} models.`);
+      } catch (error) {
+        alert(`Failed to fetch models: ${error.message}`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     });
 }
 
@@ -9381,12 +9557,12 @@ function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-model">Imagen Model</label>
-                                <select id="nig-model">
-                                    <option value="imagen-4.0-generate-001">Imagen 4.0 Standard</option>
-                                    <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra</option>
-                                    <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast</option>
-                                    <option value="imagen-3.0-generate-002">Imagen 3.0 Standard</option>
-                                </select>
+                                <div class="nig-form-group-inline">
+                                    <select id="nig-model" style="width: 100%;">
+                                        <option value="">Enter API Key and fetch...</option>
+                                    </select>
+                                    <button id="nig-google-fetch-models" class="nig-fetch-models-btn">Fetch</button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-num-images">Number of Images (1-4)</label>
@@ -9818,6 +9994,8 @@ async function configPanel_show() {
   // Populate basic configuration
   await populateConfigForm();
 
+  await populateGoogleModels();
+
   // Populate provider-specific forms
   await (0,models.populateProviderForms)(config);
 
@@ -9853,6 +10031,40 @@ async function configPanel_saveConfig() {
   }
 
   alert("Configuration saved!");
+}
+
+/**
+ * Populates the Google Imagen model dropdown from config/cache
+ */
+async function populateGoogleModels() {
+  const select = document.getElementById("nig-model");
+  if (!select) {
+    return;
+  }
+
+  const cachedModels = await (0,models/* loadCachedGoogleModels */.YE)();
+  if (cachedModels && cachedModels.length > 0) {
+    populateGoogleModelsSelect(cachedModels);
+  }
+}
+
+/**
+ * Populates the Google Models select element
+ * @param {Array} models - List of models
+ */
+function populateGoogleModelsSelect(models) {
+  const select = document.getElementById("nig-model");
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML = "";
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = model.name;
+    select.appendChild(option);
+  });
 }
 
 ;// ./src/index.js

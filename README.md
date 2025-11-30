@@ -2,7 +2,7 @@
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.6-blue.svg)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)](Changelog.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/)
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()

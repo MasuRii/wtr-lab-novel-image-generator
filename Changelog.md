@@ -4,6 +4,43 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.0] - 2025-11-30
+
+### ✨ Added
+- **Expanded Google Provider Model Support**:
+  - **Nano Banana (Gemini) Models**:
+    - `Nano Banana 2 (Gemini 2.5 Flash)` - Optimized for speed.
+    - `Nano Banana 3 Pro (Gemini 3 Pro)` - High-fidelity generation.
+  - **Standard Imagen Models**:
+    - `Imagen 4 Standard` & `Imagen 4 Ultra`
+    - `Imagen 4 Fast`
+    - `Imagen 3`
+  - *Full backward compatibility for `Imagen 2 (Legacy)` is retained.*
+
+### 🏆 Improved
+- **Intelligent Google API Routing**:
+  - The Google provider in [`src/api/google.js`](src/api/google.js:1) now dynamically switches between two different API protocols based on the selected model:
+    - **Gemini Models**: Use the modern `:generateContent` endpoint with the correct nested JSON payload.
+    - **Imagen & Legacy Models**: Use the `:predict` endpoint with model-specific parameter handling (e.g., converting resolution to `"1K"`/`"2K"` strings for Imagen 4 or sending integers for legacy models).
+- **Centralized Model Configuration**:
+  - All Google model definitions, including user-friendly names, are now centralized in [`src/config/models.js`](src/config/models.js:1).
+  - The UI dropdown in [`src/components/configPanel.js`](src/components/configPanel.js:1) is now dynamically populated from this configuration, ensuring the UI is always in sync with supported models.
+
+### 🐞 Fixed
+- **Google Model "Not Found" Errors**: Resolved critical errors where generation would fail due to outdated or incorrect static model IDs (e.g., `models/imagen-3.0-generate-002 is not found`).
+
+### 🏆 Improved
+- **Google Provider Reliability**: Replaced the static, hardcoded Google model list with a dynamic fetching mechanism in [`src/api/models.js`](src/api/models.js:1).
+  - The application now fetches the list of available models directly from the user's Google API account.
+  - This ensures users only see models they have access to and prevents future errors from model ID changes.
+  - The fetched list is cached to improve performance.
+
+### 🛠️ Changed
+- **Google Provider UI**: The model selection dropdown in the config panel now features a "Fetch Models" button, providing a clear, user-initiated way to load available models.
+
+### 🗑️ Removed
+- Removed the obsolete `GOOGLE_MODELS` constant from [`src/config/models.js`](src/config/models.js:1), as the model list is now fully dynamic.
+
 ## [6.0.6] - 2025-11-10
 
 ### 🐞 Fixed

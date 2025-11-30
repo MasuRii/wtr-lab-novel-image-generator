@@ -3,7 +3,11 @@ import {
   populateConfigForm,
   saveConfig as saveConfigToStorage,
 } from "../config/configManager.js";
-import { saveProviderConfigs, populateProviderForms } from "../api/models.js";
+import {
+  saveProviderConfigs,
+  populateProviderForms,
+  loadCachedGoogleModels,
+} from "../api/models.js";
 import * as storage from "../utils/storage.js";
 import {
   populateEnhancementSettings,
@@ -88,6 +92,8 @@ export async function show() {
   // Populate basic configuration
   await populateConfigForm();
 
+  await populateGoogleModels();
+
   // Populate provider-specific forms
   await populateProviderForms(config);
 
@@ -123,4 +129,38 @@ export async function saveConfig() {
   }
 
   alert("Configuration saved!");
+}
+
+/**
+ * Populates the Google Imagen model dropdown from config/cache
+ */
+async function populateGoogleModels() {
+  const select = document.getElementById("nig-model");
+  if (!select) {
+    return;
+  }
+
+  const cachedModels = await loadCachedGoogleModels();
+  if (cachedModels && cachedModels.length > 0) {
+    populateGoogleModelsSelect(cachedModels);
+  }
+}
+
+/**
+ * Populates the Google Models select element
+ * @param {Array} models - List of models
+ */
+export function populateGoogleModelsSelect(models) {
+  const select = document.getElementById("nig-model");
+  if (!select) {
+    return;
+  }
+
+  select.innerHTML = "";
+  models.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = model.name;
+    select.appendChild(option);
+  });
 }

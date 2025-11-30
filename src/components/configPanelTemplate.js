@@ -183,12 +183,12 @@ export function getConfigPanelHTML() {
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-model">Imagen Model</label>
-                                <select id="nig-model">
-                                    <option value="imagen-4.0-generate-001">Imagen 4.0 Standard</option>
-                                    <option value="imagen-4.0-ultra-generate-001">Imagen 4.0 Ultra</option>
-                                    <option value="imagen-4.0-fast-generate-001">Imagen 4.0 Fast</option>
-                                    <option value="imagen-3.0-generate-002">Imagen 3.0 Standard</option>
-                                </select>
+                                <div class="nig-form-group-inline">
+                                    <select id="nig-model" style="width: 100%;">
+                                        <option value="">Enter API Key and fetch...</option>
+                                    </select>
+                                    <button id="nig-google-fetch-models" class="nig-fetch-models-btn">Fetch</button>
+                                </div>
                             </div>
                             <div class="nig-form-group">
                                 <label for="nig-num-images">Number of Images (1-4)</label>

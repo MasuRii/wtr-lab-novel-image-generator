@@ -7,6 +7,88 @@ import * as logger from "../utils/logger.js";
 // --- PUBLIC FUNCTIONS ---
 
 /**
+ * Fetches Google models from the API
+ * @param {string} apiKey - The Google API Key
+ * @returns {Promise<Array>} - The list of models
+ */
+export async function fetchGoogleModels(apiKey) {
+  return new Promise((resolve, reject) => {
+    logger.logInfo("NETWORK", "Fetching Google models from API");
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
+      onload: async (response) => {
+        try {
+          const data = JSON.parse(response.responseText);
+          if (!data.models) {
+            throw new Error("Invalid response format from Google API");
+          }
+
+          const legacyIds = [
+            "imagegeneration@006",
+            "imagen-3.0-generate-002",
+            "imagen-4.0-generate-001",
+            "imagen-4.0-ultra-generate-001",
+            "imagen-4.0-fast-generate-001",
+            "gemini-2.5-flash-image",
+            "gemini-3-pro-image-preview",
+          ];
+
+          const filteredModels = data.models.filter((model) => {
+            const name = (model.displayName || model.name).toLowerCase();
+            const id = model.name.split("/").pop(); // model.name is usually "models/some-id"
+            return name.includes("image") || legacyIds.includes(id);
+          });
+
+          const models = filteredModels.map((model) => ({
+            id: model.name.split("/").pop(),
+            name: model.displayName || model.name,
+          }));
+
+          // Sort models: Prefer those starting with "imagen" or "gemini"
+          models.sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            if (aName.includes("imagen") && !bName.includes("imagen")) {
+              return -1;
+            }
+            if (!aName.includes("imagen") && bName.includes("imagen")) {
+              return 1;
+            }
+            return aName.localeCompare(bName);
+          });
+
+          await cache.setCachedModels("google", models);
+          logger.logInfo("NETWORK", "Fetched and cached Google models", {
+            count: models.length,
+          });
+          resolve(models);
+        } catch (e) {
+          logger.logError("NETWORK", "Failed to parse Google models", {
+            error: e.message,
+          });
+          reject(e);
+        }
+      },
+      onerror: (error) => {
+        logger.logError("NETWORK", "Failed to fetch Google models", {
+          error: error,
+        });
+        reject(error);
+      },
+    });
+  });
+}
+
+/**
+ * Loads cached Google models
+ * @returns {Promise<Array|null>} - The list of cached models or null
+ */
+export async function loadCachedGoogleModels() {
+  return await cache.getCachedModelsForProvider("google");
+}
+
+/**
  * Fetches Pollinations models and populates the dropdown
  */
 export async function fetchPollinationsModels(selectedModel) {
