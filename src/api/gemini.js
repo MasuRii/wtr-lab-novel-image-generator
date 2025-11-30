@@ -1,4 +1,4 @@
-import { logInfo, logDebug, logWarn, logError } from "../utils/logger.js";
+import { logInfo, logDebug, logError } from "../utils/logger.js";
 import { getApiReadyPrompt } from "../utils/promptUtils.js";
 
 /**
@@ -138,6 +138,7 @@ export async function enhancePromptWithGemini(originalPrompt, config) {
     ...enhancementModelsFallback.filter((m) => m !== rawModel),
   ];
 
+  // High-level enhancement start: informational and toggle-controlled.
   logInfo("ENHANCEMENT", "Starting robust prompt enhancement with Gemini AI", {
     originalLength: originalPrompt.length,
     primaryModel: rawModel,
@@ -192,7 +193,9 @@ export async function enhancePromptWithGemini(originalPrompt, config) {
         return enhancedText;
       } catch (error) {
         lastError = error;
-        logError(
+        // Routine enhancement attempt failure for a specific model/attempt.
+        // Use non-critical level so it respects the logging toggle while still being captured in enhancement logs when enabled.
+        logInfo(
           "ENHANCEMENT",
           `Enhancement failed for model ${model} (attempt ${attemptsForThisModel}/${enhancementMaxRetriesPerModel})`,
           {
@@ -214,8 +217,9 @@ export async function enhancePromptWithGemini(originalPrompt, config) {
       }
     }
 
-    // If we exhausted retries for this model, try the next one
-    logWarn(
+    // If we exhausted retries for this model, try the next one.
+    // This is expected operational behavior, so keep it toggle-controlled.
+    logInfo(
       "ENHANCEMENT",
       `Exhausted retries for model ${model}, switching to next model`,
       {

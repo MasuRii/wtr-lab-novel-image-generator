@@ -1,5 +1,6 @@
 import { getConfig } from "../utils/storage.js";
 import { getApiReadyPrompt } from "../utils/promptUtils.js";
+import { logDebug } from "../utils/logger.js";
 
 /**
  * Detects if response content is HTML instead of JSON
@@ -101,7 +102,8 @@ export async function generate(
   // Apply prompt cleaning as a safety measure on the fully-formed FinalPrompt
   const cleanPrompt = getApiReadyPrompt(finalPrompt, "openai_api_final");
 
-  console.log("[NIG-DEBUG] [OPENAI-COMPAT] Prompt construction:", {
+  // Respect global logging toggle for debug-level diagnostics
+  logDebug("OPENAI-COMPAT", "Prompt construction", {
     path: "non-horde inline negative",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,

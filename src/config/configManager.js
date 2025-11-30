@@ -1,6 +1,4 @@
 // --- IMPORTS ---
-import { DEFAULTS } from "../config/defaults.js";
-import { PROMPT_CATEGORIES } from "../config/styles.js";
 import * as storage from "../utils/storage.js";
 import * as logger from "../utils/logger.js";
 import * as file from "../utils/file.js";
@@ -9,6 +7,8 @@ import {
   updateEnhancementUI,
 } from "../components/enhancementPanel.js";
 import { populateProviderForms as populateProviderFormsModels } from "../api/models.js";
+import { PROMPT_CATEGORIES } from "./styles.js";
+import { DEFAULTS } from "./defaults.js";
 // --- INTERNAL HELPERS ---
 
 /**

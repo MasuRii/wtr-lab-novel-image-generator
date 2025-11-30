@@ -189,7 +189,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.4;
 }
 
@@ -440,7 +440,7 @@
   color: var(--nig-color-text-secondary);
   max-height: 120px;
   overflow-y: auto;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
 }
 
@@ -492,7 +492,7 @@
   overflow: hidden;
   padding: 0 var(--nig-space-lg);
   border-top: 1px solid transparent;
-  word-break: break-word;
+  overflow-wrap: break-word;
   color: var(--nig-color-text-secondary);
   line-height: 1.6;
   transition: all var(--nig-transition-normal);
@@ -516,7 +516,7 @@
  */
 #nig-prompt-text.nig-prompt-text {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 @keyframes nig-expand {

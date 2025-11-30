@@ -149,7 +149,7 @@ export async function handleHistoryDaysChange(event) {
   if (!isNaN(days) && days >= 1 && days <= 365) {
     try {
       await storage.setHistoryDays(days);
-      console.log(`History days setting saved: ${days}`);
+      // History days saved; no console output to respect logging toggle
       // Refresh the history tab to reflect the new setting
       const panelElement = document.getElementById("nig-config-panel");
       if (

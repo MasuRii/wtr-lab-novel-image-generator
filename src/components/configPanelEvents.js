@@ -2,19 +2,21 @@
 import {
   updateVisibleSettings,
   updateSubStyles,
+  exportConfig,
+  handleImportFile,
 } from "../config/configManager.js";
-import {
-  populateHistoryTab,
-  cleanHistory,
-  handleHistoryDaysChange,
-} from "./historyManager.js";
-import { exportConfig, handleImportFile } from "../config/configManager.js";
-import { updateEnhancementUI } from "./enhancementPanel.js";
 import * as cache from "../utils/cache.js";
 import * as storage from "../utils/storage.js";
 import * as logger from "../utils/logger.js";
 import * as models from "../api/models.js";
 import { PROMPT_CATEGORIES } from "../config/styles.js";
+import { populateGoogleModelsSelect } from "./configPanel.js";
+import { updateEnhancementUI } from "./enhancementPanel.js";
+import {
+  populateHistoryTab,
+  cleanHistory,
+  handleHistoryDaysChange,
+} from "./historyManager.js";
 
 /**
  * Initialize show/hide toggles for all password-like API key fields.
@@ -129,6 +131,33 @@ export function setupProviderEventListeners(panelElement) {
     .querySelector("#nig-provider")
     .addEventListener("change", (_e) => {
       updateVisibleSettings();
+    });
+
+  // Google fetch models
+  panelElement
+    .querySelector("#nig-google-fetch-models")
+    .addEventListener("click", async () => {
+      const apiKey = document.getElementById("nig-google-api-key").value.trim();
+      if (!apiKey) {
+        alert("Please enter a Gemini API Key first.");
+        return;
+      }
+
+      const btn = document.getElementById("nig-google-fetch-models");
+      const originalText = btn.textContent;
+      btn.textContent = "Fetching...";
+      btn.disabled = true;
+
+      try {
+        const fetchedModels = await models.fetchGoogleModels(apiKey);
+        populateGoogleModelsSelect(fetchedModels);
+        alert(`Successfully fetched ${fetchedModels.length} models.`);
+      } catch (error) {
+        alert(`Failed to fetch models: ${error.message}`);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     });
 }
 

@@ -70,20 +70,10 @@ export function isValidPrompt(prompt) {
  * @param {string} cleanedPrompt - The cleaned prompt
  * @param {string} context - Context where cleaning occurred
  */
-export function logPromptCleaning(originalPrompt, cleanedPrompt, context) {
-  if (typeof window !== "undefined" && window.console) {
-    console.log(`[PROMPT-CLEANING] [${context}]`, {
-      originalLength: originalPrompt?.length || 0,
-      cleanedLength: cleanedPrompt?.length || 0,
-      wasCleaned: originalPrompt !== cleanedPrompt,
-      originalPreview:
-        originalPrompt?.substring(0, 100) +
-        (originalPrompt?.length > 100 ? "..." : ""),
-      cleanedPreview:
-        cleanedPrompt?.substring(0, 100) +
-        (cleanedPrompt?.length > 100 ? "..." : ""),
-    });
-  }
+export function logPromptCleaning(_originalPrompt, _cleanedPrompt, _context) {
+  // Intentionally a no-op placeholder:
+  // - Callers may treat this as a debug hook.
+  // - Using underscored params keeps ESLint satisfied and documents intent.
 }
 
 /**

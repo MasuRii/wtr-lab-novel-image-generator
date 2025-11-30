@@ -2,7 +2,7 @@
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.0.5-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 Turn your novel reading into a visual experience! This script lets you highlight text on `wtr-lab.com` and generate AI-powered images on the fly. With support for multiple AI providers, smart prompt enhancement, and a clean UI, it makes stories come alive. 🎨
 

@@ -18,29 +18,65 @@ export async function updateLoggingStatus() {
  * @param {any} [data=null] - Optional data to log.
  */
 export function log(level, category, message, data = null) {
-  if (!loggingEnabled) {
+  const normalizedLevel = (level || "").toLowerCase();
+
+  // Always log critical errors and warnings, regardless of toggle state
+  const isCritical =
+    normalizedLevel === "error" ||
+    normalizedLevel === "warn" ||
+    category === "SECURITY" ||
+    category === "ERROR" ||
+    category === "APP" ||
+    category === "CONFIG_IMPORT";
+
+  if (!loggingEnabled && !isCritical) {
+    // When logging is disabled, completely suppress debug/info and non-critical logs
     return;
   }
 
   const timestamp = new Date().toISOString();
-  const logEntry = { timestamp, level, category, message, data };
+  const logEntry = {
+    timestamp,
+    level: normalizedLevel,
+    category,
+    message,
+    data,
+  };
 
-  const prefix = `[NIG-${level.toUpperCase()}]`;
+  const prefix = `[NIG-${normalizedLevel.toUpperCase()}]`;
   const categoryPrefix = `[${category}]`;
   const style = {
     error: "color: #ef4444",
     warn: "color: #f59e0b",
     debug: "color: #8b5cf6",
     info: "color: #6366f1",
-  }[level];
+  }[normalizedLevel];
 
-  if (data) {
-    console.log(`%c${prefix}`, style, categoryPrefix, message, data);
+  // Route to appropriate console method, ensuring critical visibility
+  const consoleMethod = (() => {
+    if (normalizedLevel === "error") {
+      return console.error;
+    }
+    if (normalizedLevel === "warn") {
+      return console.warn;
+    }
+    if (normalizedLevel === "info") {
+      return console.info;
+    }
+    if (normalizedLevel === "debug") {
+      return console.debug || console.log;
+    }
+    return console.log;
+  })();
+
+  if (data !== null && data !== undefined) {
+    consoleMethod(`%c${prefix}`, style, categoryPrefix, message, data);
   } else {
-    console.log(`%c${prefix}`, style, categoryPrefix, message);
+    consoleMethod(`%c${prefix}`, style, categoryPrefix, message);
   }
 
-  if (category === "ENHANCEMENT") {
+  // Persist enhancement-related logs for history when logging is enabled
+  if (loggingEnabled && category === "ENHANCEMENT") {
     enhancementLogHistory.unshift(logEntry);
     if (enhancementLogHistory.length > 50) {
       enhancementLogHistory = enhancementLogHistory.slice(0, 50);
