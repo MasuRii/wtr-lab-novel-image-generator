@@ -2,7 +2,7 @@
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.1.1-blue.svg)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-6.1.1-blue.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/)
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
@@ -79,7 +79,7 @@ Choose from comprehensive art style categories to guide the AI:
 | **Google Imagen/Gemini** | Imagen models use `:predict`; Gemini image models use current `v1` `:generateContent` with `generationConfig.responseFormat.image`. | Premium Google image generation |
 | **OpenAI Comp.** | Posts to `/images/generations`; DALL-E keeps `response_format: "b64_json"`, while GPT image models omit unsupported `response_format`. | Custom or premium OpenAI-compatible APIs |
 
-Source-backed provider details are maintained in [docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md).
+Provider behavior in this table reflects the local TypeScript implementations and the 2026-06-08 compatibility review captured in `CHANGELOG.md`.
 
 ## 🏗️ For Developers & Contributors
 
@@ -126,8 +126,7 @@ src/
 
 ## 🔗 Quick Links
 
--   **📡 API Provider Compatibility Notes**: [docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md)
--   **📜 Changelog**: [Changelog.md](Changelog.md)
+-   **📜 Changelog**: [CHANGELOG.md](CHANGELOG.md)
 -   **🧩 GreasyFork**: [Script Page](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator)
 -   **🗂️ Source & Issues**: [GitHub Repository](https://github.com/MasuRii/wtr-lab-novel-image-generator)
 

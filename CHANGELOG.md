@@ -16,7 +16,7 @@ No unreleased changes.
   - AI Horde now polls `/generate/check/{id}` before fetching final `/generate/status/{id}` results and includes a descriptive `Client-Agent` header.
   - Google Gemini image requests normalize `gemini-3-pro-image-preview` to `gemini-3-pro-image`, use the `v1` `:generateContent` endpoint, and send image sizing through `generationConfig.responseFormat.image`.
   - OpenAI-compatible GPT image models omit unsupported `response_format`, while DALL-E models retain `response_format: "b64_json"`.
-- Added [API provider compatibility notes](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md) with source URLs, access dates, implemented behavior, and unresolved provider uncertainty.
+- Recorded provider compatibility notes in this changelog so the repository does not depend on a local documentation-folder artifact.
 
 ## [6.1.0] - 2025-11-30
 
@@ -33,18 +33,18 @@ No unreleased changes.
 
 ### 🏆 Improved
 - **Intelligent Google API Routing**:
-  - The Google provider in [`src/api/google.js`](src/api/google.js:1) now dynamically switches between two different API protocols based on the selected model:
+  - The Google provider in [`src/api/google.ts`](src/api/google.ts:1) now dynamically switches between two different API protocols based on the selected model:
     - **Gemini Models**: Use the modern `:generateContent` endpoint with the correct nested JSON payload.
     - **Imagen & Legacy Models**: Use the `:predict` endpoint with model-specific parameter handling (e.g., converting resolution to `"1K"`/`"2K"` strings for Imagen 4 or sending integers for legacy models).
 - **Centralized Model Configuration**:
-  - All Google model definitions, including user-friendly names, are now centralized in [`src/config/models.js`](src/config/models.js:1).
-  - The UI dropdown in [`src/components/configPanel.js`](src/components/configPanel.js:1) is now dynamically populated from this configuration, ensuring the UI is always in sync with supported models.
+  - All Google model definitions, including user-friendly names, are now centralized in [`src/config/models.ts`](src/config/models.ts:1).
+  - The UI dropdown in [`src/components/configPanel.ts`](src/components/configPanel.ts:1) is now dynamically populated from this configuration, ensuring the UI is always in sync with supported models.
 
 ### 🐞 Fixed
 - **Google Model "Not Found" Errors**: Resolved critical errors where generation would fail due to outdated or incorrect static model IDs (e.g., `models/imagen-3.0-generate-002 is not found`).
 
 ### 🏆 Improved
-- **Google Provider Reliability**: Replaced the static, hardcoded Google model list with a dynamic fetching mechanism in [`src/api/models.js`](src/api/models.js:1).
+- **Google Provider Reliability**: Replaced the static, hardcoded Google model list with a dynamic fetching mechanism in [`src/api/models.ts`](src/api/models.ts:1).
   - The application now fetches the list of available models directly from the user's Google API account.
   - This ensures users only see models they have access to and prevents future errors from model ID changes.
   - The fetched list is cached to improve performance.
@@ -53,13 +53,13 @@ No unreleased changes.
 - **Google Provider UI**: The model selection dropdown in the config panel now features a "Fetch Models" button, providing a clear, user-initiated way to load available models.
 
 ### 🗑️ Removed
-- Removed the obsolete `GOOGLE_MODELS` constant from [`src/config/models.js`](src/config/models.js:1), as the model list is now fully dynamic.
+- Removed the obsolete `GOOGLE_MODELS` constant from [`src/config/models.ts`](src/config/models.ts:1), as the model list is now fully dynamic.
 
 ## [6.0.6] - 2025-11-10
 
 ### 🐞 Fixed
 - Console logging now strictly respects the "Toggle Console Logging & Enhancement Logs" setting:
-  - All debug and informational logs (including `[NIG-DEBUG]` prompt construction and provider traces) are routed through the centralized logger in [`src/utils/logger.js`](src/utils/logger.js:1) and suppressed when logging is disabled.
+  - All debug and informational logs (including `[NIG-DEBUG]` prompt construction and provider traces) are routed through the centralized logger in [`src/utils/logger.ts`](src/utils/logger.ts:1) and suppressed when logging is disabled.
   - Enhancement-related operational messages (per-attempt failures, quota/retry details, and model retry exhaustion) are logged with the `ENHANCEMENT` category at toggle-controlled levels, preventing console spam when logging is disabled.
 - Enhancement failure noise reduced:
   - Non-terminal messages such as:
@@ -81,7 +81,7 @@ No unreleased changes.
     - Error/warn levels and `SECURITY`, `ERROR`, `APP`, `CONFIG_IMPORT` categories remain always-on for reliable troubleshooting.
     - `ENHANCEMENT` logs are persisted only when logging is enabled, providing a dedicated enhancement log history without leaking sensitive runtime details when disabled.
 - OpenAI-compatible model classification:
-  - Enhanced `isModelFree` implementation in [`src/api/models.js`](src/api/models.js:198) to:
+  - Enhanced `isModelFree` implementation in [`src/api/models.ts`](src/api/models.ts:198) to:
     - Prefer the `plan_requirements` field for determining free vs paid:
       - Treat models as free when `"free"` is present.
       - Treat models as paid when they require `"basic"` or higher tiers.
@@ -187,12 +187,12 @@ This version contains potential bugs due to extensive refactoring and requires f
 
 ### ✨ Added
 - **JavaScript Modularization (6 New Modules)**:
-  - `src/components/configPanel.js`: Configuration panel component
-  - `src/components/configPanelEvents.js`: Configuration panel event handlers  
-  - `src/components/configPanelTemplate.js`: Configuration panel template system
-  - `src/components/enhancementPanel.js`: Enhancement panel component
-  - `src/components/historyManager.js`: History management component
-  - `src/components/statusWidget.js`: Status widget component
+  - `src/components/configPanel.ts`: Configuration panel component
+  - `src/components/configPanelEvents.ts`: Configuration panel event handlers  
+  - `src/components/configPanelTemplate.ts`: Configuration panel template system
+  - `src/components/enhancementPanel.ts`: Enhancement panel component
+  - `src/components/historyManager.ts`: History management component
+  - `src/components/statusWidget.ts`: Status widget component
 - **CSS Modularization (5 New Modules)**:
   - `src/styles/base.css`: Base styling and resets
   - `src/styles/components.css`: Component-specific styles

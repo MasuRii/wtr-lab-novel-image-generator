@@ -417,5 +417,8 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
+# Workspace guardrails
+docs/
+
 WTR LAB Novel Image Generator-5.7.user.js
 Sample

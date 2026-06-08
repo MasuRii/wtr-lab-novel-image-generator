@@ -13,30 +13,12 @@
 
 const path = require("path");
 const { UserscriptPlugin } = require("webpack-userscript");
-const pkg = require("./package.json");
-const { VERSION_INFO } = require("./config/versions.js");
-
-// Resolve base metadata with safe fallbacks
-const SCRIPT_NAME = "WTR LAB Novel Image Generator";
-const PACKAGE_NAME = pkg.name || "wtr-lab-novel-image-generator";
-const SEMVER = VERSION_INFO && VERSION_INFO.SEMANTIC ? VERSION_INFO.SEMANTIC : (pkg.version || "0.0.0");
-
-// Shared Userscript metadata fields (non-conflicting)
-const COMMON_META = {
-  description: pkg.description,
-  author: pkg.author,
-  license: pkg.license,
-  namespace: "http://tampermonkey.net/",
-  match: "https://wtr-lab.com/en/novel/*/*/*",
-  icon: "https://www.google.com/s2/favicons?sz=64&domain=wtr-lab.com",
-  connect: "*",
-  grant: [
-    "GM_setValue",
-    "GM_getValue",
-    "GM_xmlhttpRequest",
-    "GM_registerMenuCommand",
-  ],
-};
+const {
+  PACKAGE_NAME,
+  getDevHeaders,
+  getGreasyForkHeaders,
+  getPerformanceHeaders,
+} = require("./userscript.metadata.cjs");
 
 /**
  * Development / proxy configuration
@@ -93,11 +75,7 @@ const devConfig = {
   },
   plugins: [
     new UserscriptPlugin({
-      headers: {
-        ...COMMON_META,
-        name: `${SCRIPT_NAME} [DEV]`,
-        version: `${SEMVER}-dev.[buildTime]`,
-      },
+      headers: getDevHeaders,
       proxyScript: {
         baseUrl: "http://localhost:8080",
         filename: "[basename].proxy.user.js",
@@ -151,15 +129,7 @@ const performanceConfig = {
   },
   plugins: [
     new UserscriptPlugin({
-      headers: {
-        ...COMMON_META,
-        name: SCRIPT_NAME,
-        version: SEMVER,
-        downloadURL:
-          "https://update.greasyfork.org/scripts/553073/WTR%20LAB%20Novel%20Image%20Generator.user.js",
-        updateURL:
-          "https://update.greasyfork.org/scripts/553073/WTR%20LAB%20Novel%20Image%20Generator.meta.js",
-      },
+      headers: getPerformanceHeaders,
       proxyScript: false,
     }),
   ],
@@ -211,12 +181,8 @@ const greasyforkConfig = {
   },
   plugins: [
     new UserscriptPlugin({
-      headers: {
-        ...COMMON_META,
-        name: SCRIPT_NAME,
-        version: SEMVER,
-        // GreasyFork: no updateURL / downloadURL
-      },
+      // GreasyFork: no updateURL / downloadURL
+      headers: getGreasyForkHeaders,
       proxyScript: false,
     }),
   ],
