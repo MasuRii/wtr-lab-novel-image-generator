@@ -2,28 +2,28 @@
 import "./styles/main.css";
 
 // Import utility modules
-import * as logger from "./utils/logger.js";
-import * as storage from "./utils/storage.js";
-import { parseErrorMessage } from "./utils/error.js";
+import * as logger from "./utils/logger";
+import * as storage from "./utils/storage";
+import { parseErrorMessage } from "./utils/error";
 import {
   getApiReadyPrompt,
   // getDisplayReadyPrompt, // Not currently used
-} from "./utils/promptUtils.js";
+} from "./utils/promptUtils";
 
 // Import API modules
-import * as apiGemini from "./api/gemini.js";
-import * as apiGoogle from "./api/google.js";
-import * as apiPollinations from "./api/pollinations.js";
-import * as apiAIHorde from "./api/aiHorde.js";
-import * as apiOpenAI from "./api/openAI.js";
+import * as apiGemini from "./api/gemini";
+import * as apiGoogle from "./api/google";
+import * as apiPollinations from "./api/pollinations";
+import * as apiAIHorde from "./api/aiHorde";
+import * as apiOpenAI from "./api/openAI";
 
 // Import Component modules
-import * as statusWidget from "./components/statusWidget.js";
-import * as imageViewer from "./components/imageViewer.js";
-import * as errorModal from "./components/errorModal.js";
-import * as googleApiPrompt from "./components/googleApiPrompt.js";
-import * as pollinationsAuthPrompt from "./components/pollinationsAuthPrompt.js";
-import * as configPanel from "./components/configPanel.js";
+import * as statusWidget from "./components/statusWidget";
+import * as imageViewer from "./components/imageViewer";
+import * as errorModal from "./components/errorModal";
+import * as googleApiPrompt from "./components/googleApiPrompt";
+import * as pollinationsAuthPrompt from "./components/pollinationsAuthPrompt";
+import * as configPanel from "./components/configPanel";
 
 (function () {
   "use strict";
@@ -349,7 +349,8 @@ import * as configPanel from "./components/configPanel.js";
       case "AIHorde": {
         // For AI Horde:
         // - apiPrompt is strictly the positive prompt (StyledPrompt or EnhancedPrompt)
-        // - negative prompt is sent separately inside api/aiHorde.js based on config
+        // - api/aiHorde.ts appends negative prompts with AI Horde's documented
+        //   ### separator when the global negative prompt is enabled.
         logger.logInfo("QUEUE", "Using AI Horde prompt construction path", {
           provider: "AIHorde",
           positivePromptLength: apiPrompt.length,
@@ -375,11 +376,12 @@ import * as configPanel from "./components/configPanel.js";
       case "Pollinations":
       case "Google":
       case "OpenAICompat": {
-        // For all non-AI Horde providers:
-        // - Append negative prompt inline when enabled and non-empty
+        // Provider modules now own provider-specific negative prompt handling:
+        // - Pollinations sends negative_prompt as a query parameter.
+        // - Google/OpenAI-compatible retain inline negative prompting.
         const useCase =
           provider === "Pollinations"
-            ? "pollinations_inline_negative"
+            ? "pollinations_negative_prompt_query"
             : provider === "Google"
               ? "google_inline_negative"
               : "openai_compat_inline_negative";
@@ -390,17 +392,6 @@ import * as configPanel from "./components/configPanel.js";
           basePositivePromptPreview:
             apiPrompt.substring(0, 200) + (apiPrompt.length > 200 ? "..." : ""),
         });
-
-        // Negative prompt is resolved in each provider based on config, but for
-        // backward compatibility with 5.7.0 behavior we construct the exact
-        // main prompt string here before dispatch.
-        // Note:
-        // The actual negative string and enabled flag are read in each provider via getConfig().
-        // Those modules MUST:
-        //   - For Pollinations/Google/OpenAICompat: build FinalPrompt =
-        //       (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
-        //     when enabled and non-empty, and send that as the single prompt string.
-        //   - Respect empty/whitespace-only negatives by NOT appending anything.
 
         if (provider === "Pollinations") {
           logger.logDebug("QUEUE", "Dispatching to Pollinations provider", {

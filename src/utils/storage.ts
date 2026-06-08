@@ -1,5 +1,5 @@
-import { DEFAULTS } from "../config/defaults.js";
-import { filterExpiredLinks } from "./linkValidator.js";
+import { DEFAULTS } from "../config/defaults";
+import { filterExpiredLinks } from "./linkValidator";
 
 /**
  * Retrieves a single configuration value from storage.
@@ -14,8 +14,8 @@ export async function getConfigValue(key) {
  * Retrieves the entire configuration object from storage.
  * @returns {Promise<object>} The complete configuration object.
  */
-export async function getConfig() {
-  const config = {};
+export async function getConfig(): Promise<any> {
+  const config: any = {};
   for (const key in DEFAULTS) {
     config[key] = await GM_getValue(key, DEFAULTS[key]);
   }

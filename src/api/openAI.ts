@@ -1,6 +1,6 @@
-import { getConfig } from "../utils/storage.js";
-import { getApiReadyPrompt } from "../utils/promptUtils.js";
-import { logDebug } from "../utils/logger.js";
+import { getConfig } from "../utils/storage";
+import { getApiReadyPrompt } from "../utils/promptUtils";
+import { logDebug } from "../utils/logger";
 
 /**
  * Detects if response content is HTML instead of JSON
@@ -66,6 +66,53 @@ function safeJsonParse(responseText, endpointUrl) {
   }
 }
 
+function modelSupportsResponseFormat(model) {
+  const modelId = typeof model === "string" ? model.toLowerCase() : "";
+  return modelId === "dall-e-2" || modelId === "dall-e-3";
+}
+
+function getOptionalString(value) {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+}
+
+function buildOpenAIImagePayload(activeProfile, prompt) {
+  const payload: any = {
+    model: activeProfile.model,
+    prompt,
+    n: Number.isInteger(activeProfile.n) ? activeProfile.n : 1,
+    size: getOptionalString(activeProfile.size) || "1024x1024",
+  };
+
+  if (modelSupportsResponseFormat(activeProfile.model)) {
+    payload.response_format = "b64_json";
+  }
+
+  const optionalFields = [
+    "quality",
+    "output_format",
+    "background",
+    "moderation",
+  ];
+  optionalFields.forEach((field) => {
+    const value = getOptionalString(activeProfile[field]);
+    if (value) {
+      payload[field] = value;
+    }
+  });
+
+  return payload;
+}
+
+function getMimeTypeForOpenAIItem(item) {
+  const outputFormat = getOptionalString(item?.output_format);
+  if (outputFormat) {
+    return `image/${outputFormat.replace(/^image\//, "")}`;
+  }
+  return "image/png";
+}
+
 export async function generate(
   prompt,
   providerProfileUrl,
@@ -115,13 +162,7 @@ export async function generate(
   });
 
   const url = `${activeUrl}/images/generations`;
-  const payload = {
-    model: activeProfile.model,
-    prompt: cleanPrompt,
-    n: 1,
-    size: "1024x1024",
-    response_format: "b64_json",
-  };
+  const payload = buildOpenAIImagePayload(activeProfile, cleanPrompt);
 
   GM_xmlhttpRequest({
     method: "POST",
@@ -171,7 +212,7 @@ export async function generate(
                       typeof item.b64_json === "string" &&
                       item.b64_json.length > 0
                     ) {
-                      return `data:image/png;base64,${item.b64_json}`;
+                      return `data:${getMimeTypeForOpenAIItem(item)};base64,${item.b64_json}`;
                     } else {
                       throw new Error("Invalid base64 data");
                     }

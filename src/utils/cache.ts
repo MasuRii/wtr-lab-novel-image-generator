@@ -1,4 +1,4 @@
-import { log, logInfo } from "./logger.js";
+import { log, logInfo } from "./logger";
 
 export const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 

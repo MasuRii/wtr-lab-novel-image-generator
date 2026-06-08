@@ -2,7 +2,7 @@
 
 <br />
 
-Gemini can generate and process images conversationally. You can prompt either the[fast Gemini 2.5 Flash (aka Nano Banana) or the advanced Gemini 3 Pro Preview (aka Nano Banana Pro)](https://ai.google.dev/gemini-api/docs/image-generation#model-selection)image models with text, images, or a combination of both, allowing you to create, edit, and iterate on visuals with unprecedented control:
+Gemini can generate and process images conversationally. You can prompt either the[fast Gemini 2.5 Flash (aka Nano Banana) or the advanced Gemini 3 Pro (aka Nano Banana Pro)](https://ai.google.dev/gemini-api/docs/image-generation#model-selection)image models with text, images, or a combination of both, allowing you to create, edit, and iterate on visuals with unprecedented control:
 
 - **Text, Image, and Multi-Image to Image:**Generate high-quality images from text descriptions, use text prompts to edit and adjust a given image, or use multiple input images to compose new scenes and transfer styles.
 - **Iterative refinement:**Conversationally refine your image over multiple turns, making small adjustments until it's perfect.
@@ -387,7 +387,7 @@ Keep generating and editing images conversationally. Chat or multi-turn conversa
     client = genai.Client()
 
     chat = client.chats.create(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         config=types.GenerateContentConfig(
             response_modalities=['TEXT', 'IMAGE'],
             tools=[{"google_search": {}}]
@@ -412,7 +412,7 @@ Keep generating and editing images conversationally. Chat or multi-turn conversa
 
     async function main() {
       const chat = ai.chats.create({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
           tools: [{googleSearch: {}}],
@@ -457,7 +457,7 @@ Keep generating and editing images conversationally. Chat or multi-turn conversa
         }
         defer client.Close()
 
-        model := client.GenerativeModel("gemini-3-pro-image-preview")
+        model := client.GenerativeModel("gemini-3-pro-image")
         model.GenerationConfig = &pb.GenerationConfig{
             ResponseModalities: []pb.ResponseModality{genai.Text, genai.Image},
         }
@@ -513,7 +513,7 @@ Keep generating and editing images conversationally. Chat or multi-turn conversa
                   .build())
               .build();
 
-          Chat chat = client.chats.create("gemini-3-pro-image-preview", config);
+          Chat chat = client.chats.create("gemini-3-pro-image", config);
 
           GenerateContentResponse response = chat.sendMessage("""
               Create a vibrant infographic that explains photosynthesis
@@ -542,7 +542,7 @@ Keep generating and editing images conversationally. Chat or multi-turn conversa
 ### REST
 
     curl -s -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
@@ -691,7 +691,7 @@ You can then use the same chat to change the language on the graphic to Spanish.
     EOF_JQ_FILTER
 
     curl -s -X POST \
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+    "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
     -H "Content-Type: application/json" \
     -d @request2.json > turn2_response.json
@@ -702,7 +702,7 @@ You can then use the same chat to change the language on the graphic to Spanish.
 
 ## New with Gemini 3 Pro Image
 
-Gemini 3 Pro Image (`gemini-3-pro-image-preview`) is a state-of-the-art image generation and editing model optimized for professional asset production. Designed to tackle the most challenging workflows through advanced reasoning, it excels at complex, multi-turn creation and modification tasks.
+Gemini 3 Pro Image (`gemini-3-pro-image`) is a state-of-the-art image generation and editing model optimized for professional asset production. Designed to tackle the most challenging workflows through advanced reasoning, it excels at complex, multi-turn creation and modification tasks.
 
 - **High-resolution output**: Built-in generation capabilities for 1K, 2K, and 4K visuals.
 - **Advanced text rendering**: Capable of generating legible, stylized text for infographics, menus, diagrams, and marketing assets.
@@ -712,7 +712,7 @@ Gemini 3 Pro Image (`gemini-3-pro-image-preview`) is a state-of-the-art image ge
 
 ### Use up to 14 reference images
 
-Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images can include the following:
+Gemini 3 Pro lets you to mix up to 14 reference images. These 14 images can include the following:
 
 - Up to 6 images of objects with high-fidelity to include in the final image
 - Up to 5 images of humans to maintain character consistency
@@ -730,7 +730,7 @@ Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images 
     client = genai.Client()
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=[
             prompt,
             Image.open('person1.png'),
@@ -803,7 +803,7 @@ Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images 
     ];
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
+        model: 'gemini-3-pro-image',
         contents: contents,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -850,7 +850,7 @@ Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images 
         }
         defer client.Close()
 
-        model := client.GenerativeModel("gemini-3-pro-image-preview")
+        model := client.GenerativeModel("gemini-3-pro-image")
         model.GenerationConfig = &pb.GenerationConfig{
             ResponseModalities: []pb.ResponseModality{genai.Text, genai.Image},
             ImageConfig: &pb.ImageConfig{
@@ -923,7 +923,7 @@ Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images 
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview",
+              "gemini-3-pro-image",
               Content.fromParts(
                   Part.fromText("An office group photo of these people, they are making funny faces."),
                   Part.fromBytes(Files.readAllBytes(Path.of("person1.png")), "image/png"),
@@ -968,7 +968,7 @@ Gemini 3 Pro Preview lets you to mix up to 14 reference images. These 14 images 
     IMG5_BASE64=$(base64 "$B64FLAGS" "$IMG_PATH5" 2>&1)
 
     curl -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
         -H "x-goog-api-key: $GEMINI_API_KEY" \
         -H 'Content-Type: application/json' \
         -d "{
@@ -1008,7 +1008,7 @@ Note that when using Grounding with Google Search with image generation, image-b
     client = genai.Client()
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_modalities=['Text', 'Image'],
@@ -1039,7 +1039,7 @@ Note that when using Grounding with Google Search with image generation, image-b
       const resolution = '2K';
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
+        model: 'gemini-3-pro-image',
         contents: prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -1094,7 +1094,7 @@ Note that when using Grounding with Google Search with image generation, image-b
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview", """
+              "gemini-3-pro-image", """
                   Visualize the current weather forecast for the next 5 days 
                   in San Francisco as a clean, modern weather chart. 
                   Add a visual on what I should wear each day
@@ -1118,7 +1118,7 @@ Note that when using Grounding with Google Search with image generation, image-b
 ### REST
 
     curl -s -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
@@ -1155,7 +1155,7 @@ You must use an uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase parameters (e.g., 1k
     client = genai.Client()
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_modalities=['TEXT', 'IMAGE'],
@@ -1187,7 +1187,7 @@ You must use an uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase parameters (e.g., 1k
       const resolution = '1K';
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
+        model: 'gemini-3-pro-image',
         contents: prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -1234,7 +1234,7 @@ You must use an uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase parameters (e.g., 1k
         }
         defer client.Close()
 
-        model := client.GenerativeModel("gemini-3-pro-image-preview")
+        model := client.GenerativeModel("gemini-3-pro-image")
         model.GenerationConfig = &pb.GenerationConfig{
             ResponseModalities: []pb.ResponseModality{genai.Text, genai.Image},
             ImageConfig: &pb.ImageConfig{
@@ -1288,7 +1288,7 @@ You must use an uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase parameters (e.g., 1k
                 .build();
 
             GenerateContentResponse response = client.models.generateContent(
-                "gemini-3-pro-image-preview", """
+                "gemini-3-pro-image", """
                   Da Vinci style anatomical sketch of a dissected Monarch butterfly.
                   Detailed drawings of the head, wings, and legs on textured
                   parchment with notes in English.
@@ -1312,7 +1312,7 @@ You must use an uppercase 'K' (e.g., 1K, 2K, 4K). Lowercase parameters (e.g., 1k
 ### REST
 
     curl -s -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
@@ -1813,7 +1813,7 @@ Gemini excels at rendering text. Be clear about the text, the font style (descri
     client = genai.Client()
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents="Create a modern, minimalist logo for a coffee shop called 'The Daily Grind'. The text should be in a clean, bold, sans-serif font. The color scheme is black and white. Put the logo in a circle. Use a coffee bean in a clever way.",
         config=types.GenerateContentConfig(
             image_config=types.ImageConfig(
@@ -1853,7 +1853,7 @@ Gemini excels at rendering text. Be clear about the text, the font style (descri
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview",
+              "gemini-3-pro-image",
               """
               Create a modern, minimalist logo for a coffee shop called 'The Daily Grind'. The text should be in a clean, bold, sans-serif font. The color scheme is black and white. Put the logo in a circle. Use a coffee bean in a clever way.
               """,
@@ -1886,7 +1886,7 @@ Gemini excels at rendering text. Be clear about the text, the font style (descri
         "Create a modern, minimalist logo for a coffee shop called 'The Daily Grind'. The text should be in a clean, bold, sans-serif font. The color scheme is black and white. Put the logo in a circle. Use a coffee bean in a clever way.";
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: prompt,
         config: {
           imageConfig: {
@@ -1930,7 +1930,7 @@ Gemini excels at rendering text. Be clear about the text, the font style (descri
 
         result, _ := client.Models.GenerateContent(
             ctx,
-            "gemini-3-pro-image-preview",
+            "gemini-3-pro-image",
             genai.Text("Create a modern, minimalist logo for a coffee shop called 'The Daily Grind'. The text should be in a clean, bold, sans-serif font. The color scheme is black and white. Put the logo in a circle. Use a coffee bean in a clever way."),
             &genai.GenerateContentConfig{
                 ImageConfig: &genai.ImageConfig{
@@ -1953,7 +1953,7 @@ Gemini excels at rendering text. Be clear about the text, the font style (descri
 ### REST
 
     curl -s -X POST
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
@@ -2337,7 +2337,7 @@ Builds on character consistency and scene description to create panels for visua
     text_input = "Make a 3 panel comic in a gritty, noir art style with high-contrast black and white inks. Put the character in a humurous scene."
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=[text_input, image_input],
     )
 
@@ -2370,7 +2370,7 @@ Builds on character consistency and scene description to create panels for visua
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview",
+              "gemini-3-pro-image",
               Content.fromParts(
                   Part.fromText("""
                       Make a 3 panel comic in a gritty, noir art style with high-contrast black and white inks. Put the character in a humurous scene.
@@ -2419,7 +2419,7 @@ Builds on character consistency and scene description to create panels for visua
       ];
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: prompt,
       });
       for (const part of response.candidates[0].content.parts) {
@@ -2475,7 +2475,7 @@ Builds on character consistency and scene description to create panels for visua
 
         result, _ := client.Models.GenerateContent(
             ctx,
-            "gemini-3-pro-image-preview",
+            "gemini-3-pro-image",
             contents,
         )
 
@@ -2503,7 +2503,7 @@ Builds on character consistency and scene description to create panels for visua
     IMG_BASE64=$(base64 "$B64FLAGS" "$IMG_PATH" 2>&1)
 
     curl -s -X POST
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d "{
@@ -2540,7 +2540,7 @@ Use Google Search to generate images based on recent or real-time information. T
     client = genai.Client()
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_modalities=['Text', 'Image'],
@@ -2586,7 +2586,7 @@ Use Google Search to generate images based on recent or real-time information. T
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview", """
+              "gemini-3-pro-image", """
                   Make a simple but stylish graphic of last night's Arsenal game in the Champion's League
                   """,
               config);
@@ -2620,7 +2620,7 @@ Use Google Search to generate images based on recent or real-time information. T
       const resolution = '2K';
 
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-image-preview',
+        model: 'gemini-3-pro-image',
         contents: prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -2669,7 +2669,7 @@ Use Google Search to generate images based on recent or real-time information. T
         }
         defer client.Close()
 
-        model := client.GenerativeModel("gemini-3-pro-image-preview")
+        model := client.GenerativeModel("gemini-3-pro-image")
         model.Tools = []*pb.Tool{
             pb.NewGoogleSearchTool(),
         }
@@ -2701,7 +2701,7 @@ Use Google Search to generate images based on recent or real-time information. T
 ### REST
 
     curl -s -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
       -H "x-goog-api-key: $GEMINI_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
@@ -3928,7 +3928,7 @@ Upload a rough sketch or drawing and ask the model to refine it into a finished 
     text_input = """Turn this rough pencil sketch of a futuristic car into a polished photo of the finished concept car in a showroom. Keep the sleek lines and low profile from the sketch but add metallic blue paint and neon rim lighting."""
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=[sketch_image, text_input],
     )
 
@@ -3960,7 +3960,7 @@ Upload a rough sketch or drawing and ask the model to refine it into a finished 
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview",
+              "gemini-3-pro-image",
               Content.fromParts(
                   Part.fromBytes(
                       Files.readAllBytes(
@@ -4009,7 +4009,7 @@ Upload a rough sketch or drawing and ask the model to refine it into a finished 
       ];
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: prompt,
       });
       for (const part of response.parts) {
@@ -4064,7 +4064,7 @@ Upload a rough sketch or drawing and ask the model to refine it into a finished 
 
       result, _ := client.Models.GenerateContent(
           ctx,
-          "gemini-3-pro-image-preview",
+          "gemini-3-pro-image",
           contents,
       )
 
@@ -4092,7 +4092,7 @@ Upload a rough sketch or drawing and ask the model to refine it into a finished 
     IMG_BASE64=$(base64 "$B64FLAGS" "$IMG_PATH" 2>&1)
 
     curl -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
         -H "x-goog-api-key: $GEMINI_API_KEY" \
         -H 'Content-Type: application/json' \
         -d "{
@@ -4140,7 +4140,7 @@ You can generate 360-degree views of a character by iteratively prompting for di
     text_input = """A studio portrait of this man against white, in profile looking right"""
 
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=[text_input, image_input],
     )
 
@@ -4172,7 +4172,7 @@ You can generate 360-degree views of a character by iteratively prompting for di
               .build();
 
           GenerateContentResponse response = client.models.generateContent(
-              "gemini-3-pro-image-preview",
+              "gemini-3-pro-image",
               Content.fromParts(
                   Part.fromText("""
                       A studio portrait of this man against white, in profile looking right
@@ -4221,7 +4221,7 @@ You can generate 360-degree views of a character by iteratively prompting for di
       ];
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: prompt,
       });
       for (const part of response.parts) {
@@ -4277,7 +4277,7 @@ You can generate 360-degree views of a character by iteratively prompting for di
 
       result, _ := client.Models.GenerateContent(
           ctx,
-          "gemini-3-pro-image-preview",
+          "gemini-3-pro-image",
           contents,
       )
 
@@ -4305,7 +4305,7 @@ You can generate 360-degree views of a character by iteratively prompting for di
     IMG_BASE64=$(base64 "$B64FLAGS" "$IMG_PATH" 2>&1)
 
     curl -X POST \
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent" \
+      "https://generativelanguage.googleapis.com/v1/models/gemini-3-pro-image:generateContent" \
         -H "x-goog-api-key: $GEMINI_API_KEY" \
         -H 'Content-Type: application/json' \
         -d "{
@@ -4346,7 +4346,7 @@ To elevate your results from good to great, incorporate these professional strat
 - For best performance, use the following languages: EN, ar-EG, de-DE, es-MX, fr-FR, hi-IN, id-ID, it-IT, ja-JP, ko-KR, pt-BR, ru-RU, ua-UA, vi-VN, zh-CN.
 - Image generation does not support audio or video inputs.
 - The model won't always follow the exact number of image outputs that the user explicitly asks for.
-- `gemini-2.5-flash-image`works best with up to 3 images as input, while`gemini-3-pro-image-preview`supports 5 images with high fidelity, and up to 14 images in total.
+- `gemini-2.5-flash-image`works best with up to 3 images as input, while`gemini-3-pro-image`supports 5 images with high fidelity, and up to 14 images in total.
 - When generating text for an image, Gemini works best if you first generate the text and then ask for an image with the text.
 - All generated images include a[SynthID watermark](https://ai.google.dev/responsible/docs/safeguards/synthid).
 
@@ -4429,9 +4429,9 @@ The model defaults to matching the output image size to that of your input image
         )
     )
 
-    # For gemini-3-pro-image-preview
+    # For gemini-3-pro-image
     response = client.models.generate_content(
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
         contents=[prompt],
         config=types.GenerateContentConfig(
             image_config=types.ImageConfig(
@@ -4454,9 +4454,9 @@ The model defaults to matching the output image size to that of your input image
         }
       });
 
-    // For gemini-3-pro-image-preview
+    // For gemini-3-pro-image
     const response_gemini3 = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: prompt,
         config: {
           imageConfig: {
@@ -4481,10 +4481,10 @@ The model defaults to matching the output image size to that of your input image
         }
       )
 
-    // For gemini-3-pro-image-preview
+    // For gemini-3-pro-image
     result_gemini3, _ := client.Models.GenerateContent(
         ctx,
-        "gemini-3-pro-image-preview",
+        "gemini-3-pro-image",
         genai.Text("Create a picture of a nano banana dish in a " +
                     " fancy restaurant with a Gemini theme"),
         &genai.GenerateContentConfig{
@@ -4507,9 +4507,9 @@ The model defaults to matching the output image size to that of your input image
                 .build())
             .build());
 
-    // For gemini-3-pro-image-preview
+    // For gemini-3-pro-image
     response_gemini3 = client.models.generateContent(
-        "gemini-3-pro-image-preview",
+        "gemini-3-pro-image",
         prompt,
         GenerateContentConfig.builder()
             .imageConfig(ImageConfig.builder()
@@ -4534,7 +4534,7 @@ The model defaults to matching the output image size to that of your input image
       }
     }' \
 
-    # For gemini-3-pro-image-preview
+    # For gemini-3-pro-image
     -d '{
       "contents": [{
         "parts": [

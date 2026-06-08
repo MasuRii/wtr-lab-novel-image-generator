@@ -1,6 +1,6 @@
 // --- IMPORTS ---
-import * as storage from "../utils/storage.js";
-// import { filterExpiredLinks } from "../utils/linkValidator.js"; // Not currently used
+import * as storage from "../utils/storage";
+// import { filterExpiredLinks } from "../utils/linkValidator"; // Not currently used
 
 // --- PUBLIC FUNCTIONS ---
 
@@ -54,7 +54,7 @@ export async function populateHistoryTab() {
     viewLink.addEventListener("click", (e) => {
       e.preventDefault();
       // Use unified modal for all image types (both base64 and URL)
-      import("./imageViewer.js").then((module) => {
+      import("./imageViewer").then((module) => {
         if (typeof module.show === "function") {
           module.show(
             [item.url],

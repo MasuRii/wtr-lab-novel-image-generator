@@ -1,16 +1,64 @@
-import { getConfig } from "../utils/storage.js";
-import { getApiReadyPrompt } from "../utils/promptUtils.js";
-import { logDebug } from "../utils/logger.js";
+import { getConfig } from "../utils/storage";
+import { getApiReadyPrompt } from "../utils/promptUtils";
+import { logDebug } from "../utils/logger";
+
+const GOOGLE_GEMINI_IMAGE_MODEL_ALIASES = {
+  "gemini-3-pro-image-preview": "gemini-3-pro-image",
+  "models/gemini-3-pro-image-preview": "gemini-3-pro-image",
+};
+
+const GOOGLE_GEMINI_IMAGE_MODELS = new Set([
+  "gemini-3.1-flash-image",
+  "gemini-3-pro-image",
+  "gemini-2.5-flash-image",
+]);
+
+function normalizeGoogleModel(rawModel) {
+  const modelName = typeof rawModel === "string" ? rawModel.trim() : "";
+  const withoutPrefix = modelName.startsWith("models/")
+    ? modelName.substring(7)
+    : modelName;
+
+  return GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[modelName] ||
+    GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[withoutPrefix] ||
+    withoutPrefix ||
+    "imagen-4.0-generate-001";
+}
+
+function isGeminiImageModel(model) {
+  return model.startsWith("gemini-") || GOOGLE_GEMINI_IMAGE_MODELS.has(model);
+}
+
+function getImageSizeLabel(imageSize) {
+  const sizeNum = parseInt(imageSize, 10);
+  return sizeNum >= 2048 ? "2K" : "1K";
+}
+
+function getPromptWithInlineNegative(prompt, globalNegPrompt, enableNegPrompt) {
+  const basePositive = typeof prompt === "string" ? prompt : "";
+  const negText = (globalNegPrompt || "").trim();
+  const hasValidNegative = Boolean(enableNegPrompt) && negText.length > 0;
+  const finalPrompt = hasValidNegative
+    ? `${basePositive}, negative prompt: ${negText}`
+    : basePositive;
+
+  return {
+    basePositive,
+    cleanPrompt: getApiReadyPrompt(finalPrompt, "google_api_final"),
+    hasValidNegative,
+    negText,
+  };
+}
 
 /**
- * Generates an image using the Google Imagen API.
+ * Generates an image using the Google Imagen or Gemini image generation API.
  * @param {string} prompt - The generation prompt.
  * @param {object} callbacks - An object containing onSuccess and onFailure callbacks.
  */
 export async function generate(prompt, { onSuccess, onFailure }) {
   const config = await getConfig();
   const {
-    model,
+    model: configuredModel,
     googleApiKey,
     numberOfImages,
     aspectRatio,
@@ -20,43 +68,36 @@ export async function generate(prompt, { onSuccess, onFailure }) {
     globalNegPrompt,
   } = config;
 
-  const basePositive = typeof prompt === "string" ? prompt : "";
-
-  const negEnabled = Boolean(enableNegPrompt);
-  const negText = (globalNegPrompt || "").trim();
-  const hasValidNegative = negEnabled && negText.length > 0;
-
-  // For non-AI Horde providers:
-  // FinalPrompt = (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
-  // when enabled and non-empty.
-  const finalPrompt = hasValidNegative
-    ? `${basePositive}, negative prompt: ${negText}`
-    : basePositive;
-
-  // Apply prompt cleaning on the fully-formed FinalPrompt
-  const cleanPrompt = getApiReadyPrompt(finalPrompt, "google_api_final");
+  const model = normalizeGoogleModel(configuredModel);
+  const { basePositive, cleanPrompt, hasValidNegative, negText } =
+    getPromptWithInlineNegative(prompt, globalNegPrompt, enableNegPrompt);
 
   // Debug-only diagnostics respecting the global logging toggle
   logDebug("GOOGLE", "Prompt construction", {
-    path: "non-horde inline negative",
+    path: "google_provider_prompt",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,
-    enableNegPrompt: negEnabled,
+    enableNegPrompt: Boolean(enableNegPrompt),
     negativePromptLength: hasValidNegative ? negText.length : 0,
     finalPromptLength: cleanPrompt.length,
     finalPromptPreview:
       cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
+    configuredModel,
+    normalizedModel: model,
   });
 
-  if (model.startsWith("gemini-")) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  if (isGeminiImageModel(model)) {
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
+    const imageConfig: any = {
+      aspectRatio: aspectRatio,
+      imageSize: getImageSizeLabel(imageSize),
+    };
     const payload = {
       contents: [{ parts: [{ text: cleanPrompt }] }],
       generationConfig: {
         responseModalities: ["IMAGE"],
-        candidateCount: parseInt(numberOfImages, 10),
-        imageConfig: {
-          aspectRatio: aspectRatio,
+        responseFormat: {
+          image: imageConfig,
         },
       },
     };
@@ -98,7 +139,7 @@ export async function generate(prompt, { onSuccess, onFailure }) {
     });
   } else {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
-    const parameters = {
+    const parameters: any = {
       sampleCount: parseInt(numberOfImages, 10),
       aspectRatio,
       personGeneration,
@@ -108,13 +149,11 @@ export async function generate(prompt, { onSuccess, onFailure }) {
       model.startsWith("imagen-3") || model.startsWith("imagen-4");
 
     if (model.includes("fast")) {
-      // Fast models don't support imageSize
+      // Fast Imagen models don't support imageSize.
     } else if (isNewImagen) {
-      // New Standard/Ultra models require string "1K" or "2K"
-      const sizeNum = parseInt(imageSize, 10);
-      parameters.imageSize = sizeNum >= 2048 ? "2K" : "1K";
+      parameters.imageSize = getImageSizeLabel(imageSize);
     } else {
-      // Legacy models expect number
+      // Legacy/unverified models may still expect a numeric imageSize.
       parameters.imageSize = parseInt(imageSize, 10);
     }
 

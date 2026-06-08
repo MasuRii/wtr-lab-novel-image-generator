@@ -1,4 +1,4 @@
-import { setConfigValue } from "../utils/storage.js";
+import { setConfigValue } from "../utils/storage";
 
 let promptElement = null;
 

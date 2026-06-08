@@ -1,7 +1,7 @@
 // --- IMPORTS ---
-import { DEFAULTS } from "../config/defaults.js";
-import * as storage from "../utils/storage.js";
-import * as apiGemini from "../api/gemini.js";
+import { DEFAULTS } from "../config/defaults";
+import * as storage from "../utils/storage";
+import * as apiGemini from "../api/gemini";
 
 // --- PUBLIC FUNCTIONS ---
 
@@ -77,7 +77,7 @@ export function updateEnhancementUI(provider, config) {
  */
 function getNormalizedUserPresets(config) {
   const raw = config.enhancementUserPresets;
-  const normalized = {};
+  const normalized: any = {};
 
   try {
     if (!raw) {
@@ -86,7 +86,7 @@ function getNormalizedUserPresets(config) {
 
     // If already an object map of id -> preset
     if (typeof raw === "object" && !Array.isArray(raw)) {
-      Object.entries(raw).forEach(([id, value]) => {
+      Object.entries(raw).forEach(([id, value]: [string, any]) => {
         if (value && typeof value.template === "string") {
           const presetId = value.id || id;
           normalized[presetId] = {
@@ -169,7 +169,7 @@ function populateEnhancementTemplateSelect(
   userPresetsMap,
   selectedKey,
 ) {
-  const defaultPresets = DEFAULTS.enhancementPresets || {};
+  const defaultPresets: any = DEFAULTS.enhancementPresets || {};
 
   // Clear existing options while preserving optgroup structure from template
   templateSelect.innerHTML = "";
@@ -179,7 +179,7 @@ function populateEnhancementTemplateSelect(
   userOptgroup.label = "User Presets";
   userOptgroup.dataset.group = "user-presets";
 
-  const userPresetEntries = Object.values(userPresetsMap || {});
+  const userPresetEntries: any[] = Object.values(userPresetsMap || {});
   if (userPresetEntries.length === 0) {
     const emptyOption = document.createElement("option");
     emptyOption.disabled = true;
@@ -200,7 +200,7 @@ function populateEnhancementTemplateSelect(
   defaultOptgroup.label = "Default Presets";
   defaultOptgroup.dataset.group = "default-presets";
 
-  Object.entries(defaultPresets).forEach(([key, preset]) => {
+  Object.entries(defaultPresets).forEach(([key, preset]: [string, any]) => {
     if (!preset || typeof preset.template !== "string") {
       return;
     }
@@ -254,7 +254,7 @@ export async function handleEnhancementTemplateSelection(config) {
     return;
   }
 
-  const defaultPresets = DEFAULTS.enhancementPresets || {};
+  const defaultPresets: any = DEFAULTS.enhancementPresets || {};
   const userPresets = getNormalizedUserPresets(config);
 
   const storedSelected = config.enhancementTemplateSelected;
@@ -285,7 +285,7 @@ export async function handleEnhancementTemplateSelection(config) {
   // If no direct match, attempt to infer from stored template content
   if (!resolvedKey && storedTemplate) {
     // Check user presets
-    for (const preset of Object.values(userPresets)) {
+    for (const preset of Object.values(userPresets) as any[]) {
       if (preset.template === storedTemplate) {
         resolvedKey = `user:${preset.id}`;
         break;
@@ -294,7 +294,7 @@ export async function handleEnhancementTemplateSelection(config) {
 
     // Check default presets if still not resolved
     if (!resolvedKey) {
-      for (const [key, preset] of Object.entries(defaultPresets)) {
+      for (const [key, preset] of Object.entries(defaultPresets) as [string, any][]) {
         if (
           preset &&
           typeof preset === "object" &&

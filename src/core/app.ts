@@ -3,9 +3,9 @@
  * This module provides the main application entry point and coordinates between different components
  */
 
-import * as storage from "../utils/storage.js";
-import * as logger from "../utils/logger.js";
-import * as configPanel from "../components/configPanel.js";
+import * as storage from "../utils/storage";
+import * as logger from "../utils/logger";
+import * as configPanel from "../components/configPanel";
 
 export const App = {
   /**

@@ -1,8 +1,8 @@
-import { getConfig } from "../utils/storage.js";
-import * as logger from "../utils/logger.js";
+import { getConfig } from "../utils/storage";
+import * as logger from "../utils/logger";
 
 let modalElement = null;
-let retryCallback = () => {};
+let retryCallback = (..._args) => {};
 let dismissCallback = () => {};
 
 /**
@@ -103,7 +103,7 @@ export async function show(errorDetails) {
   }
   if (
     Array.from(providerSelect.options).some(
-      (opt) => opt.value === failedProviderValue,
+      (opt: any) => opt.value === failedProviderValue,
     )
   ) {
     providerSelect.value = failedProviderValue;

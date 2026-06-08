@@ -4,19 +4,19 @@ import {
   updateSubStyles,
   exportConfig,
   handleImportFile,
-} from "../config/configManager.js";
-import * as cache from "../utils/cache.js";
-import * as storage from "../utils/storage.js";
-import * as logger from "../utils/logger.js";
-import * as models from "../api/models.js";
-import { PROMPT_CATEGORIES } from "../config/styles.js";
-import { populateGoogleModelsSelect } from "./configPanel.js";
-import { updateEnhancementUI } from "./enhancementPanel.js";
+} from "../config/configManager";
+import * as cache from "../utils/cache";
+import * as storage from "../utils/storage";
+import * as logger from "../utils/logger";
+import * as models from "../api/models";
+import { PROMPT_CATEGORIES } from "../config/styles";
+import { populateGoogleModelsSelect } from "./configPanel";
+import { updateEnhancementUI } from "./enhancementPanel";
 import {
   populateHistoryTab,
   cleanHistory,
   handleHistoryDaysChange,
-} from "./historyManager.js";
+} from "./historyManager";
 
 /**
  * Initialize show/hide toggles for all password-like API key fields.
@@ -149,7 +149,7 @@ export function setupProviderEventListeners(panelElement) {
       btn.disabled = true;
 
       try {
-        const fetchedModels = await models.fetchGoogleModels(apiKey);
+        const fetchedModels: any = await models.fetchGoogleModels(apiKey);
         populateGoogleModelsSelect(fetchedModels);
         alert(`Successfully fetched ${fetchedModels.length} models.`);
       } catch (error) {

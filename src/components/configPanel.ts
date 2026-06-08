@@ -2,18 +2,18 @@
 import {
   populateConfigForm,
   saveConfig as saveConfigToStorage,
-} from "../config/configManager.js";
+} from "../config/configManager";
 import {
   saveProviderConfigs,
   populateProviderForms,
   loadCachedGoogleModels,
-} from "../api/models.js";
-import * as storage from "../utils/storage.js";
+} from "../api/models";
+import * as storage from "../utils/storage";
 import {
   populateEnhancementSettings,
   saveEnhancementConfig,
   setupEnhancementEventListeners,
-} from "./enhancementPanel.js";
+} from "./enhancementPanel";
 import {
   setupTabEventListeners,
   setupProviderEventListeners,
@@ -23,12 +23,12 @@ import {
   setupStyleEventListeners,
   setupCustomStyleEventListeners,
   setupProviderEnhancementListener,
-} from "./configPanelEvents.js";
-import { createPanelElement } from "./configPanelTemplate.js";
+} from "./configPanelEvents";
+import { createPanelElement } from "./configPanelTemplate";
 
 // --- MODULE STATE ---
 let panelElement = null;
-let initializeCallbacks = {};
+let initializeCallbacks: any = {};
 
 // --- EXPORTED FUNCTIONS ---
 

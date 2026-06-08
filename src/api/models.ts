@@ -1,10 +1,138 @@
 // --- IMPORTS ---
-import { TOP_MODELS } from "../config/models.js";
-import * as cache from "../utils/cache.js";
-import * as storage from "../utils/storage.js";
-import * as logger from "../utils/logger.js";
+import { TOP_MODELS } from "../config/models";
+import * as cache from "../utils/cache";
+import * as storage from "../utils/storage";
+import * as logger from "../utils/logger";
 
 // --- PUBLIC FUNCTIONS ---
+
+const POLLINATIONS_DEFAULT_MODEL = "sana";
+const POLLINATIONS_LEGACY_ALIASES = new Set(["flux", "turbo"]);
+
+const GOOGLE_CURATED_IMAGE_MODELS = [
+  {
+    id: "imagen-4.0-generate-001",
+    name: "Imagen 4 Standard",
+    methods: ["predict"],
+  },
+  {
+    id: "imagen-4.0-ultra-generate-001",
+    name: "Imagen 4 Ultra",
+    methods: ["predict"],
+  },
+  {
+    id: "imagen-4.0-fast-generate-001",
+    name: "Imagen 4 Fast",
+    methods: ["predict"],
+  },
+  {
+    id: "imagen-3.0-generate-002",
+    name: "Imagen 3",
+    methods: ["predict"],
+  },
+  {
+    id: "gemini-3.1-flash-image",
+    name: "Gemini 3.1 Flash Image",
+    methods: ["generateContent"],
+  },
+  {
+    id: "gemini-3-pro-image",
+    name: "Gemini 3 Pro Image",
+    methods: ["generateContent"],
+  },
+  {
+    id: "gemini-2.5-flash-image",
+    name: "Gemini 2.5 Flash Image",
+    methods: ["generateContent"],
+  },
+];
+
+const GOOGLE_CURATED_MODEL_IDS = new Set(
+  GOOGLE_CURATED_IMAGE_MODELS.map((model) => model.id),
+);
+const GOOGLE_GEMINI_IMAGE_MODEL_ALIASES = {
+  "gemini-3-pro-image-preview": "gemini-3-pro-image",
+};
+
+function normalizePollinationsModelName(model) {
+  const value = typeof model === "string" ? model.trim() : "";
+  if (!value || POLLINATIONS_LEGACY_ALIASES.has(value.toLowerCase())) {
+    return POLLINATIONS_DEFAULT_MODEL;
+  }
+  return value;
+}
+
+function normalizeGoogleModelId(id) {
+  const value = typeof id === "string" ? id.split("/").pop() : "";
+  return GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[value] || value;
+}
+
+function isImageCapableGoogleModel(model) {
+  const id = normalizeGoogleModelId(model.name || model.id || "");
+  const displayName = (model.displayName || model.name || "").toLowerCase();
+  const supportedMethods = model.supportedGenerationMethods || [];
+  return (
+    GOOGLE_CURATED_MODEL_IDS.has(id) ||
+    (displayName.includes("image") &&
+      (supportedMethods.includes("generateContent") ||
+        supportedMethods.includes("predict"))) ||
+    (id.startsWith("imagen-") && supportedMethods.includes("predict"))
+  );
+}
+
+function mergeGoogleModels(apiModels) {
+  const byId = new Map();
+
+  GOOGLE_CURATED_IMAGE_MODELS.forEach((model) => {
+    byId.set(model.id, { ...model });
+  });
+
+  apiModels.filter(isImageCapableGoogleModel).forEach((model) => {
+    const id = normalizeGoogleModelId(model.name || model.id);
+    byId.set(id, {
+      id,
+      name: model.displayName || id,
+      methods: model.supportedGenerationMethods || [],
+    });
+  });
+
+  const models = Array.from(byId.values());
+  models.sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    if (aName.includes("imagen") && !bName.includes("imagen")) {
+      return -1;
+    }
+    if (!aName.includes("imagen") && bName.includes("imagen")) {
+      return 1;
+    }
+    return aName.localeCompare(bName);
+  });
+
+  return models;
+}
+
+function fetchGoogleModelsPage(apiKey, pageToken = "") {
+  const params = new URLSearchParams({ key: apiKey, pageSize: "1000" });
+  if (pageToken) {
+    params.set("pageToken", pageToken);
+  }
+
+  return new Promise((resolve, reject) => {
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: `https://generativelanguage.googleapis.com/v1beta/models?${params.toString()}`,
+      onload: (response) => {
+        try {
+          resolve(JSON.parse(response.responseText));
+        } catch (e) {
+          reject(e);
+        }
+      },
+      onerror: reject,
+    });
+  });
+}
 
 /**
  * Fetches Google models from the API
@@ -12,72 +140,33 @@ import * as logger from "../utils/logger.js";
  * @returns {Promise<Array>} - The list of models
  */
 export async function fetchGoogleModels(apiKey) {
-  return new Promise((resolve, reject) => {
-    logger.logInfo("NETWORK", "Fetching Google models from API");
-    GM_xmlhttpRequest({
-      method: "GET",
-      url: `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
-      onload: async (response) => {
-        try {
-          const data = JSON.parse(response.responseText);
-          if (!data.models) {
-            throw new Error("Invalid response format from Google API");
-          }
+  logger.logInfo("NETWORK", "Fetching Google models from API");
 
-          const legacyIds = [
-            "imagegeneration@006",
-            "imagen-3.0-generate-002",
-            "imagen-4.0-generate-001",
-            "imagen-4.0-ultra-generate-001",
-            "imagen-4.0-fast-generate-001",
-            "gemini-2.5-flash-image",
-            "gemini-3-pro-image-preview",
-          ];
+  try {
+    const allModels = [];
+    let pageToken = "";
 
-          const filteredModels = data.models.filter((model) => {
-            const name = (model.displayName || model.name).toLowerCase();
-            const id = model.name.split("/").pop(); // model.name is usually "models/some-id"
-            return name.includes("image") || legacyIds.includes(id);
-          });
+    do {
+      const data: any = await fetchGoogleModelsPage(apiKey, pageToken);
+      if (!data.models) {
+        throw new Error("Invalid response format from Google API");
+      }
+      allModels.push(...data.models);
+      pageToken = data.nextPageToken || "";
+    } while (pageToken);
 
-          const models = filteredModels.map((model) => ({
-            id: model.name.split("/").pop(),
-            name: model.displayName || model.name,
-          }));
-
-          // Sort models: Prefer those starting with "imagen" or "gemini"
-          models.sort((a, b) => {
-            const aName = a.name.toLowerCase();
-            const bName = b.name.toLowerCase();
-            if (aName.includes("imagen") && !bName.includes("imagen")) {
-              return -1;
-            }
-            if (!aName.includes("imagen") && bName.includes("imagen")) {
-              return 1;
-            }
-            return aName.localeCompare(bName);
-          });
-
-          await cache.setCachedModels("google", models);
-          logger.logInfo("NETWORK", "Fetched and cached Google models", {
-            count: models.length,
-          });
-          resolve(models);
-        } catch (e) {
-          logger.logError("NETWORK", "Failed to parse Google models", {
-            error: e.message,
-          });
-          reject(e);
-        }
-      },
-      onerror: (error) => {
-        logger.logError("NETWORK", "Failed to fetch Google models", {
-          error: error,
-        });
-        reject(error);
-      },
+    const models = mergeGoogleModels(allModels);
+    await cache.setCachedModels("google", models);
+    logger.logInfo("NETWORK", "Fetched and cached Google models", {
+      count: models.length,
     });
-  });
+    return models;
+  } catch (e) {
+    logger.logError("NETWORK", "Failed to fetch or parse Google models", {
+      error: e.message,
+    });
+    throw e;
+  }
 }
 
 /**
@@ -128,16 +217,16 @@ export async function fetchPollinationsModels(selectedModel) {
         logger.logError("NETWORK", "Failed to parse Pollinations models", {
           error: e.message,
         });
-        select.innerHTML = "<option>flux</option>";
-        select.value = "flux";
+        select.innerHTML = "<option>sana</option>";
+        select.value = POLLINATIONS_DEFAULT_MODEL;
       }
     },
     onerror: (error) => {
       logger.logError("NETWORK", "Failed to fetch Pollinations models", {
         error: error,
       });
-      select.innerHTML = "<option>flux</option>";
-      select.value = "flux";
+      select.innerHTML = "<option>sana</option>";
+      select.value = POLLINATIONS_DEFAULT_MODEL;
     },
   });
 }
@@ -147,22 +236,30 @@ export async function fetchPollinationsModels(selectedModel) {
  */
 function populatePollinationsSelect(select, models, selectedModel) {
   select.innerHTML = "";
-  models.forEach((model) => {
+  const normalizedSelected = normalizePollinationsModelName(selectedModel);
+  const normalizedModels = Array.from(
+    new Set(
+      [POLLINATIONS_DEFAULT_MODEL, ...models.map(normalizePollinationsModelName)]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b)),
+    ),
+  );
+
+  normalizedModels.forEach((model) => {
     const option = document.createElement("option");
     option.value = model;
     let textContent = model;
-    if (model === "gptimage") {
-      textContent += " (Recommended: Quality)";
-    } else if (model === "flux") {
-      textContent += " (Default: Speed)";
+    if (model === POLLINATIONS_DEFAULT_MODEL) {
+      textContent += " (Current default)";
     }
     option.textContent = textContent;
     select.appendChild(option);
   });
-  if (models.includes(selectedModel)) {
-    select.value = selectedModel;
+
+  if (normalizedModels.includes(normalizedSelected)) {
+    select.value = normalizedSelected;
   } else {
-    select.value = "flux";
+    select.value = POLLINATIONS_DEFAULT_MODEL;
   }
 }
 
@@ -234,7 +331,7 @@ function populateAIHordeSelect(select, models, selectedModel) {
   // Add top models first
   TOP_MODELS.forEach((topModel) => {
     if (apiModelMap.has(topModel.name)) {
-      const apiData = apiModelMap.get(topModel.name);
+      const apiData: any = apiModelMap.get(topModel.name);
       const option = document.createElement("option");
       option.value = topModel.name;
       option.textContent = `${topModel.name} - ${topModel.desc} (${apiData.count} workers)`;
@@ -256,7 +353,7 @@ function populateAIHordeSelect(select, models, selectedModel) {
   select.appendChild(topGroup);
   select.appendChild(otherGroup);
 
-  if (Array.from(select.options).some((opt) => opt.value === selectedModel)) {
+  if (Array.from(select.options).some((opt: any) => opt.value === selectedModel)) {
     select.value = selectedModel;
   } else {
     select.value = models[0]?.name || "Stable Diffusion";
@@ -462,7 +559,7 @@ export async function fetchOpenAICompatModels() {
           );
         }
 
-        populateOpenAICompatSelect(select, imageModels);
+        populateOpenAICompatSelect(select, imageModels, undefined);
 
         // Cache the models for this profile
         await cache.setCachedOpenAICompatModels(baseUrl, imageModels);
@@ -692,7 +789,7 @@ export async function saveProviderConfigs() {
   );
   const postProcessing = Array.from(
     document.querySelectorAll('input[name="nig-horde-post"]:checked'),
-  ).map((cb) => cb.value);
+  ).map((cb: any) => cb.value);
   await storage.setConfigValue("aiHordePostProcessing", postProcessing);
 
   // Google configuration

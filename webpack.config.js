@@ -46,7 +46,7 @@ const COMMON_META = {
 const devConfig = {
   name: "dev",
   mode: "development",
-  entry: "./src/index.js",
+  entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: `${PACKAGE_NAME}.dev.user.js`,
@@ -67,8 +67,24 @@ const devConfig = {
       logging: "none",
     },
   },
+  resolve: {
+    extensions: [".ts", ".js"],
+  },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              noEmit: false,
+            },
+          },
+        },
+      },
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
@@ -99,13 +115,29 @@ const devConfig = {
 const performanceConfig = {
   name: "performance",
   mode: "production",
-  entry: "./src/index.js",
+  entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: `${PACKAGE_NAME}.user.js`,
   },
+  resolve: {
+    extensions: [".ts", ".js"],
+  },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              noEmit: false,
+            },
+          },
+        },
+      },
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
@@ -142,14 +174,30 @@ const performanceConfig = {
 const greasyforkConfig = {
   name: "greasyfork",
   mode: "production",
-  entry: "./src/index.js",
+  entry: "./src/index.ts",
   output: {
     path: path.resolve(__dirname, "dist"),
     // No version in filename so each build overwrites previous GreasyFork artifact.
     filename: `${PACKAGE_NAME}.greasyfork.user.js`,
   },
+  resolve: {
+    extensions: [".ts", ".js"],
+  },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            transpileOnly: true,
+            compilerOptions: {
+              noEmit: false,
+            },
+          },
+        },
+      },
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],

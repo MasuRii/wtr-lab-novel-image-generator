@@ -145,7 +145,7 @@ export async function validateImageLinks(
     const batch = urls.slice(i, i + batchSize);
 
     const batchPromises = batch.map(async (url, _index) => {
-      const result = await validateImageLink(url, timeout);
+      const result: any = await validateImageLink(url, timeout);
       result.url = url;
       return result;
     });

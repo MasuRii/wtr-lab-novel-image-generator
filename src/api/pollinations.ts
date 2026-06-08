@@ -1,7 +1,28 @@
-import { getConfig } from "../utils/storage.js";
-import { clearCachedModels } from "../utils/cache.js";
-import { getApiReadyPrompt } from "../utils/promptUtils.js";
-import { logDebug } from "../utils/logger.js";
+import { getConfig } from "../utils/storage";
+import { clearCachedModels } from "../utils/cache";
+import { getApiReadyPrompt } from "../utils/promptUtils";
+import { logDebug } from "../utils/logger";
+
+const POLLINATIONS_CURRENT_DEFAULT_MODEL = "sana";
+const POLLINATIONS_LEGACY_MODEL_ALIASES = new Set(["flux", "turbo"]);
+
+function normalizePollinationsModel(model) {
+  const trimmedModel = typeof model === "string" ? model.trim() : "";
+  if (
+    !trimmedModel ||
+    POLLINATIONS_LEGACY_MODEL_ALIASES.has(trimmedModel.toLowerCase())
+  ) {
+    return POLLINATIONS_CURRENT_DEFAULT_MODEL;
+  }
+  return trimmedModel;
+}
+
+async function readResponseText(response) {
+  if (response?.response && typeof response.response.text === "function") {
+    return await response.response.text();
+  }
+  return response?.responseText || "";
+}
 
 /**
  * Generates an image using the Pollinations.ai API.
@@ -27,25 +48,20 @@ export async function generate(
     globalNegPrompt,
   } = config;
 
-  // Base positive prompt from queue (StyledPrompt or EnhancedPrompt)
+  // Base positive prompt from queue (StyledPrompt or EnhancedPrompt).
+  // Pollinations now accepts negative prompts as the source-backed
+  // negative_prompt query parameter, so keep the path prompt positive-only.
   const basePositive = typeof prompt === "string" ? prompt : "";
 
   const negEnabled = Boolean(enableNegPrompt);
   const negText = (globalNegPrompt || "").trim();
-  const hasValidNegative = negEnabled && negText.length > 0;
-
-  // For Pollinations and other non-AI Horde providers:
-  // FinalPrompt = (StyledPrompt or EnhancedPrompt) + ", negative prompt: " + globalNegPrompt
-  // when enabled and non-empty.
-  const finalPrompt = hasValidNegative
-    ? `${basePositive}, negative prompt: ${negText}`
-    : basePositive;
-
-  // Apply prompt cleaning as a safety measure (on the fully formed FinalPrompt)
-  const cleanPrompt = getApiReadyPrompt(finalPrompt, "pollinations_api_final");
-
-  // Use the configured model (includes kontext which can do text-to-image)
-  const finalModel = model || "flux";
+  const cleanNegativePrompt = getApiReadyPrompt(
+    negText,
+    "pollinations_negative_prompt",
+  );
+  const hasValidNegative = negEnabled && cleanNegativePrompt.length > 0;
+  const cleanPrompt = getApiReadyPrompt(basePositive, "pollinations_api_prompt");
+  const finalModel = normalizePollinationsModel(model);
 
   // Debug logging to track model configuration and prompt construction
   logDebug("POLLINATIONS", "Model configuration", {
@@ -53,11 +69,11 @@ export async function generate(
     finalModel: finalModel,
   });
   logDebug("POLLINATIONS", "Prompt construction", {
-    path: "non-horde inline negative",
+    path: "positive_path_prompt_with_negative_prompt_query",
     basePositivePromptLength: basePositive.length,
     hasNegativePrompt: hasValidNegative,
     enableNegPrompt: negEnabled,
-    negativePromptLength: hasValidNegative ? negText.length : 0,
+    negativePromptLength: hasValidNegative ? cleanNegativePrompt.length : 0,
     finalPromptLength: cleanPrompt.length,
     finalPromptPreview:
       cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
@@ -67,8 +83,9 @@ export async function generate(
   if (pollinationsToken) {
     params.append("token", pollinationsToken);
   }
-  if (finalModel && finalModel !== "flux") {
-    params.append("model", finalModel);
+  params.append("model", finalModel);
+  if (hasValidNegative) {
+    params.append("negative_prompt", cleanNegativePrompt);
   }
   if (pollinationsWidth && pollinationsWidth > 0) {
     params.append("width", pollinationsWidth);
@@ -89,7 +106,7 @@ export async function generate(
     params.append("nologo", "true");
   }
   if (pollinationsPrivate) {
-    params.append("private", "true");
+    params.append("nofeed", "true");
   }
 
   const paramString = params.toString();
@@ -109,7 +126,7 @@ export async function generate(
         // Pass the exact FinalPrompt string used for the API to the viewer/history
         onSuccess([blobUrl], cleanPrompt, "Pollinations", finalModel, [url]);
       } else {
-        const text = await response.response.text();
+        const text = await readResponseText(response);
         if (text.toLowerCase().includes("model not found")) {
           onFailure(
             `Model error: ${text}. Refreshing model list.`,
@@ -121,11 +138,13 @@ export async function generate(
           return;
         }
 
-        // Check for authentication requirements in any status code
-        // kontext model returns 500 status codes when auth is required
-        // gptimage model returns 403 status codes when auth is required
+        // Check for authentication/payment requirements in any status code.
+        // Restricted Pollinations models may direct users to auth.pollinations.ai
+        // or enter.pollinations.ai depending on the current service path.
         if (
+          response.status === 402 ||
           (response.status === 403 && text.includes("auth.pollinations.ai")) ||
+          text.includes("enter.pollinations.ai") ||
           (text.toLowerCase().includes("authentication") &&
             text.toLowerCase().includes("auth.pollinations.ai"))
         ) {

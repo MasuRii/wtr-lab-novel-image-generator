@@ -1,5 +1,5 @@
 // Image Viewer Component
-import { getScriptName } from "../utils/file.js";
+import { getScriptName } from "../utils/file";
 
 /**
  * Helper function to determine if an image URL is base64 encoded
@@ -46,7 +46,7 @@ export function create() {
   imageViewer.querySelector(".nig-close-btn").addEventListener("click", () => {
     imageViewer.style.display = "none";
     // Import updateSystemStatus dynamically to avoid circular dependency
-    import("./statusWidget.js").then((module) => {
+    import("./statusWidget").then((module: any) => {
       if (typeof module.updateSystemStatus === "function") {
         // This will be handled by the main application
       }

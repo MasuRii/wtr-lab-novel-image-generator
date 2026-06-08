@@ -1,5 +1,22 @@
-import { logInfo, logDebug, logError } from "../utils/logger.js";
-import { getApiReadyPrompt } from "../utils/promptUtils.js";
+import { logInfo, logDebug, logError } from "../utils/logger";
+import { getApiReadyPrompt } from "../utils/promptUtils";
+
+const DEFAULT_ENHANCEMENT_MAX_OUTPUT_TOKENS = 8192;
+const KNOWN_ENHANCEMENT_OUTPUT_TOKEN_LIMITS = {
+  "gemini-2.5-pro": 65536,
+  "gemini-2.5-flash": 65536,
+  "gemini-2.5-flash-lite": 65536,
+};
+
+function getEnhancementMaxOutputTokens(model) {
+  const normalizedModel = model.startsWith("models/")
+    ? model.substring(7)
+    : model;
+  return (
+    KNOWN_ENHANCEMENT_OUTPUT_TOKEN_LIMITS[normalizedModel] ||
+    DEFAULT_ENHANCEMENT_MAX_OUTPUT_TOKENS
+  );
+}
 
 /**
  * Determines if the selected provider's built-in enhancement should be used.
@@ -288,7 +305,7 @@ async function attemptEnhancementWithModel(
       temperature: 0.7,
       topK: 40,
       topP: 0.95,
-      maxOutputTokens: 65536,
+      maxOutputTokens: getEnhancementMaxOutputTokens(model),
     },
   };
 

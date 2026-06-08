@@ -110,7 +110,7 @@ export const DEFAULTS = {
   aiHordePostProcessing: [],
   aiHordeSeed: "",
   // Pollinations.ai
-  pollinationsModel: "flux",
+  pollinationsModel: "sana",
   pollinationsWidth: 512,
   pollinationsHeight: 512,
   pollinationsSeed: "",

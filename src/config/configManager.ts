@@ -1,14 +1,14 @@
 // --- IMPORTS ---
-import * as storage from "../utils/storage.js";
-import * as logger from "../utils/logger.js";
-import * as file from "../utils/file.js";
+import * as storage from "../utils/storage";
+import * as logger from "../utils/logger";
+import * as file from "../utils/file";
 import {
   populateEnhancementSettings,
   updateEnhancementUI,
-} from "../components/enhancementPanel.js";
-import { populateProviderForms as populateProviderFormsModels } from "../api/models.js";
-import { PROMPT_CATEGORIES } from "./styles.js";
-import { DEFAULTS } from "./defaults.js";
+} from "../components/enhancementPanel";
+import { populateProviderForms as populateProviderFormsModels } from "../api/models";
+import { PROMPT_CATEGORIES } from "./styles";
+import { DEFAULTS } from "./defaults";
 // --- INTERNAL HELPERS ---
 
 /**
@@ -39,11 +39,11 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
       !Array.isArray(importedConfig)
     ) {
       if (
-        importedConfig.config &&
-        typeof importedConfig.config === "object" &&
-        !Array.isArray(importedConfig.config)
+        (importedConfig as any).config &&
+        typeof (importedConfig as any).config === "object" &&
+        !Array.isArray((importedConfig as any).config)
       ) {
-        importedConfig = importedConfig.config;
+        importedConfig = (importedConfig as any).config;
       }
     }
 
@@ -95,7 +95,7 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
     // Detect legacy enhancement template selection:
     // If enhancementTemplateSelected missing but enhancementTemplate present:
     if (!("enhancementTemplateSelected" in importedConfig)) {
-      const importedTemplate = importedConfig.enhancementTemplate;
+      const importedTemplate = (importedConfig as any).enhancementTemplate;
       let matchedKey = null;
 
       if (
@@ -149,40 +149,40 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
 
     // enhancementMaxRetriesPerModel
     normalized.enhancementMaxRetriesPerModel = ensureNumber(
-      importedConfig.enhancementMaxRetriesPerModel,
+      (importedConfig as any).enhancementMaxRetriesPerModel,
       DEFAULTS.enhancementMaxRetriesPerModel,
     );
 
     // enhancementRetryDelay
     normalized.enhancementRetryDelay = ensureNumber(
-      importedConfig.enhancementRetryDelay,
+      (importedConfig as any).enhancementRetryDelay,
       DEFAULTS.enhancementRetryDelay,
     );
 
     // enhancementModelsFallback
     normalized.enhancementModelsFallback = ensureArray(
-      importedConfig.enhancementModelsFallback,
+      (importedConfig as any).enhancementModelsFallback,
       DEFAULTS.enhancementModelsFallback,
     );
 
     // enhancementLogLevel
     normalized.enhancementLogLevel = ensureLogLevel(
-      importedConfig.enhancementLogLevel,
+      (importedConfig as any).enhancementLogLevel,
       DEFAULTS.enhancementLogLevel,
     );
 
     // enhancementAlwaysFallback
-    if (typeof importedConfig.enhancementAlwaysFallback === "boolean") {
+    if (typeof (importedConfig as any).enhancementAlwaysFallback === "boolean") {
       normalized.enhancementAlwaysFallback =
-        importedConfig.enhancementAlwaysFallback;
+        (importedConfig as any).enhancementAlwaysFallback;
     } else {
       normalized.enhancementAlwaysFallback = DEFAULTS.enhancementAlwaysFallback;
     }
 
     // enhancementPresets: if missing or invalid, fill from defaults
     if (
-      !importedConfig.enhancementPresets ||
-      typeof importedConfig.enhancementPresets !== "object"
+      !(importedConfig as any).enhancementPresets ||
+      typeof (importedConfig as any).enhancementPresets !== "object"
     ) {
       normalized.enhancementPresets = DEFAULTS.enhancementPresets;
     }
@@ -232,14 +232,31 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
     // Ensure enhancementTemplateSelected is normalized using resolver
     normalized.enhancementTemplateSelected = resolveEnhancementTemplateKey(
       normalized.enhancementTemplateSelected ||
-        importedConfig.enhancementTemplateSelected,
+        (importedConfig as any).enhancementTemplateSelected,
     );
+
+    // Pollinations legacy public model aliases now resolve to the current
+    // source-backed public default, while preserving any non-legacy model name.
+    if (
+      typeof normalized.pollinationsModel !== "string" ||
+      !normalized.pollinationsModel.trim()
+    ) {
+      normalized.pollinationsModel = DEFAULTS.pollinationsModel;
+    } else if (["flux", "turbo"].includes(normalized.pollinationsModel.trim())) {
+      normalized.pollinationsModel = DEFAULTS.pollinationsModel;
+    }
+
+    // Google retired the preview Gemini image model name; map exports/imports to
+    // the current stable model without removing Google provider support.
+    if (normalized.model === "gemini-3-pro-image-preview") {
+      normalized.model = "gemini-3-pro-image";
+    }
 
     // historyDays: default only when missing/invalid
     if (!("historyDays" in importedConfig)) {
       normalized.historyDays = DEFAULTS.historyDays ?? 30;
     } else {
-      const parsedDays = parseInt(importedConfig.historyDays, 10);
+      const parsedDays = parseInt((importedConfig as any).historyDays, 10);
       if (isNaN(parsedDays) || parsedDays < 1 || parsedDays > 365) {
         normalized.historyDays = DEFAULTS.historyDays ?? 30;
       } else {
@@ -250,33 +267,33 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
     // --- Sensitive / critical fields preservation ---
 
     // Direct provider API keys / tokens
-    if (isNonEmptyString(importedConfig.aiHordeApiKey)) {
-      normalized.aiHordeApiKey = importedConfig.aiHordeApiKey;
+    if (isNonEmptyString((importedConfig as any).aiHordeApiKey)) {
+      normalized.aiHordeApiKey = (importedConfig as any).aiHordeApiKey;
     }
 
-    if (isNonEmptyString(importedConfig.pollinationsToken)) {
-      normalized.pollinationsToken = importedConfig.pollinationsToken;
+    if (isNonEmptyString((importedConfig as any).pollinationsToken)) {
+      normalized.pollinationsToken = (importedConfig as any).pollinationsToken;
     }
 
-    if (isNonEmptyString(importedConfig.enhancementApiKey)) {
-      normalized.enhancementApiKey = importedConfig.enhancementApiKey;
+    if (isNonEmptyString((importedConfig as any).enhancementApiKey)) {
+      normalized.enhancementApiKey = (importedConfig as any).enhancementApiKey;
     }
 
-    if (isNonEmptyString(importedConfig.googleApiKey)) {
-      normalized.googleApiKey = importedConfig.googleApiKey;
+    if (isNonEmptyString((importedConfig as any).googleApiKey)) {
+      normalized.googleApiKey = (importedConfig as any).googleApiKey;
     }
 
     // OpenAI-compatible profiles: ensure structure and preserve apiKey-like fields
     if (
-      importedConfig.openAICompatProfiles &&
-      typeof importedConfig.openAICompatProfiles === "object"
+      (importedConfig as any).openAICompatProfiles &&
+      typeof (importedConfig as any).openAICompatProfiles === "object"
     ) {
-      const normalizedProfiles = {};
+      const normalizedProfiles: any = {};
       for (const [url, profile] of Object.entries(
-        importedConfig.openAICompatProfiles,
-      )) {
+        (importedConfig as any).openAICompatProfiles,
+      ) as [string, any][]) {
         if (profile && typeof profile === "object") {
-          const cloned = { ...profile };
+          const cloned: any = { ...profile };
           if (isNonEmptyString(profile.apiKey)) {
             cloned.apiKey = profile.apiKey;
           }
@@ -289,18 +306,18 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
     }
 
     // Preserve active profile URL if valid string, otherwise use default
-    if (isNonEmptyString(importedConfig.openAICompatActiveProfileUrl)) {
+    if (isNonEmptyString((importedConfig as any).openAICompatActiveProfileUrl)) {
       normalized.openAICompatActiveProfileUrl =
-        importedConfig.openAICompatActiveProfileUrl;
+        (importedConfig as any).openAICompatActiveProfileUrl;
     } else {
       normalized.openAICompatActiveProfileUrl =
         DEFAULTS.openAICompatActiveProfileUrl;
     }
 
     // Preserve openAICompatModelManualInput boolean
-    if (typeof importedConfig.openAICompatModelManualInput === "boolean") {
+    if (typeof (importedConfig as any).openAICompatModelManualInput === "boolean") {
       normalized.openAICompatModelManualInput =
-        importedConfig.openAICompatModelManualInput;
+        (importedConfig as any).openAICompatModelManualInput;
     } else if (typeof normalized.openAICompatModelManualInput !== "boolean") {
       normalized.openAICompatModelManualInput =
         DEFAULTS.openAICompatModelManualInput;
@@ -452,7 +469,7 @@ export async function populateConfigForm() {
 export async function populateProviderForms(config) {
   // Import and call the populateProviderForms from models.js
   const { populateProviderForms: populateProviderFormsModels } = await import(
-    "../api/models.js"
+    "../api/models"
   );
   await populateProviderFormsModels(config);
 }

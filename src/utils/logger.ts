@@ -1,4 +1,4 @@
-import { getConfigValue } from "./storage.js";
+import { getConfigValue } from "./storage";
 
 let loggingEnabled = false;
 let enhancementLogHistory = [];
@@ -89,13 +89,13 @@ export function log(level, category, message, data = null) {
 }
 
 // Convenience methods for different log levels
-export const logInfo = (category, message, data) =>
+export const logInfo = (category, message, data = null) =>
   log("info", category, message, data);
-export const logDebug = (category, message, data) =>
+export const logDebug = (category, message, data = null) =>
   log("debug", category, message, data);
-export const logWarn = (category, message, data) =>
+export const logWarn = (category, message, data = null) =>
   log("warn", category, message, data);
-export const logError = (category, message, data) =>
+export const logError = (category, message, data = null) =>
   log("error", category, message, data);
 
 /**

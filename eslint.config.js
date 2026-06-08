@@ -1,16 +1,21 @@
 const js = require("@eslint/js");
-const prettierConfig = require("eslint-config-prettier");
-const prettierPlugin = require("eslint-plugin-prettier");
+const tsParser = require("@typescript-eslint/parser");
+const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const importPlugin = require("eslint-plugin-import");
 
 module.exports = [
   js.configs.recommended,
-  prettierConfig,
   {
-    files: ["src/**/*.js"],
+    ignores: ["node_modules/", "dist/", "build/", "*.min.js"],
+  },
+  {
+    files: ["src/**/*.ts"],
     languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: "module",
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: "module",
+      },
       globals: {
         // Tampermonkey/Greasemonkey globals
         GM_xmlhttpRequest: "readonly",
@@ -34,19 +39,23 @@ module.exports = [
         Blob: "readonly",
         URL: "readonly",
         CustomEvent: "readonly",
-        require: "readonly",
-        module: "readonly",
-        jquery: "readonly",
-        error: "readonly",
+        Event: "readonly",
+        AbortController: "readonly",
+        fetch: "readonly",
+        URLSearchParams: "readonly",
+        CSS: "readonly",
+        confirm: "readonly",
+        prompt: "readonly",
+        HTMLInputElement: "readonly",
       },
     },
     plugins: {
-      prettier: prettierPlugin,
+      "@typescript-eslint": tsPlugin,
       import: importPlugin,
     },
     rules: {
-      "prettier/prettier": "error",
-      "no-unused-vars": [
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
         "error",
         {
           argsIgnorePattern: "^_",
@@ -97,14 +106,17 @@ module.exports = [
       "import/order": "error",
       "import/newline-after-import": "error",
       "import/group-exports": "off",
-      "import/extensions": ["error", "always", { ignorePackages: true }],
+      "import/extensions": ["error", "ignorePackages", {
+        js: "never",
+        ts: "never",
+      }],
     },
-    ignores: [
-      "node_modules/",
-      "dist/",
-      "build/",
-      "*.min.js",
-      "webpack.config.js",
-    ],
+    settings: {
+      "import/resolver": {
+        node: {
+          extensions: [".ts", ".js"],
+        },
+      },
+    },
   },
 ];
