@@ -2,7 +2,7 @@
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-6.1.1-blue.svg)](Changelog.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/)
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
@@ -12,7 +12,7 @@ WTR LAB Novel Image Generator is a modern userscript that turns your novel readi
 
 ## ✨ Key Features
 
-*   **🔄 Multi-Provider Support**: Generate images using Pollinations, AI Horde, Google Imagen, and any OpenAI-compatible API.
+*   **🔄 Multi-Provider Support**: Generate images using Pollinations, AI Horde, Google Imagen/Gemini image models, and any OpenAI-compatible API.
 *   **🚀 AI Prompt Enhancement**: Uses Google Gemini to automatically improve your selected text for better image results, with a smart queue and custom templates.
 *   **🎛️ Rich Configuration**: An extensive settings panel to manage API keys, models, prompt styles, and more, with import/export functionality.
 *   **🖼️ Unified Image Viewer**: A clean, mobile-friendly viewer to inspect, download, and manage your image generation history.
@@ -72,12 +72,14 @@ Choose from comprehensive art style categories to guide the AI:
 
 ## 📊 Provider Comparison
 
-| Provider          | Speed       | Cost    | Quality    | Best For                               |
-| ----------------- | ----------- | ------- | ---------- | -------------------------------------- |
-| **Pollinations**  | ⚡ Fast     | 💰 Free | ⭐⭐⭐     | Quick experiments and free usage       |
-| **AI Horde**      | 🐌 Variable | 💰 Free | ⭐⭐⭐⭐   | High-quality results from a community  |
-| **Google Imagen** | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Premium quality and advanced controls  |
-| **OpenAI Comp.**  | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Connecting to custom or premium APIs   |
+| Provider | Current local behavior | Best For |
+| --- | --- | --- |
+| **Pollinations** | Public generation defaults to `sana`, sends negative prompts with `negative_prompt`, and uses `nofeed=true` for privacy. | Quick experiments and free usage |
+| **AI Horde** | Starts async jobs, polls `/generate/check/{id}` until done, then fetches `/generate/status/{id}` once; negative prompts use AI Horde's `###` separator. | Community-powered free generation |
+| **Google Imagen/Gemini** | Imagen models use `:predict`; Gemini image models use current `v1` `:generateContent` with `generationConfig.responseFormat.image`. | Premium Google image generation |
+| **OpenAI Comp.** | Posts to `/images/generations`; DALL-E keeps `response_format: "b64_json"`, while GPT image models omit unsupported `response_format`. | Custom or premium OpenAI-compatible APIs |
+
+Source-backed provider details are maintained in [docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md).
 
 ## 🏗️ For Developers & Contributors
 
@@ -90,18 +92,23 @@ We welcome contributions! Whether it's reporting a bug, suggesting a feature, or
 
 ### 🛠️ Development Setup
 
-The project is built using a modern, modular structure with webpack.
+The project is built using a modern, modular TypeScript structure with Webpack. Runtime source changes belong under `src/**/*.ts`; installable userscript artifacts are generated under `dist/`.
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies from the lockfile
+npm ci
 
-# Run development server with hot-reloading
+# Run the API compatibility harness without real provider keys or network calls
+npm run test:api:red
+
+# Run the standard repository gate: typecheck, ESLint, and build
+npm run validate
+
+# Run development server with hot-reloading when browser testing
 npm run dev
-
-# Create an optimized production build
-npm run build
 ```
+
+ESLint is the required source-quality gate for this workspace. Prettier/style commands may exist for local cleanup, but they are not required for workspace standard validation.
 
 ### 🏛️ Architecture Overview
 
@@ -119,6 +126,7 @@ src/
 
 ## 🔗 Quick Links
 
+-   **📡 API Provider Compatibility Notes**: [docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md)
 -   **📜 Changelog**: [Changelog.md](Changelog.md)
 -   **🧩 GreasyFork**: [Script Page](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator)
 -   **🗂️ Source & Issues**: [GitHub Repository](https://github.com/MasuRii/wtr-lab-novel-image-generator)

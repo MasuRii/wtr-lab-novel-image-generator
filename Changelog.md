@@ -4,6 +4,20 @@ All notable changes to the WTR Lab Novel Image Generator project will be documen
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+No unreleased changes.
+
+## [6.1.1] - 2026-06-08
+
+### 🏆 Improved
+- Updated provider API compatibility to match 2026-06-08 source-backed research:
+  - Pollinations defaults legacy `flux`/`turbo` selections to current public `sana`, sends `negative_prompt` as a query parameter, and uses `nofeed=true` for privacy.
+  - AI Horde now polls `/generate/check/{id}` before fetching final `/generate/status/{id}` results and includes a descriptive `Client-Agent` header.
+  - Google Gemini image requests normalize `gemini-3-pro-image-preview` to `gemini-3-pro-image`, use the `v1` `:generateContent` endpoint, and send image sizing through `generationConfig.responseFormat.image`.
+  - OpenAI-compatible GPT image models omit unsupported `response_format`, while DALL-E models retain `response_format: "b64_json"`.
+- Added [API provider compatibility notes](docs/API_PROVIDER_COMPATIBILITY_2026-06-08.md) with source URLs, access dates, implemented behavior, and unresolved provider uncertainty.
+
 ## [6.1.0] - 2025-11-30
 
 ### ✨ Added

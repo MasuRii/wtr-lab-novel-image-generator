@@ -2,13 +2,13 @@
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
 
-[![Version](https://img.shields.io/badge/version-6.1.0-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.1-blue.svg)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator/versions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Userscript](https://img.shields.io/badge/Userscript-Tampermonkey-green.svg)](https://tampermonkey.net/) [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 Turn your novel reading into a visual experience! This script lets you highlight text on `wtr-lab.com` and generate AI-powered images on the fly. With support for multiple AI providers, smart prompt enhancement, and a clean UI, it makes stories come alive. 🎨
 
 ## ✨ Key Features
 
-*   **🔄 Multi-Provider Support**: Generate images using Pollinations, AI Horde, Google Imagen, and any OpenAI-compatible API.
+*   **🔄 Multi-Provider Support**: Generate images using Pollinations, AI Horde, Google Imagen/Gemini image models, and any OpenAI-compatible API.
 *   **🚀 AI Prompt Enhancement**: Uses Google Gemini to automatically improve your selected text for better image results.
 *   **🎛️ Rich Configuration**: An extensive settings panel to manage API keys, models, prompt styles, and more.
 *   **🖼️ Unified Image Viewer**: A clean, mobile-friendly viewer to inspect, download, and manage your image history.
@@ -36,12 +36,12 @@ Turn your novel reading into a visual experience! This script lets you highlight
 
 ## 📊 Provider Comparison
 
-| Provider          | Speed       | Cost    | Quality    | Best For                               |
-| ----------------- | ----------- | ------- | ---------- | -------------------------------------- |
-| **Pollinations**  | ⚡ Fast     | 💰 Free | ⭐⭐⭐     | Quick experiments and free usage       |
-| **AI Horde**      | 🐌 Variable | 💰 Free | ⭐⭐⭐⭐   | High-quality results from a community  |
-| **Google Imagen** | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Premium quality and advanced controls  |
-| **OpenAI Comp.**  | ⚡ Fast     | 💳 Paid | ⭐⭐⭐⭐⭐ | Connecting to custom or premium APIs   |
+| Provider | Current behavior | Best For |
+| --- | --- | --- |
+| **Pollinations** | Uses the current public `sana` model by default, supports negative prompts, and keeps generated images out of the public feed when privacy is enabled. | Quick experiments and free usage |
+| **AI Horde** | Uses async community generation with efficient status checks before fetching completed results. | Community-powered free generation |
+| **Google Imagen/Gemini** | Supports Imagen models and current Gemini image models through Google's documented image APIs. | Premium Google image generation |
+| **OpenAI Comp.** | Works with OpenAI-compatible image endpoints, including DALL-E and GPT image model response differences. | Custom or premium OpenAI-compatible APIs |
 
 ## 🛠️ FAQ & Troubleshooting
 
