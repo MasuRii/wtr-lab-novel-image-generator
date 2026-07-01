@@ -1,6 +1,47 @@
 import { log, logInfo } from "./logger";
+import { showToast } from "./uiUtils";
 
 export const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const CACHE_SCHEMA_VERSION = 2;
+
+// Cache entry shape (schema v2):
+//   { models: any[], timestamp: number, endpoint?: string, schemaVersion: number }
+//
+// Legacy shape (schema v1 / unversioned):
+//   { [provider]: any[] }  ← bare array of models with no metadata
+// Legacy entries are treated as cache misses and overwritten on next fetch.
+
+/**
+ * Validates a cache entry against the current schema, TTL, and endpoint.
+ * @param entry - The cache entry to validate
+ * @param endpoint - Optional endpoint URL that must match the stored value
+ * @returns true if the entry is valid, fresh, and endpoint-matched
+ */
+function isCacheEntryValid(entry: any, endpoint?: string): boolean {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    return false;
+  }
+  if (entry.schemaVersion !== CACHE_SCHEMA_VERSION) {
+    return false;
+  }
+  if (typeof entry.timestamp !== "number") {
+    return false;
+  }
+  if (Date.now() - entry.timestamp > CACHE_EXPIRATION_MS) {
+    return false;
+  }
+  if (
+    endpoint &&
+    typeof entry.endpoint === "string" &&
+    entry.endpoint !== endpoint
+  ) {
+    return false;
+  }
+  if (!Array.isArray(entry.models)) {
+    return false;
+  }
+  return true;
+}
 
 export async function getCachedModels() {
   try {
@@ -27,14 +68,22 @@ export async function getCachedModels() {
 }
 
 /**
- * Gets cached models for a specific provider
- * @param {string} provider - The provider name (e.g., 'pollinations', 'aiHorde')
- * @returns {Promise<Array|null>} Array of cached models or null if not found
+ * Gets cached models for a specific provider.
+ * Returns the models array only when the cache entry is valid (correct schema
+ * version, not expired, endpoint matches). Legacy bare-array entries and
+ * expired/endpoint-mismatched entries are treated as cache misses (null).
+ * @param provider - The provider name (e.g. 'pollinations', 'aiHorde')
+ * @param endpoint - Optional endpoint URL to validate against the stored value
+ * @returns {Promise<Array|null>} Array of cached models or null if not found/expired
  */
-export async function getCachedModelsForProvider(provider) {
+export async function getCachedModelsForProvider(provider, endpoint?) {
   try {
     const cache = await getCachedModels();
-    return cache[provider] || null;
+    const entry = cache[provider];
+    if (isCacheEntryValid(entry, endpoint)) {
+      return entry.models;
+    }
+    return null;
   } catch (error) {
     log("error", "CACHE", `Failed to get cached models for ${provider}`, {
       error: error.message,
@@ -43,10 +92,23 @@ export async function getCachedModelsForProvider(provider) {
   }
 }
 
-export async function setCachedModels(provider, models) {
+/**
+ * Sets cached models for a specific provider with timestamp, endpoint, and
+ * schema version metadata so the cache can auto-expire and invalidate on
+ * endpoint changes.
+ * @param provider - The provider name
+ * @param models - Array of model objects/strings to cache
+ * @param endpoint - Optional endpoint URL the models were fetched from
+ */
+export async function setCachedModels(provider, models, endpoint?) {
   try {
     const cache = await getCachedModels();
-    cache[provider] = models;
+    cache[provider] = {
+      models: models,
+      timestamp: Date.now(),
+      endpoint: endpoint || null,
+      schemaVersion: CACHE_SCHEMA_VERSION,
+    };
     await GM_setValue("cachedModels", JSON.stringify(cache));
     log("info", "CACHE", `Cached models for ${provider}`);
   } catch (error) {
@@ -90,8 +152,9 @@ export async function clearCachedModels(provider = null) {
         "CACHE",
         "Cleared all cached models and reset OpenAI Compatible model selections.",
       );
-      alert(
+      showToast(
         "All cached models have been cleared. They will be re-fetched when you next open the settings.",
+        "success",
       );
     }
   } catch (error) {

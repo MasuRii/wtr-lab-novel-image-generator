@@ -1,8 +1,12 @@
 // --- IMPORTS ---
 import * as storage from "../utils/storage";
-// import { filterExpiredLinks } from "../utils/linkValidator"; // Not currently used
+import { escapeHtml, showToast } from "../utils/uiUtils";
 
 // --- PUBLIC FUNCTIONS ---
+
+// Track whether the history data has changed since last render to avoid
+// full re-render on every tab visit (finding #23).
+let lastRenderHash = "";
 
 /**
  * Populates the history tab with the user's generation history
@@ -11,6 +15,14 @@ export async function populateHistoryTab() {
   const historyList = document.getElementById("nig-history-list");
   // Use the new getFilteredHistory function to respect the configured days setting
   const history = await storage.getFilteredHistory();
+
+  // Compute a simple hash to detect whether data has changed since last render.
+  // This avoids full re-render on every tab visit when data hasn't changed.
+  const currentHash = `${history.length}:${history.length > 0 ? history[0]?.date : ""}`;
+  if (currentHash === lastRenderHash && historyList.children.length > 0) {
+    return; // Data unchanged, skip re-render
+  }
+  lastRenderHash = currentHash;
 
   historyList.innerHTML = "";
   if (history.length === 0) {
@@ -30,15 +42,16 @@ export async function populateHistoryTab() {
           : "";
 
     const providerInfo =
-      item && item.provider ? `<strong>${item.provider}</strong>` : "";
-    const modelInfo = item && item.model ? `(${item.model})` : "";
+      item && item.provider ? `<strong>${escapeHtml(item.provider)}</strong>` : "";
+    const modelInfo = item && item.model ? `(${escapeHtml(item.model)})` : "";
 
     const metaText = new Date(item.date).toLocaleString();
     const metaHtml = `<div class="nig-history-meta"><small>${metaText} - ${providerInfo} ${modelInfo}</small></div>`;
 
     // Prompt display: up to 2 lines, full available width, ellipsis beyond 2 lines.
+    // Use escapeHtml for XSS safety (finding #28).
     const promptHtml = safePrompt
-      ? `<div class="nig-history-prompt" title="${safePrompt.replace(/"/g, '"')}">${safePrompt}</div>`
+      ? `<div class="nig-history-prompt" title="${escapeHtml(safePrompt)}">${escapeHtml(safePrompt)}</div>`
       : '<div class="nig-history-prompt nig-history-prompt-empty">No prompt available</div>';
 
     li.innerHTML = `
@@ -80,7 +93,7 @@ export async function cleanHistory() {
 
   // Validate the input
   if (isNaN(days) || days < 1 || days > 365) {
-    alert("Please enter a valid number of days (1-365).");
+    showToast("Please enter a valid number of days (1-365).", "error");
     return;
   }
 
@@ -127,12 +140,12 @@ export async function cleanHistory() {
       message += `\n\nTotal removed: ${result.totalRemoved} items`;
       message += `\nRemaining entries: ${result.finalHistoryCount}`;
 
-      alert(message);
+      showToast(message, "success", 8000);
 
       await populateHistoryTab();
     } catch (error) {
       console.error("Failed to clean history:", error);
-      alert("Failed to clean history. Please try again.");
+      showToast("Failed to clean history. Please try again.", "error");
     } finally {
       // Restore button state - restore the complete original structure
       cleanButton.disabled = false;

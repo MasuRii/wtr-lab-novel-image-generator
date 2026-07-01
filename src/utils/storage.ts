@@ -1,4 +1,5 @@
 import { DEFAULTS } from "../config/defaults";
+import { migrateConfig } from "../config/migration";
 import { filterExpiredLinks } from "./linkValidator";
 
 /**
@@ -12,6 +13,8 @@ export async function getConfigValue(key) {
 
 /**
  * Retrieves the entire configuration object from storage.
+ * Runs schema-versioned migration on load to upgrade stale/empty settings
+ * (e.g. Zen enhancement defaults) for existing users.
  * @returns {Promise<object>} The complete configuration object.
  */
 export async function getConfig(): Promise<any> {
@@ -19,7 +22,18 @@ export async function getConfig(): Promise<any> {
   for (const key in DEFAULTS) {
     config[key] = await GM_getValue(key, DEFAULTS[key]);
   }
-  return config;
+
+  // Run config migration if the stored schema version is outdated
+  const migrated = migrateConfig(config);
+  if (migrated !== config) {
+    for (const key in migrated) {
+      if (migrated[key] !== config[key]) {
+        await GM_setValue(key, migrated[key]);
+      }
+    }
+  }
+
+  return migrated;
 }
 
 /**

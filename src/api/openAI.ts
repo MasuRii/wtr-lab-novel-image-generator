@@ -1,6 +1,7 @@
 import { getConfig } from "../utils/storage";
 import { getApiReadyPrompt } from "../utils/promptUtils";
 import { logDebug } from "../utils/logger";
+import * as abortRegistry from "../utils/abortRegistry";
 
 /**
  * Detects if response content is HTML instead of JSON
@@ -66,11 +67,6 @@ function safeJsonParse(responseText, endpointUrl) {
   }
 }
 
-function modelSupportsResponseFormat(model) {
-  const modelId = typeof model === "string" ? model.toLowerCase() : "";
-  return modelId === "dall-e-2" || modelId === "dall-e-3";
-}
-
 function getOptionalString(value) {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
@@ -84,10 +80,6 @@ function buildOpenAIImagePayload(activeProfile, prompt) {
     n: Number.isInteger(activeProfile.n) ? activeProfile.n : 1,
     size: getOptionalString(activeProfile.size) || "1024x1024",
   };
-
-  if (modelSupportsResponseFormat(activeProfile.model)) {
-    payload.response_format = "b64_json";
-  }
 
   const optionalFields = [
     "quality",
@@ -149,6 +141,8 @@ export async function generate(
   // Apply prompt cleaning as a safety measure on the fully-formed FinalPrompt
   const cleanPrompt = getApiReadyPrompt(finalPrompt, "openai_api_final");
 
+  const myToken = abortRegistry.getCancelToken();
+
   // Respect global logging toggle for debug-level diagnostics
   logDebug("OPENAI-COMPAT", "Prompt construction", {
     path: "non-horde inline negative",
@@ -164,7 +158,7 @@ export async function generate(
   const url = `${activeUrl}/images/generations`;
   const payload = buildOpenAIImagePayload(activeProfile, cleanPrompt);
 
-  GM_xmlhttpRequest({
+  const xhr = GM_xmlhttpRequest({
     method: "POST",
     url: url,
     headers: {
@@ -173,6 +167,10 @@ export async function generate(
     },
     data: JSON.stringify(payload),
     onload: (response) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       try {
         const data = safeJsonParse(response.responseText, activeUrl);
 
@@ -281,7 +279,13 @@ export async function generate(
         }
       }
     },
-    onerror: (error) =>
-      onFailure(JSON.stringify(error), prompt, "OpenAICompat", activeUrl),
+    onerror: (error) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
+      onFailure(JSON.stringify(error), prompt, "OpenAICompat", activeUrl);
+    },
   });
+  abortRegistry.trackRequest(xhr);
 }

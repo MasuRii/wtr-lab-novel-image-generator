@@ -1,4 +1,5 @@
 // --- IMPORTS ---
+import { showToast, showConfirm } from "../utils/uiUtils";
 import * as storage from "../utils/storage";
 import * as logger from "../utils/logger";
 import * as file from "../utils/file";
@@ -139,13 +140,29 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
         ? value
         : fallback;
 
-    const ensureArray = (value, fallback) =>
-      Array.isArray(value) ? value : fallback;
-
     const ensureLogLevel = (value, fallback) => {
       const allowed = ["debug", "info", "warn", "error"];
       return allowed.includes(value) ? value : fallback;
     };
+
+    // --- Migrate legacy enhancement config to OpenAI-compatible ---
+    // Remove dead keys that no longer exist in DEFAULTS.
+    delete (normalized as any).enhancementProvider;
+    delete (normalized as any).enhancementModelsFallback;
+
+    // Clear legacy provider-prefixed model names — they won't work with OpenAI-compatible endpoints.
+    const legacyModel = (normalized as any).enhancementModel;
+    if (
+      typeof legacyModel === "string" &&
+      legacyModel.startsWith("models/")
+    ) {
+      normalized.enhancementModel = DEFAULTS.enhancementModel;
+    }
+
+    // Ensure enhancementBaseUrl field exists for OpenAI-compatible enhancement.
+    if (typeof (normalized as any).enhancementBaseUrl !== "string") {
+      normalized.enhancementBaseUrl = DEFAULTS.enhancementBaseUrl;
+    }
 
     // enhancementMaxRetriesPerModel
     normalized.enhancementMaxRetriesPerModel = ensureNumber(
@@ -159,11 +176,8 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
       DEFAULTS.enhancementRetryDelay,
     );
 
-    // enhancementModelsFallback
-    normalized.enhancementModelsFallback = ensureArray(
-      (importedConfig as any).enhancementModelsFallback,
-      DEFAULTS.enhancementModelsFallback,
-    );
+    // enhancementModelsFallback normalization removed — legacy fallback list
+    // is stripped above during migration. OpenAI-compatible enhancement uses a single model.
 
     // enhancementLogLevel
     normalized.enhancementLogLevel = ensureLogLevel(
@@ -246,12 +260,6 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
       normalized.pollinationsModel = DEFAULTS.pollinationsModel;
     }
 
-    // Google retired the preview Gemini image model name; map exports/imports to
-    // the current stable model without removing Google provider support.
-    if (normalized.model === "gemini-3-pro-image-preview") {
-      normalized.model = "gemini-3-pro-image";
-    }
-
     // historyDays: default only when missing/invalid
     if (!("historyDays" in importedConfig)) {
       normalized.historyDays = DEFAULTS.historyDays ?? 30;
@@ -277,10 +285,6 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
 
     if (isNonEmptyString((importedConfig as any).enhancementApiKey)) {
       normalized.enhancementApiKey = (importedConfig as any).enhancementApiKey;
-    }
-
-    if (isNonEmptyString((importedConfig as any).googleApiKey)) {
-      normalized.googleApiKey = (importedConfig as any).googleApiKey;
     }
 
     // OpenAI-compatible profiles: ensure structure and preserve apiKey-like fields
@@ -323,13 +327,21 @@ export function normalizeImportedConfig(importedConfigRaw = {}) {
         DEFAULTS.openAICompatModelManualInput;
     }
 
+    // Preserve enhancementModelManualInput boolean (dropdown vs manual model input)
+    if (typeof (importedConfig as any).enhancementModelManualInput === "boolean") {
+      normalized.enhancementModelManualInput =
+        (importedConfig as any).enhancementModelManualInput;
+    } else if (typeof normalized.enhancementModelManualInput !== "boolean") {
+      normalized.enhancementModelManualInput =
+        DEFAULTS.enhancementModelManualInput;
+    }
+
     // Ensure we do not overwrite valid sensitive values with empty defaults
     // If normalized has empty string but imported had non-empty, restore imported
     const sensitiveKeys = [
       "aiHordeApiKey",
       "pollinationsToken",
       "enhancementApiKey",
-      "googleApiKey",
     ];
     for (const key of sensitiveKeys) {
       if (
@@ -440,10 +452,12 @@ export async function populateConfigForm() {
   // Enhancement settings
   document.getElementById("nig-enhancement-enabled").checked =
     config.enhancementEnabled;
-  document.getElementById("nig-gemini-api-key").value =
-    config.enhancementApiKey;
-  document.getElementById("nig-enhancement-model").value =
-    config.enhancementModel;
+  document.getElementById("nig-enhancement-base-url").value =
+    config.enhancementBaseUrl || "";
+  document.getElementById("nig-enhancement-api-key").value =
+    config.enhancementApiKey || "";
+  document.getElementById("nig-enhancement-model-manual").value =
+    config.enhancementModel || "";
 
   // Enhancement template selection will be handled by enhancementPanel.js
 
@@ -502,12 +516,25 @@ export async function saveConfig() {
     document.getElementById("nig-enhancement-enabled").checked,
   );
   await storage.setConfigValue(
+    "enhancementBaseUrl",
+    document.getElementById("nig-enhancement-base-url").value.trim(),
+  );
+  await storage.setConfigValue(
     "enhancementApiKey",
-    document.getElementById("nig-gemini-api-key").value.trim(),
+    document.getElementById("nig-enhancement-api-key").value.trim(),
+  );
+  const enhancementManualContainer = document.getElementById(
+    "nig-enhancement-model-container-manual",
+  );
+  const enhancementIsManualMode = Boolean(
+    enhancementManualContainer &&
+      enhancementManualContainer.style.display !== "none",
   );
   await storage.setConfigValue(
     "enhancementModel",
-    document.getElementById("nig-enhancement-model").value,
+    enhancementIsManualMode
+      ? document.getElementById("nig-enhancement-model-manual").value.trim()
+      : document.getElementById("nig-enhancement-model").value.trim(),
   );
   await storage.setConfigValue(
     "enhancementTemplate",
@@ -535,7 +562,7 @@ export async function saveConfig() {
   );
 
   // Provider-specific configurations will be saved by their respective modules
-  // (models.js for Pollinations, AI Horde, Google, and OpenAI compatible)
+  // (models.js for Pollinations, AI Horde, and OpenAI compatible)
 
   // Alert will be handled by the main saveConfig function in configPanel.js
 }
@@ -573,7 +600,7 @@ export async function handleImportFile(event) {
       throw new Error("Invalid configuration format: root must be an object.");
     }
 
-    if (confirm("This will overwrite all current settings. Continue?")) {
+    if (await showConfirm("This will overwrite all current settings. Continue?", "Import Configuration")) {
       const normalizedConfig = normalizeImportedConfig(importedConfig);
 
       try {
@@ -602,7 +629,7 @@ export async function handleImportFile(event) {
           );
         }
 
-        // 2) Provider-specific sections (Pollinations, AI Horde, Google, OpenAICompat)
+        // 2) Provider-specific sections (Pollinations, AI Horde, OpenAICompat)
         try {
           await populateProviderFormsModels(updatedConfig);
         } catch (uiError) {
@@ -615,7 +642,7 @@ export async function handleImportFile(event) {
           );
         }
 
-        // 3) Enhancement panel (Gemini / enhancement settings)
+        // 3) Enhancement panel (enhancement settings)
         try {
           if (typeof populateEnhancementSettings === "function") {
             await populateEnhancementSettings(updatedConfig);
@@ -647,8 +674,9 @@ export async function handleImportFile(event) {
           );
         }
 
-        alert(
+        showToast(
           "Configuration imported successfully! All visible settings have been updated.",
+          "success",
         );
       } catch (persistError) {
         // If persisting or UI sync fails in a critical way, surface a clear error
@@ -659,10 +687,11 @@ export async function handleImportFile(event) {
             error: persistError?.message || persistError,
           },
         );
-        alert(
+        showToast(
           "Configuration import failed while applying settings. " +
             "Your previous configuration is still in effect. " +
             `Details: ${persistError?.message || persistError}`,
+          "error",
         );
       }
     }
@@ -674,7 +703,7 @@ export async function handleImportFile(event) {
     logger.logError("CONFIG_IMPORT", "Failed to import configuration", {
       error: error?.message || error,
     });
-    alert(`Failed to import configuration: ${error?.message || error}`);
+    showToast(`Failed to import configuration: ${error?.message || error}`, "error");
   } finally {
     // Always clear file input to allow re-import attempts
     event.target.value = "";

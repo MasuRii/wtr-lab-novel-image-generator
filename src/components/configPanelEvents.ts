@@ -10,7 +10,7 @@ import * as storage from "../utils/storage";
 import * as logger from "../utils/logger";
 import * as models from "../api/models";
 import { PROMPT_CATEGORIES } from "../config/styles";
-import { populateGoogleModelsSelect } from "./configPanel";
+import { showToast, showConfirm, escapeHtml } from "../utils/uiUtils";
 import { updateEnhancementUI } from "./enhancementPanel";
 import {
   populateHistoryTab,
@@ -97,26 +97,77 @@ function initializePasswordVisibilityToggles(panelElement) {
 // --- PUBLIC FUNCTIONS ---
 
 /**
- * Sets up all the tab functionality event listeners
+ * Sets up all the tab functionality event listeners with ARIA keyboard navigation.
+ * Implements the WAI-ARIA Tabs pattern: ArrowLeft/ArrowRight to move between
+ * tabs, Home/End for first/last, and activation on click or Enter/Space.
  */
 export function setupTabEventListeners(panelElement) {
   // Initialize password visibility toggles once panel DOM is ready
   initializePasswordVisibilityToggles(panelElement);
 
-  panelElement.querySelectorAll(".nig-tab").forEach((tab) => {
+  const tabs = Array.from(panelElement.querySelectorAll(".nig-tab")) as any[];
+
+  function activateTab(tab) {
+    panelElement
+      .querySelectorAll(".nig-tab, .nig-tab-content")
+      .forEach((el) => {
+        el.classList.remove("active");
+        if (el.classList.contains("nig-tab")) {
+          el.setAttribute("aria-selected", "false");
+          el.setAttribute("tabindex", "-1");
+        }
+      });
+    tab.classList.add("active");
+    tab.setAttribute("aria-selected", "true");
+    tab.setAttribute("tabindex", "0");
+    tab.focus();
+    panelElement
+      .querySelector(`#${tab.getAttribute("aria-controls")}`)
+      .classList.add("active");
+  }
+
+  tabs.forEach((tab) => {
     tab.addEventListener("click", async () => {
-      panelElement
-        .querySelectorAll(".nig-tab, .nig-tab-content")
-        .forEach((el) => el.classList.remove("active"));
-      tab.classList.add("active");
-      panelElement
-        .querySelector(`#nig-${tab.dataset.tab}-tab`)
-        .classList.add("active");
+      activateTab(tab);
       if (tab.dataset.tab === "history") {
         await populateHistoryTab();
         panelElement.querySelector("#nig-save-btn").style.display = "none";
       } else {
         panelElement.querySelector("#nig-save-btn").style.display = "block";
+      }
+    });
+
+    // Keyboard navigation per WAI-ARIA Tabs pattern
+    tab.addEventListener("keydown", async (e) => {
+      const currentIndex = tabs.indexOf(tab);
+      let newIndex = null;
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        newIndex = (currentIndex + 1) % tabs.length;
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        newIndex = 0;
+      } else if (e.key === "End") {
+        e.preventDefault();
+        newIndex = tabs.length - 1;
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        newIndex = currentIndex;
+      }
+
+      if (newIndex !== null) {
+        const targetTab = tabs[newIndex];
+        activateTab(targetTab);
+        if (targetTab.dataset.tab === "history") {
+          await populateHistoryTab();
+          panelElement.querySelector("#nig-save-btn").style.display = "none";
+        } else {
+          panelElement.querySelector("#nig-save-btn").style.display = "block";
+        }
       }
     });
   });
@@ -131,33 +182,6 @@ export function setupProviderEventListeners(panelElement) {
     .querySelector("#nig-provider")
     .addEventListener("change", (_e) => {
       updateVisibleSettings();
-    });
-
-  // Google fetch models
-  panelElement
-    .querySelector("#nig-google-fetch-models")
-    .addEventListener("click", async () => {
-      const apiKey = document.getElementById("nig-google-api-key").value.trim();
-      if (!apiKey) {
-        alert("Please enter a Gemini API Key first.");
-        return;
-      }
-
-      const btn = document.getElementById("nig-google-fetch-models");
-      const originalText = btn.textContent;
-      btn.textContent = "Fetching...";
-      btn.disabled = true;
-
-      try {
-        const fetchedModels: any = await models.fetchGoogleModels(apiKey);
-        populateGoogleModelsSelect(fetchedModels);
-        alert(`Successfully fetched ${fetchedModels.length} models.`);
-      } catch (error) {
-        alert(`Failed to fetch models: ${error.message}`);
-      } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-      }
     });
 }
 
@@ -252,8 +276,9 @@ export function setupLoggingEventListeners(panelElement) {
       await storage.setConfigValue("loggingEnabled", newState);
       await logger.updateLoggingStatus();
       await logger.loadEnhancementLogHistory();
-      alert(
+      showToast(
         `Debug Console & Enhancement Logs are now ${newState ? "ENABLED" : "DISABLED"}.`,
+        "info",
       );
     });
 
@@ -263,8 +288,9 @@ export function setupLoggingEventListeners(panelElement) {
     .addEventListener("click", async () => {
       const logs = await logger.getEnhancementLogHistory();
       if (logs.length === 0) {
-        alert(
+        showToast(
           "No enhancement logs found. Enhancement logging is disabled or no enhancement operations have been performed yet.",
+          "info",
         );
         return;
       }
@@ -272,9 +298,9 @@ export function setupLoggingEventListeners(panelElement) {
       const logModal = document.createElement("div");
       logModal.className = "nig-modal-overlay";
       logModal.innerHTML = `
-            <div class="nig-modal-content">
-                <span class="nig-close-btn">&times;</span>
-                <h2>Enhancement Operation Logs</h2>
+            <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-logs-title">
+                <button type="button" class="nig-close-btn" aria-label="Close logs dialog">&times;</button>
+                <h2 id="nig-logs-title">Enhancement Operation Logs</h2>
                 <p>Detailed logs of prompt enhancement operations with timestamps and performance data.</p>
                 <div style="max-height: 400px; overflow-y: auto; background: var(--nig-color-bg-tertiary); border-radius: var(--nig-radius-md); padding: var(--nig-space-lg); margin: var(--nig-space-lg) 0;">
                     <div id="nig-enhancement-logs-display"></div>
@@ -306,12 +332,12 @@ export function setupLoggingEventListeners(panelElement) {
             `;
         logEntry.innerHTML = `
                 <div style="display: flex; align-items: center; gap: var(--nig-space-sm); margin-bottom: var(--nig-space-xs);">
-                    <span style="color: ${color}; font-weight: 600;">[${log.level?.toUpperCase() || "INFO"}]</span>
-                    <span style="color: var(--nig-color-text-muted); font-size: var(--nig-font-size-xs);">${time}</span>
-                    <span style="color: var(--nig-color-accent-primary); font-weight: 500;">[${log.category || "LOG"}]</span>
+                    <span style="color: ${color}; font-weight: 600;">[${escapeHtml(log.level?.toUpperCase() || "INFO")}]</span>
+                    <span style="color: var(--nig-color-text-muted); font-size: var(--nig-font-size-xs);">${escapeHtml(time)}</span>
+                    <span style="color: var(--nig-color-accent-primary); font-weight: 500;">[${escapeHtml(log.category || "LOG")}]</span>
                 </div>
-                <div style="color: var(--nig-color-text-primary); margin-bottom: var(--nig-space-xs);">${log.message || "No message"}</div>
-                ${log.data ? `<pre style="color: var(--nig-color-text-secondary); font-size: var(--nig-font-size-xs); background: var(--nig-color-bg-primary); padding: var(--nig-space-sm); border-radius: var(--nig-radius-sm); margin: 0; overflow-x: auto;">${JSON.stringify(log.data, null, 2)}</pre>` : ""}
+                <div style="color: var(--nig-color-text-primary); margin-bottom: var(--nig-space-xs);">${escapeHtml(log.message || "No message")}</div>
+                ${log.data ? `<pre style="color: var(--nig-color-text-secondary); font-size: var(--nig-font-size-xs); background: var(--nig-color-bg-primary); padding: var(--nig-space-sm); border-radius: var(--nig-radius-sm); margin: 0; overflow-x: auto;">${escapeHtml(JSON.stringify(log.data, null, 2))}</pre>` : ""}
             `;
         logsDisplay.appendChild(logEntry);
       });
@@ -327,16 +353,16 @@ export function setupLoggingEventListeners(panelElement) {
     .addEventListener("click", async () => {
       const logs = await logger.getEnhancementLogHistory();
       if (logs.length === 0) {
-        alert("No enhancement logs to clear.");
+        showToast("No enhancement logs to clear.", "info");
         return;
       }
-      if (
-        confirm(
-          `Are you sure you want to clear all ${logs.length} enhancement logs? This action cannot be undone.`,
-        )
-      ) {
+      const shouldClear = await showConfirm(
+        `Are you sure you want to clear all ${logs.length} enhancement logs? This action cannot be undone.`,
+        "Clear Enhancement Logs",
+      );
+      if (shouldClear) {
         logger.clearEnhancementLogs();
-        alert("All enhancement logs have been cleared.");
+        showToast("All enhancement logs have been cleared.", "success");
       }
     });
 }

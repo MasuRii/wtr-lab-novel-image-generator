@@ -5,14 +5,10 @@ import "./styles/main.css";
 import * as logger from "./utils/logger";
 import * as storage from "./utils/storage";
 import { parseErrorMessage } from "./utils/error";
-import {
-  getApiReadyPrompt,
-  // getDisplayReadyPrompt, // Not currently used
-} from "./utils/promptUtils";
+import { getApiReadyPrompt } from "./utils/promptUtils";
 
 // Import API modules
-import * as apiGemini from "./api/gemini";
-import * as apiGoogle from "./api/google";
+import * as apiEnhancement from "./api/enhancement";
 import * as apiPollinations from "./api/pollinations";
 import * as apiAIHorde from "./api/aiHorde";
 import * as apiOpenAI from "./api/openAI";
@@ -21,9 +17,9 @@ import * as apiOpenAI from "./api/openAI";
 import * as statusWidget from "./components/statusWidget";
 import * as imageViewer from "./components/imageViewer";
 import * as errorModal from "./components/errorModal";
-import * as googleApiPrompt from "./components/googleApiPrompt";
 import * as pollinationsAuthPrompt from "./components/pollinationsAuthPrompt";
 import * as configPanel from "./components/configPanel";
+import * as abortRegistry from "./utils/abortRegistry";
 
 (function () {
   "use strict";
@@ -59,7 +55,19 @@ import * as configPanel from "./components/configPanel";
     });
 
     completedQueue.push({ imageUrls: displayUrls, prompt, provider, model });
-    const historyUrls = persistentUrls || displayUrls;
+    // Defensive guard: only honor persistentUrls when every entry is a data:
+    // URL (actual image content). This prevents non-image API endpoints from
+    // overriding valid display URLs in history — the root cause of the
+    // Pollinations history 404 bug where the POST endpoint URL was stored
+    // instead of the generated image.
+    const safePersistentUrls =
+      persistentUrls &&
+      persistentUrls.every(
+        (u) => typeof u === "string" && u.startsWith("data:"),
+      )
+        ? persistentUrls
+        : null;
+    const historyUrls = safePersistentUrls || displayUrls;
     historyUrls.forEach((url) =>
       storage.addToHistory({
         date: new Date().toISOString(),
@@ -235,6 +243,20 @@ import * as configPanel from "./components/configPanel";
     }
   }
 
+  function cancelGeneration() {
+    logger.logInfo("GENERATION", "User cancelled generation", {
+      generationQueueLength: generationQueue.length,
+      isGenerating,
+      enhancementInFlightCount,
+    });
+    generationQueue.length = 0;
+    abortRegistry.abortAll();
+    isGenerating = false;
+    enhancementInFlightCount = 0;
+    currentGenerationStatusText = "";
+    updateSystemStatus();
+  }
+
   function updateSystemStatus() {
     logger.logDebug("SYSTEM", "Updating system status", {
       completedQueueLength: completedQueue.length,
@@ -271,6 +293,8 @@ import * as configPanel from "./components/configPanel";
       statusWidget.update(
         "loading",
         `${currentGenerationStatusText}${queueText}`,
+        null,
+        cancelGeneration,
       );
     } else {
       statusWidget.update("hidden", "");
@@ -374,17 +398,14 @@ import * as configPanel from "./components/configPanel";
       }
 
       case "Pollinations":
-      case "Google":
       case "OpenAICompat": {
         // Provider modules now own provider-specific negative prompt handling:
         // - Pollinations sends negative_prompt as a query parameter.
-        // - Google/OpenAI-compatible retain inline negative prompting.
+        // - OpenAI-compatible retains inline negative prompting.
         const useCase =
           provider === "Pollinations"
             ? "pollinations_negative_prompt_query"
-            : provider === "Google"
-              ? "google_inline_negative"
-              : "openai_compat_inline_negative";
+            : "openai_compat_inline_negative";
 
         logger.logInfo("QUEUE", "Using non-AI Horde prompt construction path", {
           provider,
@@ -402,28 +423,18 @@ import * as configPanel from "./components/configPanel";
           });
           apiPollinations.generate(apiPrompt, callbacks);
         } else {
-          if (provider === "Google") {
-            logger.logDebug("QUEUE", "Dispatching to Google provider", {
-              prompt:
-                apiPrompt.substring(0, 200) +
-                (apiPrompt.length > 200 ? "..." : ""),
-              path: useCase,
-            });
-            apiGoogle.generate(apiPrompt, callbacks);
-          } else if (provider === "OpenAICompat") {
-            logger.logDebug("QUEUE", "Dispatching to OpenAICompat provider", {
-              prompt:
-                apiPrompt.substring(0, 200) +
-                (apiPrompt.length > 200 ? "..." : ""),
-              providerProfileUrl: request.providerProfileUrl,
-              path: useCase,
-            });
-            apiOpenAI.generate(
-              apiPrompt,
-              request.providerProfileUrl,
-              callbacks,
-            );
-          }
+          logger.logDebug("QUEUE", "Dispatching to OpenAICompat provider", {
+            prompt:
+              apiPrompt.substring(0, 200) +
+              (apiPrompt.length > 200 ? "..." : ""),
+            providerProfileUrl: request.providerProfileUrl,
+            path: useCase,
+          });
+          apiOpenAI.generate(
+            apiPrompt,
+            request.providerProfileUrl,
+            callbacks,
+          );
         }
         break;
       }
@@ -458,15 +469,6 @@ import * as configPanel from "./components/configPanel";
 
     const config = await storage.getConfig();
 
-    if (config.selectedProvider === "Google" && !config.googleApiKey) {
-      logger.logWarn(
-        "GENERATION",
-        "Google provider selected but no API key provided",
-      );
-      googleApiPrompt.show();
-      return;
-    }
-
     let finalPrompt = currentSelection;
     let prefix = "";
 
@@ -486,17 +488,21 @@ import * as configPanel from "./components/configPanel";
 
     // If AI Enhancement is enabled and used, it operates on StyledPrompt and becomes EnhancedPrompt.
     if (config.enhancementEnabled) {
-      const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(
+      const shouldUseProviderEnh = apiEnhancement.shouldUseProviderEnhancement(
         config.selectedProvider,
         config,
       );
-      const hasApiKey = (config.enhancementApiKey || "").trim().length > 0;
+      const hasEndpoint =
+        (config.enhancementBaseUrl || "").trim().length > 0;
+      const hasModel = (config.enhancementModel || "").trim().length > 0;
       const shouldUseExternalEnhancement =
         (!shouldUseProviderEnh || config.enhancementOverrideProvider) &&
-        hasApiKey;
+        hasEndpoint &&
+        hasModel;
 
       if (shouldUseExternalEnhancement) {
         enhancementInFlightCount++;
+        const tokenBeforeEnhancement = abortRegistry.getCancelToken();
         const startQueueText =
           enhancementInFlightCount > 1
             ? ` (Queue: ${enhancementInFlightCount})`
@@ -509,11 +515,14 @@ import * as configPanel from "./components/configPanel";
             finalPrompt,
             "enhancement_positive_only",
           );
-          finalPrompt = await apiGemini.enhancePromptWithGemini(
+          finalPrompt = await apiEnhancement.enhancePrompt(
             cleanPromptForEnhancement,
             config,
           );
           enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+          if (abortRegistry.getCancelToken() !== tokenBeforeEnhancement) {
+            return;
+          }
           const successQueueText =
             enhancementInFlightCount > 0
               ? ` (Queue: ${enhancementInFlightCount})`
@@ -522,6 +531,9 @@ import * as configPanel from "./components/configPanel";
           setTimeout(() => updateSystemStatus(), 2000);
         } catch (error) {
           enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+          if (abortRegistry.getCancelToken() !== tokenBeforeEnhancement) {
+            return;
+          }
           const errorQueueText =
             enhancementInFlightCount > 0
               ? ` (Queue: ${enhancementInFlightCount})`
@@ -633,6 +645,7 @@ import * as configPanel from "./components/configPanel";
     generateBtn = document.createElement("button");
     generateBtn.className = "nig-button";
     generateBtn.innerHTML = "🎨 Generate Image";
+    generateBtn.setAttribute("aria-label", "Generate image from selected text");
     generateBtn.addEventListener("click", onGenerateClick);
     document.body.appendChild(generateBtn);
 

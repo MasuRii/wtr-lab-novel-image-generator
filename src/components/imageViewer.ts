@@ -1,5 +1,6 @@
 // Image Viewer Component
 import { getScriptName } from "../utils/file";
+import { setupModalA11y } from "../utils/uiUtils";
 
 /**
  * Helper function to determine if an image URL is base64 encoded
@@ -34,28 +35,38 @@ export function create() {
   imageViewer.className = "nig-modal-overlay";
   imageViewer.style.display = "none";
   imageViewer.innerHTML = `
-		<div class="nig-modal-content">
-			<span class="nig-close-btn">&times;</span>
-			<div id="nig-prompt-container" class="nig-prompt-container">
-				<div class="nig-prompt-header"><span>Generated Image Prompt</span></div>
+		<div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-image-viewer-title">
+			<button type="button" class="nig-close-btn" aria-label="Close image viewer">&times;</button>
+			<div id="nig-prompt-container" class="nig-prompt-container" role="button" tabindex="0" aria-expanded="false" aria-controls="nig-prompt-text" aria-label="Toggle prompt visibility">
+				<div class="nig-prompt-header"><span id="nig-image-viewer-title" style="display:none;">Image Viewer</span><span>Generated Image Prompt</span></div>
 				<p id="nig-prompt-text" class="nig-prompt-text"></p>
 			</div>
 			<div id="nig-image-gallery" class="nig-image-gallery"></div>
 		</div>`;
   document.body.appendChild(imageViewer);
+  let viewerA11yCleanup = null;
   imageViewer.querySelector(".nig-close-btn").addEventListener("click", () => {
     imageViewer.style.display = "none";
-    // Import updateSystemStatus dynamically to avoid circular dependency
-    import("./statusWidget").then((module: any) => {
-      if (typeof module.updateSystemStatus === "function") {
-        // This will be handled by the main application
-      }
-    });
+    if (viewerA11yCleanup) {
+      viewerA11yCleanup();
+      viewerA11yCleanup = null;
+    }
   });
   const promptContainer = imageViewer.querySelector("#nig-prompt-container");
-  promptContainer.addEventListener("click", () => {
-    promptContainer.classList.toggle("expanded");
+  function togglePrompt() {
+    const isExpanded = promptContainer.classList.toggle("expanded");
+    promptContainer.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+  }
+  promptContainer.addEventListener("click", togglePrompt);
+  promptContainer.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      togglePrompt();
+    }
   });
+
+  // Store cleanup for use in show()
+  imageViewer._nigA11yCleanup = null;
 }
 
 export function show(imageUrls, prompt, provider, model = "Unknown") {
@@ -69,6 +80,7 @@ export function show(imageUrls, prompt, provider, model = "Unknown") {
   const promptText = imageViewer.querySelector("#nig-prompt-text");
   promptText.textContent = prompt;
   promptContainer.classList.remove("expanded");
+  promptContainer.setAttribute("aria-expanded", "false");
   const extension =
     provider === "Pollinations" || provider === "OpenAICompat" ? "jpg" : "png";
 
@@ -77,6 +89,8 @@ export function show(imageUrls, prompt, provider, model = "Unknown") {
     container.className = "nig-image-container";
     const img = document.createElement("img");
     img.src = url;
+    // Set aspect-ratio to reduce CLS (finding #24)
+    img.style.aspectRatio = "auto";
 
     // Add loading state for URL images
     if (!isBase64Image(url)) {
@@ -148,6 +162,9 @@ export function show(imageUrls, prompt, provider, model = "Unknown") {
       actions.appendChild(urlLinkBtn);
     }
 
+    // Add aria-labels to action buttons for screen readers
+    downloadBtn.setAttribute("aria-label", "Download image");
+    fullscreenBtn.setAttribute("aria-label", "View image fullscreen");
     actions.appendChild(downloadBtn);
     actions.appendChild(fullscreenBtn);
     container.appendChild(img);
@@ -155,6 +172,21 @@ export function show(imageUrls, prompt, provider, model = "Unknown") {
     gallery.appendChild(container);
   });
   imageViewer.style.display = "flex";
+
+  // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+  if (imageViewer._nigA11yCleanup) {
+    imageViewer._nigA11yCleanup();
+  }
+  imageViewer._nigA11yCleanup = setupModalA11y(imageViewer, {
+    closeOnEscape: true,
+    onClose: () => {
+      imageViewer.style.display = "none";
+      if (imageViewer._nigA11yCleanup) {
+        imageViewer._nigA11yCleanup();
+        imageViewer._nigA11yCleanup = null;
+      }
+    },
+  });
 }
 
 export function initialize() {

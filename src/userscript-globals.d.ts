@@ -19,6 +19,7 @@ declare const fetch: any;
 declare function setTimeout(handler: (...args: any[]) => void, timeout?: number, ...args: any[]): number;
 declare function clearTimeout(handle?: number): void;
 declare function getComputedStyle(element: any): any;
+declare function requestAnimationFrame(callback: () => void): number;
 
 declare function GM_getValue(key: string, defaultValue?: any): Promise<any>;
 declare function GM_setValue(key: string, value: any): Promise<void>;
@@ -31,6 +32,7 @@ declare interface GMXmlHttpRequestResponse<T = any> {
   statusText: string;
   responseText: string;
   response: T;
+  responseHeaders?: string;
 }
 
 declare interface GMXmlHttpRequestOptions<T = any> {

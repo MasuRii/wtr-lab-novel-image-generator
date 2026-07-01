@@ -6,9 +6,9 @@ import {
 import {
   saveProviderConfigs,
   populateProviderForms,
-  loadCachedGoogleModels,
 } from "../api/models";
 import * as storage from "../utils/storage";
+import { showToast, setupModalA11y } from "../utils/uiUtils";
 import {
   populateEnhancementSettings,
   saveEnhancementConfig,
@@ -29,6 +29,7 @@ import { createPanelElement } from "./configPanelTemplate";
 // --- MODULE STATE ---
 let panelElement = null;
 let initializeCallbacks: any = {};
+let panelA11yCleanup: (() => void) | null = null;
 
 // --- EXPORTED FUNCTIONS ---
 
@@ -49,7 +50,13 @@ export function create() {
   // Basic panel functionality
   panelElement
     .querySelector(".nig-close-btn")
-    .addEventListener("click", () => (panelElement.style.display = "none"));
+    .addEventListener("click", () => {
+      if (panelA11yCleanup) {
+        panelA11yCleanup();
+        panelA11yCleanup = null;
+      }
+      panelElement.style.display = "none";
+    });
   panelElement
     .querySelector("#nig-save-btn")
     .addEventListener("click", saveConfig);
@@ -92,8 +99,6 @@ export async function show() {
   // Populate basic configuration
   await populateConfigForm();
 
-  await populateGoogleModels();
-
   // Populate provider-specific forms
   await populateProviderForms(config);
 
@@ -101,6 +106,22 @@ export async function show() {
   await populateEnhancementSettings(config);
 
   panelElement.style.display = "flex";
+
+  // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+  if (panelA11yCleanup) {
+    panelA11yCleanup();
+  }
+  panelA11yCleanup = setupModalA11y(panelElement, {
+    labelledBy: "nig-config-title",
+    closeOnEscape: true,
+    onClose: () => {
+      panelElement.style.display = "none";
+      if (panelA11yCleanup) {
+        panelA11yCleanup();
+        panelA11yCleanup = null;
+      }
+    },
+  });
 }
 
 /**
@@ -128,39 +149,7 @@ export async function saveConfig() {
     initializeCallbacks.onConfigSaved();
   }
 
-  alert("Configuration saved!");
+  showToast("Configuration saved!", "success");
 }
 
-/**
- * Populates the Google Imagen model dropdown from config/cache
- */
-async function populateGoogleModels() {
-  const select = document.getElementById("nig-model");
-  if (!select) {
-    return;
-  }
 
-  const cachedModels = await loadCachedGoogleModels();
-  if (cachedModels && cachedModels.length > 0) {
-    populateGoogleModelsSelect(cachedModels);
-  }
-}
-
-/**
- * Populates the Google Models select element
- * @param {Array} models - List of models
- */
-export function populateGoogleModelsSelect(models) {
-  const select = document.getElementById("nig-model");
-  if (!select) {
-    return;
-  }
-
-  select.innerHTML = "";
-  models.forEach((model) => {
-    const option = document.createElement("option");
-    option.value = model.id;
-    option.textContent = model.name;
-    select.appendChild(option);
-  });
-}

@@ -1,4 +1,5 @@
 import { setConfigValue } from "../utils/storage";
+import { showToast, setupModalA11y, escapeHtml } from "../utils/uiUtils";
 
 let promptElement = null;
 
@@ -17,12 +18,12 @@ export function show(errorMessage, failedPrompt, onRetry) {
   promptElement.id = "nig-pollinations-auth-prompt";
   promptElement.className = "nig-modal-overlay";
   promptElement.innerHTML = `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Authentication Required</h2>
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-auth-title">
+            <button type="button" class="nig-close-btn" aria-label="Close authentication dialog">&times;</button>
+            <h2 id="nig-auth-title">Authentication Required</h2>
             <p>The Pollinations.ai model you selected requires authentication. You can get free access by registering.</p>
-            <p><strong>Error Message:</strong> <em>${errorMessage}</em></p>
-            <p>Please visit <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> to continue. You can either:</p>
+            <p><strong>Error Message:</strong> <em>${escapeHtml(errorMessage)}</em></p>
+            <p>Please visit <a href="https://enter.pollinations.ai" target="_blank" class="nig-api-prompt-link">enter.pollinations.ai</a> to continue. You can either:</p>
             <ul>
                 <li><strong>Register the Referrer:</strong> The easiest method. Just register the domain <code>wtr-lab.com</code>. This links your usage to your account without needing a token.</li>
                 <li><strong>Use a Token:</strong> Get an API token and enter it below.</li>
@@ -35,7 +36,19 @@ export function show(errorMessage, failedPrompt, onRetry) {
         </div>`;
   document.body.appendChild(promptElement);
 
-  const close = () => promptElement.remove();
+  const close = () => {
+    if (a11yCleanup) {
+      a11yCleanup();
+      a11yCleanup = null;
+    }
+    promptElement.remove();
+  };
+
+  let a11yCleanup = setupModalA11y(promptElement, {
+    labelledBy: "nig-auth-title",
+    closeOnEscape: true,
+    onClose: close,
+  });
 
   promptElement
     .querySelector(".nig-close-btn")
@@ -49,10 +62,10 @@ export function show(errorMessage, failedPrompt, onRetry) {
       if (token) {
         await setConfigValue("pollinationsToken", token);
         promptElement.remove();
-        alert("Token saved. Retrying generation...");
+        showToast("Token saved. Retrying generation...", "success");
         onRetry(failedPrompt, "Pollinations");
       } else {
-        alert("Token cannot be empty.");
+        showToast("Token cannot be empty.", "error");
       }
     });
 }

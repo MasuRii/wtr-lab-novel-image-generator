@@ -2,9 +2,10 @@ import { getConfig } from "../utils/storage";
 import { clearCachedModels } from "../utils/cache";
 import { getApiReadyPrompt } from "../utils/promptUtils";
 import { logInfo, logDebug, logError } from "../utils/logger";
+import * as abortRegistry from "../utils/abortRegistry";
 
 const AI_HORDE_CLIENT_AGENT =
-  "WTR-Lab-Novel-Image-Generator:6.1.1:https://github.com/MasuRii/wtr-lab-novel-image-generator";
+  "WTR-Lab-Novel-Image-Generator:6.2.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
 const AI_HORDE_API_BASE = "https://aihorde.net/api/v2";
 
 function getAIHordeHeaders(aiHordeApiKey = "0000000000") {
@@ -44,12 +45,17 @@ function fetchFinalStatus(
   model,
   aiHordeApiKey,
   { onSuccess, onFailure, updateStatus },
+  myToken,
 ) {
-  GM_xmlhttpRequest({
+  const xhr = GM_xmlhttpRequest({
     method: "GET",
     url: `${AI_HORDE_API_BASE}/generate/status/${id}`,
     headers: getAIHordeHeaders(aiHordeApiKey),
     onload: (response) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       try {
         const data = parseJsonResponse(response);
         const finalElapsedTime = Date.now() - startTime;
@@ -105,6 +111,10 @@ function fetchFinalStatus(
       }
     },
     onerror: (error) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       logError("AIHORDE", "Failed to retrieve results from AI Horde", {
         generationId: id,
         error: error,
@@ -112,6 +122,7 @@ function fetchFinalStatus(
       onFailure("Failed to retrieve results from AI Horde.", prompt, "AIHorde");
     },
   });
+  abortRegistry.trackRequest(xhr);
 }
 
 function checkStatus(
@@ -121,6 +132,7 @@ function checkStatus(
   model,
   aiHordeApiKey,
   { onSuccess, onFailure, updateStatus },
+  myToken,
 ) {
   const currentTime = Date.now();
   const elapsedTime = currentTime - startTime;
@@ -132,11 +144,15 @@ function checkStatus(
       prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
   });
 
-  GM_xmlhttpRequest({
+  const xhr = GM_xmlhttpRequest({
     method: "GET",
     url: `${AI_HORDE_API_BASE}/generate/check/${id}`,
     headers: getAIHordeHeaders(aiHordeApiKey),
     onload: (response) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       try {
         const data = parseJsonResponse(response);
         logDebug("AIHORDE", "AI Horde check response received", {
@@ -153,7 +169,7 @@ function checkStatus(
             onSuccess,
             onFailure,
             updateStatus,
-          });
+          }, myToken);
           return;
         }
 
@@ -200,15 +216,16 @@ function checkStatus(
 
         updateStatus(statusText);
 
-        setTimeout(
+        const timer = setTimeout(
           () =>
             checkStatus(id, prompt, startTime, model, aiHordeApiKey, {
               onSuccess,
               onFailure,
               updateStatus,
-            }),
+            }, myToken),
           5000,
         );
+        abortRegistry.trackTimer(timer);
       } catch (e) {
         logError("AIHORDE", "Error checking AI Horde status", {
           generationId: id,
@@ -219,6 +236,10 @@ function checkStatus(
       }
     },
     onerror: (error) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       logError("AIHORDE", "Failed to get status from AI Horde", {
         generationId: id,
         error: error,
@@ -226,10 +247,12 @@ function checkStatus(
       onFailure("Failed to get status from AI Horde.", prompt, "AIHorde");
     },
   });
+  abortRegistry.trackRequest(xhr);
 }
 
 export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
   const config = await getConfig();
+  const myToken = abortRegistry.getCancelToken();
   const {
     aiHordeApiKey,
     aiHordeModel,
@@ -296,12 +319,16 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
 
   updateStatus("Requesting...");
 
-  GM_xmlhttpRequest({
+  const xhr = GM_xmlhttpRequest({
     method: "POST",
     url: `${AI_HORDE_API_BASE}/generate/async`,
     headers: getAIHordeHeaders(aiHordeApiKey),
     data: JSON.stringify(payload),
     onload: (response) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       try {
         const data = JSON.parse(response.responseText);
         logDebug("AIHORDE", "AI Horde API response received", {
@@ -329,6 +356,7 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
               onFailure,
               updateStatus,
             },
+            myToken,
           );
         } else {
           if (data.message && data.message.toLowerCase().includes("model")) {
@@ -359,10 +387,15 @@ export async function generate(prompt, { onSuccess, onFailure, updateStatus }) {
       }
     },
     onerror: (error) => {
+      abortRegistry.untrackRequest(xhr);
+      if (abortRegistry.getCancelToken() !== myToken) {
+        return;
+      }
       logError("AIHORDE", "Network error during AI Horde request", {
         error: error,
       });
       onFailure(JSON.stringify(error), prompt, "AIHorde");
     },
   });
+  abortRegistry.trackRequest(xhr);
 }

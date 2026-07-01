@@ -1,20 +1,29 @@
 // --- PUBLIC FUNCTIONS ---
 
+import { VERSION_INFO } from "../version";
+
 /**
  * Gets the complete HTML template for the configuration panel
  */
 export function getConfigPanelHTML() {
   return `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Image Generator Configuration</h2>
-            <div class="nig-tabs">
-                <div class="nig-tab active" data-tab="config">Configuration</div>
-                <div class="nig-tab" data-tab="styling">Prompt Styling</div>
-                <div class="nig-tab" data-tab="history">History</div>
-                <div class="nig-tab" data-tab="utilities">Utilities</div>
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-config-title">
+            <button type="button" class="nig-close-btn" aria-label="Close configuration dialog">&times;</button>
+            <h2 id="nig-config-title">
+                Image Generator Configuration
+                <span
+                    class="nig-version-badge"
+                    title="Build ${VERSION_INFO.BUILD_DATE} (${VERSION_INFO.BUILD_ENV})"
+                    aria-label="Version ${VERSION_INFO.DISPLAY}, built ${VERSION_INFO.BUILD_DATE} (${VERSION_INFO.BUILD_ENV})"
+                >${VERSION_INFO.DISPLAY}</span>
+            </h2>
+            <div class="nig-tabs" role="tablist" aria-label="Configuration sections">
+                <button type="button" class="nig-tab active" data-tab="config" role="tab" id="nig-tab-config" aria-selected="true" aria-controls="nig-config-tab" tabindex="0">Configuration</button>
+                <button type="button" class="nig-tab" data-tab="styling" role="tab" id="nig-tab-styling" aria-selected="false" aria-controls="nig-styling-tab" tabindex="-1">Prompt Styling</button>
+                <button type="button" class="nig-tab" data-tab="history" role="tab" id="nig-tab-history" aria-selected="false" aria-controls="nig-history-tab" tabindex="-1">History</button>
+                <button type="button" class="nig-tab" data-tab="utilities" role="tab" id="nig-tab-utilities" aria-selected="false" aria-controls="nig-utilities-tab" tabindex="-1">Utilities</button>
             </div>
-            <div id="nig-config-tab" class="nig-tab-content active">
+            <div id="nig-config-tab" class="nig-tab-content active" role="tabpanel" aria-labelledby="nig-tab-config" tabindex="0">
                 <div class="nig-config-grid">
                     <div class="nig-config-section">
                         <div class="nig-form-group">
@@ -23,7 +32,6 @@ export function getConfigPanelHTML() {
                                 <option value="Pollinations">Pollinations.ai (Free, Simple)</option>
                                 <option value="AIHorde">AI Horde (Free, Advanced)</option>
                                 <option value="OpenAICompat">OpenAI Compatible (Custom)</option>
-                                <option value="Google">Google Imagen (Requires Billed Account)</option>
                             </select>
                         </div>
                     </div>
@@ -78,7 +86,7 @@ export function getConfigPanelHTML() {
                                         <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
                                     </button>
                                 </div>
-                                <small class="nig-hint">Get a token from <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
+                                <small class="nig-hint">Get a token from <a href="https://enter.pollinations.ai" target="_blank" class="nig-api-prompt-link">enter.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
                             </div>
                         </div>
 
@@ -161,66 +169,6 @@ export function getConfigPanelHTML() {
                             </div>
                         </div>
 
-                        <div id="nig-provider-Google" class="nig-provider-settings">
-                            <div class="nig-provider-header">
-                                <h3><img src="https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" alt="Google Imagen" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> Google Imagen Settings</h3>
-                                <p>High-quality generation powered by Google's advanced AI</p>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-google-api-key">Gemini API Key</label>
-                                <div class="nig-password-wrapper">
-                                    <input type="password" id="nig-google-api-key">
-                                    <button
-                                        type="button"
-                                        class="nig-password-toggle"
-                                        data-target="nig-google-api-key"
-                                        aria-label="Show Gemini API key"
-                                        aria-pressed="false"
-                                    >
-                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-model">Imagen Model</label>
-                                <div class="nig-form-group-inline">
-                                    <select id="nig-model" style="width: 100%;">
-                                        <option value="">Enter API Key and fetch...</option>
-                                    </select>
-                                    <button id="nig-google-fetch-models" class="nig-fetch-models-btn">Fetch</button>
-                                </div>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-num-images">Number of Images (1-4)</label>
-                                <input type="number" id="nig-num-images" min="1" max="4" step="1">
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-image-size">Image Size</label>
-                                <select id="nig-image-size">
-                                    <option value="1024">1K</option>
-                                    <option value="2048">2K</option>
-                                </select>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-aspect-ratio">Aspect Ratio</label>
-                                <select id="nig-aspect-ratio">
-                                    <option value="1:1">1:1</option>
-                                    <option value="3:4">3:4</option>
-                                    <option value="4:3">4:3</option>
-                                    <option value="9:16">9:16</option>
-                                    <option value="16:9">16:9</option>
-                                </select>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-person-gen">Person Generation</label>
-                                <select id="nig-person-gen">
-                                    <option value="dont_allow">Don't Allow</option>
-                                    <option value="allow_adult">Allow Adults</option>
-                                    <option value="allow_all">Allow All</option>
-                                </select>
-                            </div>
-                        </div>
-
                         <div id="nig-provider-OpenAICompat" class="nig-provider-settings">
                             <div class="nig-provider-header">
                                 <h3><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" alt="OpenAI" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> OpenAI Compatible Settings</h3>
@@ -265,7 +213,7 @@ export function getConfigPanelHTML() {
                                     <small class=" nig-hint">If fetching fails or your model isn't listed, <a href="#" id="nig-openai-compat-switch-to-manual" class="nig-api-prompt-link">switch to manual input</a>.</small>
                                 </div>
                                 <div id="nig-openai-model-container-manual" style="display: none;">
-                                    <input type="text" id="nig-openai-compat-model-manual" placeholder="e.g., dall-e-3">
+                                    <input type="text" id="nig-openai-compat-model-manual" placeholder="e.g., gpt-image-1">
                                     <small class=" nig-hint">Manually enter the model name. <a href="#" id="nig-openai-compat-switch-to-select" class="nig-api-prompt-link">Switch back to fetched list</a>.</small>
                                 </div>
                             </div>
@@ -274,7 +222,7 @@ export function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-styling-tab" class="nig-tab-content">
+            <div id="nig-styling-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-styling" tabindex="0">
                 <div class="nig-styling-container">
                     <div class="nig-styling-intro">
                         <p>Select a style to automatically add it to the beginning of every prompt. This helps maintain a consistent look across all providers.</p>
@@ -325,32 +273,43 @@ export function getConfigPanelHTML() {
 
                                 <div class="nig-enhancement-settings disabled" id="nig-enhancement-settings">
                                     <div class="nig-form-group">
-                                        <label for="nig-gemini-api-key">Gemini API Key</label>
+                                        <label for="nig-enhancement-base-url">Enhancement Endpoint URL</label>
+                                        <input type="text" id="nig-enhancement-base-url" placeholder="e.g., https://api.openai.com/v1 or http://127.0.0.1:11434/v1">
+                                        <small class="nig-hint">Any OpenAI-compatible /chat/completions endpoint. Works with cloud (OpenAI, OpenRouter) and local (Ollama, LM Studio, vLLM) providers.</small>
+                                    </div>
+
+                                    <div class="nig-form-group">
+                                        <label for="nig-enhancement-api-key">Enhancement API Key (Optional)</label>
                                         <div class="nig-password-wrapper">
-                                            <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                            <input type="password" id="nig-enhancement-api-key" placeholder="Leave empty for local no-auth servers">
                                             <button
                                                 type="button"
                                                 class="nig-password-toggle"
-                                                data-target="nig-gemini-api-key"
-                                                aria-label="Show Gemini API key for enhancement"
+                                                data-target="nig-enhancement-api-key"
+                                                aria-label="Show enhancement API key"
                                                 aria-pressed="false"
                                             >
                                                 <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
                                             </button>
                                         </div>
-                                        <small class="nig-hint">Get a free API key from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a></small>
+                                        <small class="nig-hint">Bearer token for cloud providers. Omit for local servers without authentication.</small>
                                     </div>
 
                                     <div class="nig-form-group">
                                         <label for="nig-enhancement-model">Enhancement Model</label>
-                                        <select id="nig-enhancement-model">
-                                            <option value="models/gemini-2.5-pro">Gemini 2.5 Pro (High Quality)</option>
-                                            <option value="models/gemini-flash-latest">Gemini Flash Latest (Fast)</option>
-                                            <option value="models/gemini-flash-lite-latest">Gemini Flash Lite (Ultra Fast)</option>
-                                            <option value="models/gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
-                                            <option value="models/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Efficient)</option>
-                                        </select>
-                                        <small class="nig-hint">Choose model based on your needs: quality vs speed</small>
+                                        <div id="nig-enhancement-model-container-select">
+                                            <div class="nig-form-group-inline">
+                                                <select id="nig-enhancement-model" style="width: 100%;">
+                                                    <option value="">Enter endpoint URL and fetch...</option>
+                                                </select>
+                                                <button id="nig-enhancement-fetch-models" class="nig-fetch-models-btn">Fetch</button>
+                                            </div>
+                                            <small class="nig-hint">Model name accepted by the /chat/completions endpoint. If fetching fails or your model isn't listed, <a href="#" id="nig-enhancement-switch-to-manual" class="nig-api-prompt-link">switch to manual input</a>.</small>
+                                        </div>
+                                        <div id="nig-enhancement-model-container-manual" style="display: none;">
+                                            <input type="text" id="nig-enhancement-model-manual" placeholder="e.g., gpt-4o-mini, llama3.1, qwen2.5-instruct">
+                                            <small class="nig-hint">Manually enter the model name accepted by the /chat/completions endpoint. <a href="#" id="nig-enhancement-switch-to-select" class="nig-api-prompt-link">Switch back to fetched list</a>.</small>
+                                        </div>
                                     </div>
 
                                     <div class="nig-form-group">
@@ -390,25 +349,6 @@ export function getConfigPanelHTML() {
                                         </div>
                                     </div>
 
-                                    <div class="nig-enhancement-preview" id="nig-enhancement-preview" style="display: none;">
-                                        <div class="nig-preview-container">
-                                            <div class="nig-preview-section">
-                                                <h5>Original Prompt</h5>
-                                                <textarea id="nig-original-prompt" class="nig-prompt-display" rows="4" placeholder="A rich narrative-style prompt will appear here for testing. You can edit or replace it with your own text before running Test Enhancement."></textarea>
-                                            </div>
-                                            <div class="nig-preview-arrow">
-                                                <span class="material-symbols-outlined">arrow_forward</span>
-                                            </div>
-                                            <div class="nig-preview-section">
-                                                <h5>Enhanced Prompt</h5>
-                                                <div class="nig-prompt-display" id="nig-enhanced-prompt"></div>
-                                            </div>
-                                        </div>
-                                        <button class="nig-test-enhancement-btn" id="nig-test-enhancement">
-                                            <span class="material-symbols-outlined">auto_awesome</span>
-                                            Test Enhancement
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -442,7 +382,7 @@ export function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-history-tab" class="nig-tab-content">
+            <div id="nig-history-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-history" tabindex="0">
                 <div class="nig-history-container">
                     <div class="nig-history-cleanup">
                         <div class="nig-cleanup-info">
@@ -463,7 +403,7 @@ export function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-utilities-tab" class="nig-tab-content">
+            <div id="nig-utilities-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-utilities" tabindex="0">
                 <div class="nig-utilities-grid">
                     <div class="nig-utility-card">
                         <h4>Import/Export Settings</h4>

@@ -1,58 +1,16 @@
 // --- IMPORTS ---
-import { TOP_MODELS } from "../config/models";
 import * as cache from "../utils/cache";
 import * as storage from "../utils/storage";
 import * as logger from "../utils/logger";
+import { showToast, showConfirm } from "../utils/uiUtils";
 
 // --- PUBLIC FUNCTIONS ---
 
-const POLLINATIONS_DEFAULT_MODEL = "sana";
-const POLLINATIONS_LEGACY_ALIASES = new Set(["flux", "turbo"]);
-
-const GOOGLE_CURATED_IMAGE_MODELS = [
-  {
-    id: "imagen-4.0-generate-001",
-    name: "Imagen 4 Standard",
-    methods: ["predict"],
-  },
-  {
-    id: "imagen-4.0-ultra-generate-001",
-    name: "Imagen 4 Ultra",
-    methods: ["predict"],
-  },
-  {
-    id: "imagen-4.0-fast-generate-001",
-    name: "Imagen 4 Fast",
-    methods: ["predict"],
-  },
-  {
-    id: "imagen-3.0-generate-002",
-    name: "Imagen 3",
-    methods: ["predict"],
-  },
-  {
-    id: "gemini-3.1-flash-image",
-    name: "Gemini 3.1 Flash Image",
-    methods: ["generateContent"],
-  },
-  {
-    id: "gemini-3-pro-image",
-    name: "Gemini 3 Pro Image",
-    methods: ["generateContent"],
-  },
-  {
-    id: "gemini-2.5-flash-image",
-    name: "Gemini 2.5 Flash Image",
-    methods: ["generateContent"],
-  },
-];
-
-const GOOGLE_CURATED_MODEL_IDS = new Set(
-  GOOGLE_CURATED_IMAGE_MODELS.map((model) => model.id),
-);
-const GOOGLE_GEMINI_IMAGE_MODEL_ALIASES = {
-  "gemini-3-pro-image-preview": "gemini-3-pro-image",
-};
+const POLLINATIONS_DEFAULT_MODEL = "zimage";
+const POLLINATIONS_LEGACY_ALIASES = new Set(["sana", "turbo"]);
+const POLLINATIONS_MODELS_ENDPOINT = "https://gen.pollinations.ai/image/models";
+const AI_HORDE_MODELS_ENDPOINT =
+  "https://aihorde.net/api/v2/status/models?type=image";
 
 function normalizePollinationsModelName(model) {
   const value = typeof model === "string" ? model.trim() : "";
@@ -62,119 +20,28 @@ function normalizePollinationsModelName(model) {
   return value;
 }
 
-function normalizeGoogleModelId(id) {
-  const value = typeof id === "string" ? id.split("/").pop() : "";
-  return GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[value] || value;
-}
-
-function isImageCapableGoogleModel(model) {
-  const id = normalizeGoogleModelId(model.name || model.id || "");
-  const displayName = (model.displayName || model.name || "").toLowerCase();
-  const supportedMethods = model.supportedGenerationMethods || [];
-  return (
-    GOOGLE_CURATED_MODEL_IDS.has(id) ||
-    (displayName.includes("image") &&
-      (supportedMethods.includes("generateContent") ||
-        supportedMethods.includes("predict"))) ||
-    (id.startsWith("imagen-") && supportedMethods.includes("predict"))
-  );
-}
-
-function mergeGoogleModels(apiModels) {
-  const byId = new Map();
-
-  GOOGLE_CURATED_IMAGE_MODELS.forEach((model) => {
-    byId.set(model.id, { ...model });
-  });
-
-  apiModels.filter(isImageCapableGoogleModel).forEach((model) => {
-    const id = normalizeGoogleModelId(model.name || model.id);
-    byId.set(id, {
-      id,
-      name: model.displayName || id,
-      methods: model.supportedGenerationMethods || [],
-    });
-  });
-
-  const models = Array.from(byId.values());
-  models.sort((a, b) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    if (aName.includes("imagen") && !bName.includes("imagen")) {
-      return -1;
-    }
-    if (!aName.includes("imagen") && bName.includes("imagen")) {
-      return 1;
-    }
-    return aName.localeCompare(bName);
-  });
-
-  return models;
-}
-
-function fetchGoogleModelsPage(apiKey, pageToken = "") {
-  const params = new URLSearchParams({ key: apiKey, pageSize: "1000" });
-  if (pageToken) {
-    params.set("pageToken", pageToken);
-  }
-
-  return new Promise((resolve, reject) => {
-    GM_xmlhttpRequest({
-      method: "GET",
-      url: `https://generativelanguage.googleapis.com/v1beta/models?${params.toString()}`,
-      onload: (response) => {
-        try {
-          resolve(JSON.parse(response.responseText));
-        } catch (e) {
-          reject(e);
-        }
-      },
-      onerror: reject,
-    });
-  });
-}
-
 /**
- * Fetches Google models from the API
- * @param {string} apiKey - The Google API Key
- * @returns {Promise<Array>} - The list of models
+ * Parses the Pollinations /image/models response (array of objects with name,
+ * category, etc.) into a sorted list of image model name strings.
+ * Filters out non-image models (e.g. video) using the category field.
+ * @param {Array} data - Array of model objects from gen.pollinations.ai/image/models
+ * @returns {string[]} Sorted image model names
  */
-export async function fetchGoogleModels(apiKey) {
-  logger.logInfo("NETWORK", "Fetching Google models from API");
-
-  try {
-    const allModels = [];
-    let pageToken = "";
-
-    do {
-      const data: any = await fetchGoogleModelsPage(apiKey, pageToken);
-      if (!data.models) {
-        throw new Error("Invalid response format from Google API");
-      }
-      allModels.push(...data.models);
-      pageToken = data.nextPageToken || "";
-    } while (pageToken);
-
-    const models = mergeGoogleModels(allModels);
-    await cache.setCachedModels("google", models);
-    logger.logInfo("NETWORK", "Fetched and cached Google models", {
-      count: models.length,
-    });
-    return models;
-  } catch (e) {
-    logger.logError("NETWORK", "Failed to fetch or parse Google models", {
-      error: e.message,
-    });
-    throw e;
+export function parsePollinationsModelsResponse(data) {
+  if (!Array.isArray(data)) {
+    return [];
   }
-}
-
-/**
- * Loads cached Google models
- * @returns {Promise<Array|null>} - The list of cached models or null
- */
-export async function loadCachedGoogleModels() {
-  return await cache.getCachedModelsForProvider("google");
+  return data
+    .filter(
+      (entry) =>
+        entry &&
+        typeof entry === "object" &&
+        typeof entry.name === "string" &&
+        entry.name.trim().length > 0 &&
+        (!entry.category || entry.category === "image"),
+    )
+    .map((entry) => entry.name.trim())
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -185,7 +52,7 @@ export async function fetchPollinationsModels(selectedModel) {
   select.innerHTML = "<option>Loading models...</option>";
 
   try {
-    const cachedModels = await cache.getCachedModelsForProvider("pollinations");
+    const cachedModels = await cache.getCachedModelsForProvider("pollinations", POLLINATIONS_MODELS_ENDPOINT);
     if (cachedModels && cachedModels.length > 0) {
       logger.logInfo("CACHE", "Loading Pollinations models from cache");
       populatePollinationsSelect(select, cachedModels, selectedModel);
@@ -200,15 +67,15 @@ export async function fetchPollinationsModels(selectedModel) {
   logger.logInfo("NETWORK", "Fetching Pollinations models from API");
   GM_xmlhttpRequest({
     method: "GET",
-    url: "https://image.pollinations.ai/models",
+    url: POLLINATIONS_MODELS_ENDPOINT,
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
     },
     onload: async (response) => {
       try {
-        const models = JSON.parse(response.responseText);
-        await cache.setCachedModels("pollinations", models);
+        const models = parsePollinationsModelsResponse(JSON.parse(response.responseText));
+        await cache.setCachedModels("pollinations", models, POLLINATIONS_MODELS_ENDPOINT);
         logger.logInfo("NETWORK", "Fetched and cached Pollinations models", {
           count: models.length,
         });
@@ -217,7 +84,7 @@ export async function fetchPollinationsModels(selectedModel) {
         logger.logError("NETWORK", "Failed to parse Pollinations models", {
           error: e.message,
         });
-        select.innerHTML = "<option>sana</option>";
+        select.innerHTML = "<option>zimage</option>";
         select.value = POLLINATIONS_DEFAULT_MODEL;
       }
     },
@@ -225,7 +92,7 @@ export async function fetchPollinationsModels(selectedModel) {
       logger.logError("NETWORK", "Failed to fetch Pollinations models", {
         error: error,
       });
-      select.innerHTML = "<option>sana</option>";
+      select.innerHTML = "<option>zimage</option>";
       select.value = POLLINATIONS_DEFAULT_MODEL;
     },
   });
@@ -271,7 +138,7 @@ export async function fetchAIHordeModels(selectedModel) {
   select.innerHTML = "<option>Loading models...</option>";
 
   try {
-    const cachedModels = await cache.getCachedModelsForProvider("aiHorde");
+    const cachedModels = await cache.getCachedModelsForProvider("aiHorde", AI_HORDE_MODELS_ENDPOINT);
     if (cachedModels && cachedModels.length > 0) {
       logger.logInfo("CACHE", "Loading AI Horde models from cache");
       populateAIHordeSelect(select, cachedModels, selectedModel);
@@ -286,11 +153,11 @@ export async function fetchAIHordeModels(selectedModel) {
   logger.logInfo("NETWORK", "Fetching AI Horde models from API");
   GM_xmlhttpRequest({
     method: "GET",
-    url: "https://aihorde.net/api/v2/status/models?type=image",
+    url: AI_HORDE_MODELS_ENDPOINT,
     onload: async (response) => {
       try {
         const apiModels = JSON.parse(response.responseText);
-        await cache.setCachedModels("aiHorde", apiModels);
+        await cache.setCachedModels("aiHorde", apiModels, AI_HORDE_MODELS_ENDPOINT);
         logger.logInfo("NETWORK", "Fetched and cached AI Horde models", {
           count: apiModels.length,
         });
@@ -314,44 +181,56 @@ export async function fetchAIHordeModels(selectedModel) {
 }
 
 /**
- * Populates the AI Horde model dropdown
+ * Groups AI Horde models into top (popular) and other buckets based on live
+ * API metadata (worker count), replacing the former static curated list.
+ * @param {Array} models - Array of AI Horde model objects with { name, count, ... }
+ * @returns {{ top: Array, other: Array }}
+ */
+export function groupAIHordeModels(models) {
+  const sorted = [...models].sort((a, b) => (b.count || 0) - (a.count || 0));
+  const topCount = Math.min(10, sorted.length);
+  return {
+    top: sorted.slice(0, topCount),
+    other: sorted.slice(topCount),
+  };
+}
+
+/**
+ * Populates the AI Horde model dropdown.
+ * Top/popular grouping is derived from live API metadata (worker count),
+ * not from any hardcoded list.
  */
 function populateAIHordeSelect(select, models, selectedModel) {
   select.innerHTML = "";
 
-  const apiModelMap = new Map(models.map((m) => [m.name, m]));
-  const topModelNames = new Set(TOP_MODELS.map((m) => m.name));
+  const { top, other } = groupAIHordeModels(models);
+  const topCount = top.length;
 
   const topGroup = document.createElement("optgroup");
-  topGroup.label = "Top 10 Popular Models";
+  topGroup.label =
+    topCount > 0 ? `Top ${topCount} Popular Models` : "Popular Models";
 
   const otherGroup = document.createElement("optgroup");
   otherGroup.label = "Other Models";
 
-  // Add top models first
-  TOP_MODELS.forEach((topModel) => {
-    if (apiModelMap.has(topModel.name)) {
-      const apiData: any = apiModelMap.get(topModel.name);
-      const option = document.createElement("option");
-      option.value = topModel.name;
-      option.textContent = `${topModel.name} - ${topModel.desc} (${apiData.count} workers)`;
-      topGroup.appendChild(option);
-    }
-  });
-
-  // Add other models
-  const otherModels = models
-    .filter((m) => !topModelNames.has(m.name))
-    .sort((a, b) => b.count - a.count);
-  otherModels.forEach((model) => {
+  top.forEach((model) => {
     const option = document.createElement("option");
     option.value = model.name;
-    option.textContent = `${model.name} (${model.count} workers)`;
+    option.textContent = `${model.name} (${model.count || 0} workers)`;
+    topGroup.appendChild(option);
+  });
+
+  other.forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model.name;
+    option.textContent = `${model.name} (${model.count || 0} workers)`;
     otherGroup.appendChild(option);
   });
 
   select.appendChild(topGroup);
-  select.appendChild(otherGroup);
+  if (otherGroup.childElementCount > 0) {
+    select.appendChild(otherGroup);
+  }
 
   if (Array.from(select.options).some((opt: any) => opt.value === selectedModel)) {
     select.value = selectedModel;
@@ -488,7 +367,7 @@ export async function fetchOpenAICompatModels() {
     .value.trim();
 
   if (!baseUrl) {
-    alert("Please enter a Base URL first.");
+    showToast("Please enter a Base URL first.", "error");
     return;
   }
 
@@ -530,13 +409,12 @@ export async function fetchOpenAICompatModels() {
           imageModels = data.data.filter((model) => {
             const modelId = model.id.toLowerCase();
             return (
-              modelId.includes("dall-e") ||
-              modelId.includes("dalle") ||
+              modelId.includes("gpt-image") ||
+              modelId.includes("chatgpt-image") ||
               modelId.includes("image") ||
               modelId.includes("midjourney") ||
               modelId.includes("stable diffusion") ||
-              modelId.includes("flux") ||
-              modelId.includes("imagen")
+              modelId.includes("flux")
             );
           });
         }
@@ -572,8 +450,9 @@ export async function fetchOpenAICompatModels() {
           error: error.message,
         });
         select.innerHTML = "<option>Failed to fetch models</option>";
-        alert(
+        showToast(
           `Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`,
+          "error",
         );
 
         // Switch to manual input mode
@@ -590,8 +469,9 @@ export async function fetchOpenAICompatModels() {
         error,
       });
       select.innerHTML = "<option>Failed to fetch models</option>";
-      alert(
+      showToast(
         "Failed to fetch models. Check your network connection and the Base URL. Switching to manual input.",
+        "error",
       );
 
       // Switch to manual input mode
@@ -691,11 +571,11 @@ export async function deleteSelectedOpenAIProfile() {
   const selectedUrl = select.value;
 
   if (selectedUrl === "__new__") {
-    alert("You can't delete the 'Add New' option.");
+    showToast("You can't delete the 'Add New' option.", "error");
     return;
   }
 
-  if (confirm(`Delete profile for "${selectedUrl}"?`)) {
+  if (await showConfirm(`Delete profile for "${selectedUrl}"?`, "Delete Profile")) {
     const config = await storage.getConfig();
     const profiles = config.openAICompatProfiles || {};
     delete profiles[selectedUrl];
@@ -709,6 +589,356 @@ export async function deleteSelectedOpenAIProfile() {
     document.getElementById("nig-openai-compat-model-manual").value = "";
 
     await loadOpenAIProfiles();
+  }
+}
+
+// --- Enhancement Model Discovery ---
+
+/**
+ * Name patterns for models that are unambiguously NOT chat/text models.
+ * Used as a permissive fallback when no explicit capability metadata is present.
+ */
+const ENHANCEMENT_NON_CHAT_PATTERNS = [
+  /\bembed/i,
+  /\btts/i,
+  /whisper/i,
+  /moderation/i,
+  /\baudio\b/i,
+  /transcri/i,
+  /image/i,
+];
+
+/**
+ * Builds the request URL and headers for fetching enhancement models from an
+ * OpenAI-compatible /models endpoint.
+ *
+ * Authorization is omitted when no API key is provided, supporting no-auth
+ * local servers (Ollama, LM Studio, vLLM).
+ * @param {string} baseUrl - Enhancement endpoint base URL (e.g. https://api.openai.com/v1)
+ * @param {string} apiKey - Optional Bearer token; empty for no-auth servers
+ * @returns {{ url: string, headers: Record<string, string> }}
+ */
+export function buildEnhancementModelsRequest(baseUrl, apiKey) {
+  const endpointUrl =
+    typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const key = typeof apiKey === "string" ? apiKey.trim() : "";
+  if (key) {
+    headers["Authorization"] = `Bearer ${key}`;
+  }
+  return { url: `${endpointUrl}/models`, headers };
+}
+
+/**
+ * Extracts model entries from common OpenAI-compatible /models response shapes.
+ * Handles: { data: [...] }, bare arrays, { models: [...] }, and string arrays.
+ * Returns deduplicated { id, meta } entries.
+ */
+function extractEnhancementModelEntries(data) {
+  let modelList = [];
+  if (data && Array.isArray(data.data)) {
+    modelList = data.data;
+  } else if (Array.isArray(data)) {
+    modelList = data;
+  } else if (data && Array.isArray(data.models)) {
+    modelList = data.models;
+  } else {
+    return [];
+  }
+
+  const entries = [];
+  const seen = new Set();
+  for (const entry of modelList) {
+    let id = null;
+    let meta: any = {};
+    if (typeof entry === "string") {
+      id = entry;
+    } else if (entry && typeof entry === "object") {
+      id = entry.id || entry.name || entry.model;
+      if (id) {
+        meta = entry;
+      }
+    }
+    if (typeof id === "string") {
+      id = id.trim();
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        entries.push({ id, meta });
+      }
+    }
+  }
+  return entries;
+}
+
+/**
+ * Filters model entries to chat/text models.
+ * - Uses explicit endpoint/type metadata when available.
+ * - Falls back to name heuristics for providers with minimal metadata.
+ * - Never returns an empty list if the input had entries (falls back to all)
+ *   so local providers with minimal metadata are never left without options.
+ * @param {Array} entries - Array of { id, meta } entries
+ * @returns {Array} Filtered entries
+ */
+function filterEnhancementChatModels(entries) {
+  const isChat = (entry) => {
+    const meta = entry.meta || {};
+    // Explicit endpoint metadata — strongest signal
+    if (meta.endpoint === "/v1/chat/completions") {
+      return true;
+    }
+    if (
+      Array.isArray(meta.endpoints) &&
+      meta.endpoints.includes("/v1/chat/completions")
+    ) {
+      return true;
+    }
+    // Explicit type metadata
+    if (typeof meta.type === "string" && meta.type.trim().length > 0) {
+      const t = meta.type.toLowerCase();
+      if (
+        t.includes("image") ||
+        t.includes("embedding") ||
+        t.includes("audio") ||
+        t.includes("transcription") ||
+        t.includes("tts")
+      ) {
+        return false;
+      }
+      return true; // chat / text / llm / language
+    }
+    // No explicit metadata — use name heuristics (permissive for local servers)
+    const id = entry.id.toLowerCase();
+    if (ENHANCEMENT_NON_CHAT_PATTERNS.some((re) => re.test(id))) {
+      return false;
+    }
+    return true;
+  };
+
+  const filtered = entries.filter(isChat);
+  // Never leave the user with an empty list; fall back to all entries.
+  return filtered.length > 0 ? filtered : entries;
+}
+
+/**
+ * Determines if a model is free on OpenCode Zen.
+ * Free models include IDs containing "free" plus "big-pickle" (a stealth free model).
+ * The Zen /models API returns no pricing field, so the name heuristic is required.
+ * @param {string} modelId - The model ID to check
+ * @returns {boolean} true if the model is free on Zen
+ */
+export function isZenFreeModel(modelId) {
+  const id = typeof modelId === "string" ? modelId.toLowerCase() : "";
+  return id.includes("free") || id === "big-pickle";
+}
+
+/**
+ * Determines if a base URL points to OpenCode Zen.
+ * @param {string} baseUrl - The enhancement endpoint base URL
+ * @returns {boolean} true if the URL is an OpenCode Zen endpoint
+ */
+export function isZenEndpoint(baseUrl) {
+  return (
+    typeof baseUrl === "string" && baseUrl.includes("opencode.ai/zen")
+  );
+}
+
+/**
+ * Parses an OpenAI-compatible /models response into a sorted list of chat model ids.
+ * Pure function: no DOM, no network. Handles common response shapes and filters
+ * non-chat models (embeddings, tts, image, etc.) without excluding local providers
+ * that expose minimal metadata.
+ * @param {object|Array} data - Parsed JSON response from GET {baseUrl}/models
+ * @param {{ zenFreeOnly?: boolean }} [options] - When zenFreeOnly is true, filters to Zen free models only
+ * @returns {string[]} Sorted, deduplicated chat model ids
+ */
+export function parseEnhancementModelsResponse(data, options: { zenFreeOnly?: boolean } = {}) {
+  const entries = extractEnhancementModelEntries(data);
+  let filtered = filterEnhancementChatModels(entries);
+  if (options.zenFreeOnly) {
+    filtered = filtered.filter((e) => isZenFreeModel(e.id));
+  }
+  return filtered.map((e) => e.id).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Populates the enhancement model <select> with fetched model ids.
+ * Preserves a saved model that is absent from the fetched list.
+ */
+function populateEnhancementModelSelect(select, modelIds, selectedModel) {
+  select.innerHTML = "";
+  modelIds.forEach((id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = id;
+    select.appendChild(option);
+  });
+
+  // Preserve a saved model that is absent from the fetched list
+  if (selectedModel && !modelIds.includes(selectedModel)) {
+    const option = document.createElement("option");
+    option.value = selectedModel;
+    option.textContent = `${selectedModel} (saved)`;
+    select.insertBefore(option, select.firstChild);
+  }
+
+  if (
+    selectedModel &&
+    Array.from(select.options).some((opt: any) => opt.value === selectedModel)
+  ) {
+    select.value = selectedModel;
+  } else if (modelIds.length > 0) {
+    select.value = modelIds[0];
+  }
+}
+
+/**
+ * Switches the enhancement model UI to manual input mode (used on fetch failure).
+ */
+function switchEnhancementToManual() {
+  const selectContainer = document.getElementById(
+    "nig-enhancement-model-container-select",
+  );
+  const manualContainer = document.getElementById(
+    "nig-enhancement-model-container-manual",
+  );
+  if (selectContainer) {
+    selectContainer.style.display = "none";
+  }
+  if (manualContainer) {
+    manualContainer.style.display = "block";
+  }
+}
+
+/**
+ * Fetches enhancement models from {enhancementBaseUrl}/models and populates the dropdown.
+ * @param {string} baseUrl - Enhancement endpoint base URL
+ * @param {string} apiKey - Optional Bearer token; empty for no-auth local servers
+ */
+export async function fetchEnhancementModels(baseUrl, apiKey) {
+  const endpointUrl =
+    typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+  if (!endpointUrl) {
+    showToast("Please enter an Enhancement Endpoint URL first.", "error");
+    return;
+  }
+
+  const key = typeof apiKey === "string" ? apiKey.trim() : "";
+  const select = document.getElementById("nig-enhancement-model");
+  if (!select) {
+    return;
+  }
+  select.innerHTML = "<option>Fetching models...</option>";
+
+  const { url, headers } = buildEnhancementModelsRequest(endpointUrl, key);
+
+  logger.logInfo("NETWORK", `Fetching enhancement models from ${url}`);
+
+  GM_xmlhttpRequest({
+    method: "GET",
+    url,
+    headers,
+    onload: async (response) => {
+      try {
+        const data = JSON.parse(response.responseText);
+        const isZen = isZenEndpoint(endpointUrl);
+        const zenFreeOnly = isZen && !key;
+        const modelIds = parseEnhancementModelsResponse(data, { zenFreeOnly });
+        if (modelIds.length === 0) {
+          throw new Error("No chat/text models found at this endpoint.");
+        }
+        await cache.setCachedModels("enhancement", modelIds, endpointUrl);
+        logger.logInfo(
+          "NETWORK",
+          `Fetched and cached ${modelIds.length} enhancement models`,
+        );
+        // Preserve the current selection (if it is a real model id) across refresh
+        const currentModel =
+          select.value &&
+          !select.value.toLowerCase().includes("fetch") &&
+          !select.value.toLowerCase().includes("enter")
+            ? select.value
+            : "";
+        populateEnhancementModelSelect(select, modelIds, currentModel);
+      } catch (error) {
+        logger.logError("NETWORK", "Failed to parse enhancement models", {
+          error: error.message,
+        });
+        select.innerHTML = "<option>Failed to fetch models</option>";
+        showToast(
+          `Failed to fetch enhancement models. Check the endpoint URL and API key. You can enter the model name manually. Error: ${error.message}`,
+          "error",
+        );
+        switchEnhancementToManual();
+      }
+    },
+    onerror: (error) => {
+      logger.logError("NETWORK", "Failed to fetch enhancement models", {
+        error,
+      });
+      select.innerHTML = "<option>Failed to fetch models</option>";
+      showToast(
+        "Failed to fetch enhancement models. Check your network connection and endpoint URL. Switching to manual input.",
+        "error",
+      );
+      switchEnhancementToManual();
+    },
+  });
+}
+
+/**
+ * Loads cached enhancement models (if available) into the dropdown and preserves
+ * the saved model selection. Called when populating the enhancement settings.
+ * For Zen endpoints with no API key and an empty cache, auto-fetches the free
+ * model list so the dropdown is not blank.
+ * @param selectedModel - The currently saved enhancement model name
+ * @param baseUrl - The enhancement endpoint base URL (for cache validation)
+ * @param apiKey - Optional API key (used to decide auto-fetch for Zen)
+ */
+export async function loadEnhancementModels(selectedModel, baseUrl, apiKey) {
+  const select = document.getElementById("nig-enhancement-model");
+  if (!select) {
+    return;
+  }
+
+  const normalizedBaseUrl =
+    typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+
+  try {
+    const cached = await cache.getCachedModelsForProvider("enhancement", normalizedBaseUrl);
+    if (Array.isArray(cached) && cached.length > 0) {
+      populateEnhancementModelSelect(select, cached, selectedModel);
+      return;
+    }
+  } catch (error) {
+    logger.logError("CACHE", "Failed to get cached enhancement models", {
+      error: error.message,
+    });
+  }
+
+  // No cache available: preserve the saved model or show a fetch prompt
+  select.innerHTML = "";
+  if (selectedModel && typeof selectedModel === "string" && selectedModel.trim()) {
+    const option = document.createElement("option");
+    option.value = selectedModel;
+    option.textContent = `${selectedModel} (saved — click Fetch to refresh list)`;
+    select.appendChild(option);
+    select.value = selectedModel;
+  } else {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Enter endpoint URL and fetch...";
+    select.appendChild(option);
+  }
+
+  // Auto-fetch Zen free models when endpoint is Zen and no API key is set.
+  // Zen free models work without authentication, so auto-fetch is safe and
+  // prevents a blank dropdown for existing users after migration.
+  if (isZenEndpoint(normalizedBaseUrl) && !apiKey) {
+    logger.logInfo(
+      "NETWORK",
+      "Auto-fetching Zen free models for enhancement dropdown",
+    );
+    fetchEnhancementModels(normalizedBaseUrl, apiKey);
   }
 }
 
@@ -792,32 +1022,6 @@ export async function saveProviderConfigs() {
   ).map((cb: any) => cb.value);
   await storage.setConfigValue("aiHordePostProcessing", postProcessing);
 
-  // Google configuration
-  await storage.setConfigValue(
-    "googleApiKey",
-    document.getElementById("nig-google-api-key").value.trim(),
-  );
-  await storage.setConfigValue(
-    "model",
-    document.getElementById("nig-model").value,
-  );
-  await storage.setConfigValue(
-    "numberOfImages",
-    document.getElementById("nig-num-images").value,
-  );
-  await storage.setConfigValue(
-    "imageSize",
-    document.getElementById("nig-image-size").value,
-  );
-  await storage.setConfigValue(
-    "aspectRatio",
-    document.getElementById("nig-aspect-ratio").value,
-  );
-  await storage.setConfigValue(
-    "personGeneration",
-    document.getElementById("nig-person-gen").value,
-  );
-
   // OpenAI Compatible configuration
   const baseUrl = document
     .getElementById("nig-openai-compat-base-url")
@@ -879,14 +1083,6 @@ export async function populateProviderForms(config) {
     cb.checked = config.aiHordePostProcessing.includes(cb.value);
   });
   fetchAIHordeModels(config.aiHordeModel);
-
-  // Google settings
-  document.getElementById("nig-google-api-key").value = config.googleApiKey;
-  document.getElementById("nig-model").value = config.model;
-  document.getElementById("nig-num-images").value = config.numberOfImages;
-  document.getElementById("nig-image-size").value = config.imageSize;
-  document.getElementById("nig-aspect-ratio").value = config.aspectRatio;
-  document.getElementById("nig-person-gen").value = config.personGeneration;
 
   // OpenAI Compatible settings
   await loadOpenAIProfiles();

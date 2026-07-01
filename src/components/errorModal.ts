@@ -1,9 +1,11 @@
 import { getConfig } from "../utils/storage";
 import * as logger from "../utils/logger";
+import { escapeHtml, showToast, setupModalA11y } from "../utils/uiUtils";
 
 let modalElement = null;
 let retryCallback = (..._args) => {};
 let dismissCallback = () => {};
+let errorA11yCleanup = null;
 
 /**
  * Initializes the error modal with callbacks for retry and dismiss actions.
@@ -29,9 +31,9 @@ export function create() {
   modalElement.className = "nig-modal-overlay";
   modalElement.style.display = "none";
   modalElement.innerHTML = `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Generation Failed</h2>
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-error-title">
+            <button type="button" class="nig-close-btn" aria-label="Close error dialog">&times;</button>
+            <h2 id="nig-error-title">Generation Failed</h2>
             <p>The image could not be generated. Please review the reason below and adjust your prompt if necessary.</p>
             <p><strong>Reason:</strong></p>
             <div id="nig-error-reason"></div>
@@ -41,6 +43,7 @@ export function create() {
                 <label for="nig-retry-provider-select">Retry with Provider:</label>
                 <select id="nig-retry-provider-select"></select>
             </div>
+            <div id="nig-error-hint" class="nig-error-hint" style="display: none;"></div>
             <div id="nig-error-actions" class="nig-error-actions"></div>
         </div>`;
   document.body.appendChild(modalElement);
@@ -56,6 +59,12 @@ export function create() {
 export function hide() {
   if (modalElement) {
     modalElement.style.display = "none";
+  }
+
+  // Clean up a11y (focus trap, scroll lock, restore focus)
+  if (errorA11yCleanup) {
+    errorA11yCleanup();
+    errorA11yCleanup = null;
   }
 
   // Call the dismiss callback if provided
@@ -80,7 +89,21 @@ export async function show(errorDetails) {
   const providerSelect = document.getElementById("nig-retry-provider-select");
   providerSelect.innerHTML = "";
   const config = await getConfig();
-  const providers = ["Pollinations", "AIHorde", "Google"];
+  // Derive available providers dynamically from the config panel's provider
+  // dropdown instead of hardcoding, so the retry list always reflects the
+  // actual available providers (finding #19).
+  const providerSelectEl = document.getElementById("nig-provider");
+  const providers = [];
+  if (providerSelectEl) {
+    for (let i = 0; i < providerSelectEl.options.length; i++) {
+      const v = providerSelectEl.options[i].value;
+      if (v && v !== "OpenAICompat") {providers.push(v);}
+    }
+  }
+  // Fallback if DOM not available
+  if (providers.length === 0) {
+    providers.push("Pollinations", "AIHorde");
+  }
   providers.forEach((p) => {
     const option = document.createElement("option");
     option.value = p;
@@ -181,7 +204,7 @@ export async function show(errorDetails) {
   // In case multiple signals exist, ensure uniqueness and readability
   const uniqueReasonParts = Array.from(new Set(reasonParts.filter(Boolean)));
   reasonContainer.innerHTML = uniqueReasonParts
-    .map((part) => `<p>${part}</p>`)
+    .map((part) => `<p>${escapeHtml(part)}</p>`)
     .join("");
 
   // Reset prompt text
@@ -208,7 +231,7 @@ export async function show(errorDetails) {
   retryBtn.onclick = () => {
     const editedPrompt = promptTextarea.value.trim();
     if (!editedPrompt) {
-      alert("Prompt cannot be empty.");
+      showToast("Prompt cannot be empty.", "error");
       return;
     }
 
@@ -244,9 +267,19 @@ export async function show(errorDetails) {
       actionsContainer.appendChild(retryBtn);
     } else {
       // For non-retryable errors, only show retry if user modifies prompt or changes provider
+      // Show a hint explaining why Retry is hidden (finding #18)
+      const hintEl = document.getElementById("nig-error-hint");
+      if (hintEl) {
+        hintEl.textContent =
+          "Retry is hidden because this error may not be resolved by simply retrying. Edit your prompt above or select a different provider to reveal the Retry button.";
+        hintEl.style.display = "block";
+      }
       const showRetryButton = () => {
         if (!actionsContainer.contains(retryBtn)) {
           actionsContainer.appendChild(retryBtn);
+          if (hintEl) {
+            hintEl.style.display = "none";
+          }
         }
       };
       promptTextarea.oninput = showRetryButton;
@@ -255,4 +288,14 @@ export async function show(errorDetails) {
   }
 
   modalElement.style.display = "flex";
+
+  // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+  if (errorA11yCleanup) {
+    errorA11yCleanup();
+  }
+  errorA11yCleanup = setupModalA11y(modalElement, {
+    labelledBy: "nig-error-title",
+    closeOnEscape: true,
+    onClose: () => hide(),
+  });
 }

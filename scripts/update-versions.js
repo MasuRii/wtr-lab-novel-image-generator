@@ -4,7 +4,7 @@
 //
 // Responsibilities:
 // - Keep package.json version in sync with VERSION_INFO.SEMANTIC
-// - Update README.md and GreasyForkREADME.md version badges/titles/footer
+// - Update README.md version badges/titles/footer
 // - Provide introspection helpers (version, banner, header)
 // - Fail fast with clear errors for CI and local workflows
 
@@ -103,39 +103,48 @@ function updateReadme() {
   console.log("[version:update] Updated README.md badge and footer metadata.");
 }
 
-// --- GreasyForkREADME.md sync ---
 
-function updateGreasyForkReadme() {
-  const gfPath = path.join(process.cwd(), "GreasyForkREADME.md");
-  let content;
-  try {
-    content = readFileSafe(gfPath);
-  } catch (error) {
-    // File is optional; do not hard-fail CI if missing.
-    console.warn("[version:update] GreasyForkREADME.md not found; skipping.");
-    return;
-  }
+// --- src/version.ts sync ---
 
-  const semantic = VERSION_INFO.GREASYFORK || VERSION_INFO.SEMANTIC;
-  const buildDate = VERSION_INFO.BUILD_DATE;
+function updateVersionTs() {
+  const versionTsPath = path.join(process.cwd(), "src", "version.ts");
+  const content = `// src/version.ts
+// Runtime version information for the userscript UI.
+// Auto-synced by scripts/update-versions.js — do not edit manually.
 
-  // 1) Update ONLY the GreasyFork badge version (top metadata)
-  content = content.replace(
-    /(Version\]\(https:\/\/img\.shields\.io\/badge\/version-)(\d+\.\d+\.\d+)(-blue\.svg\)\])/,
-    `$1${semantic}$3`
+interface RuntimeVersionInfo {
+  SEMANTIC: string;
+  DISPLAY: string;
+  BUILD_ENV: string;
+  BUILD_DATE: string;
+  GREASYFORK: string;
+  NPM: string;
+  BADGE: string;
+  CHANGELOG: string;
+}
+
+export const VERSION_INFO: RuntimeVersionInfo = {
+  SEMANTIC: "${VERSION_INFO.SEMANTIC}",
+  DISPLAY: "${VERSION_INFO.DISPLAY}",
+  BUILD_ENV: "${VERSION_INFO.BUILD_ENV}",
+  BUILD_DATE: "${VERSION_INFO.BUILD_DATE}",
+  GREASYFORK: "${VERSION_INFO.GREASYFORK}",
+  NPM: "${VERSION_INFO.NPM}",
+  BADGE: "${VERSION_INFO.BADGE}",
+  CHANGELOG: "${VERSION_INFO.CHANGELOG}",
+};
+
+export const VERSION = VERSION_INFO.SEMANTIC;
+
+if (typeof window !== "undefined") {
+  window.WTR_VERSION = VERSION;
+  window.WTR_VERSION_INFO = VERSION_INFO;
+}
+`;
+  writeFileSafe(versionTsPath, content);
+  console.log(
+    `[version:update] Updated src/version.ts -> ${VERSION_INFO.DISPLAY}`,
   );
-
-  // 2) Update footer-style "Last Updated / Current Version" line if present.
-  // Example:
-  // _Last Updated: November 08, 2025_ | _Current Version: 6.0.4_
-  // This targets only that structured footer, not historical "**Latest: vX.Y.Z**" entries.
-  content = content.replace(
-    /(_Last Updated:\s*)([^_]+)(_ \|\s*_Current Version:\s*)(\d+\.\d+\.\d+)([^_]*)/,
-    `$1${buildDate}$3${semantic}$5`
-  );
-
-  writeFileSafe(gfPath, content);
-  console.log("[version:update] Updated GreasyForkREADME.md badge and footer metadata.");
 }
 
 // --- Aggregate updater ---
@@ -144,7 +153,7 @@ function runUpdateAll() {
   ensureVersionInfo();
   updatePackageJsonVersion();
   updateReadme();
-  updateGreasyForkReadme();
+  updateVersionTs();
 }
 
 // --- CLI helpers ---

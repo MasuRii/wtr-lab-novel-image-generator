@@ -1,4 +1,7 @@
+export const CONFIG_SCHEMA_VERSION = 2;
+
 export const DEFAULTS = {
+  configSchemaVersion: 1,
   selectedProvider: "Pollinations",
   loggingEnabled: false,
   // Prompt Styling
@@ -6,11 +9,12 @@ export const DEFAULTS = {
   subPromptStyle: "none",
   customStyleEnabled: false,
   customStyleText: "",
-  // AI Prompt Enhancement
-  enhancementEnabled: false,
-  enhancementProvider: "gemini", // 'gemini', 'disabled'
-  enhancementApiKey: "",
-  enhancementModel: "models/gemini-2.5-pro",
+  // AI Prompt Enhancement (OpenAI-compatible /chat/completions endpoint)
+  enhancementEnabled: true,
+  enhancementBaseUrl: "https://opencode.ai/zen/v1", // OpenCode Zen: free models work with no API key
+  enhancementApiKey: "", // Bearer token; leave empty for Zen free models or no-auth local servers
+  enhancementModel: "big-pickle", // OpenCode Zen free model (works without API key)
+  enhancementModelManualInput: false, // false = dropdown (dynamic fetch), true = manual text input
   // Default enhancement behavior is driven by the selected preset.
   // This base template is aligned with the "Standard Enhancement" preset.
   enhancementTemplate:
@@ -21,13 +25,6 @@ export const DEFAULTS = {
   // Enhancement Retry and Fallback Configuration
   enhancementMaxRetriesPerModel: 2,
   enhancementRetryDelay: 1000,
-  enhancementModelsFallback: [
-    "models/gemini-2.5-pro",
-    "models/gemini-flash-latest",
-    "models/gemini-flash-lite-latest",
-    "models/gemini-2.5-flash",
-    "models/gemini-2.5-flash-lite",
-  ],
   enhancementLogLevel: "info", // 'debug', 'info', 'warn', 'error'
   enhancementAlwaysFallback: true,
   // Preset Enhancement Prompts
@@ -92,13 +89,6 @@ export const DEFAULTS = {
   enableNegPrompt: true,
   globalNegPrompt:
     "ugly, blurry, deformed, disfigured, poor details, bad anatomy, low quality",
-  // Google
-  googleApiKey: "",
-  model: "imagen-4.0-generate-001",
-  numberOfImages: 1,
-  imageSize: "1024",
-  aspectRatio: "1:1",
-  personGeneration: "allow_adult",
   // AI Horde
   aiHordeApiKey: "0000000000",
   aiHordeModel: "AlbedoBase XL (SDXL)",
@@ -110,7 +100,7 @@ export const DEFAULTS = {
   aiHordePostProcessing: [],
   aiHordeSeed: "",
   // Pollinations.ai
-  pollinationsModel: "sana",
+  pollinationsModel: "zimage",
   pollinationsWidth: 512,
   pollinationsHeight: 512,
   pollinationsSeed: "",

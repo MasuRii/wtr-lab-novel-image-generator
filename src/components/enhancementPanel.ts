@@ -1,7 +1,19 @@
 // --- IMPORTS ---
 import { DEFAULTS } from "../config/defaults";
 import * as storage from "../utils/storage";
-import * as apiGemini from "../api/gemini";
+import * as apiEnhancement from "../api/enhancement";
+import * as models from "../api/models";
+import { showToast, showConfirm, showPrompt } from "../utils/uiUtils";
+
+/**
+ * Returns true when the enhancement model UI is in manual text-input mode.
+ */
+function isEnhancementManualMode() {
+  const manualContainer = document.getElementById(
+    "nig-enhancement-model-container-manual",
+  );
+  return Boolean(manualContainer && manualContainer.style.display !== "none");
+}
 
 // --- PUBLIC FUNCTIONS ---
 
@@ -15,8 +27,22 @@ export function toggleEnhancementSettings(enabled) {
   if (enhancementSettings) {
     if (enabled) {
       enhancementSettings.classList.remove("disabled");
+      // Re-enable inputs in tab order (finding #20)
+      enhancementSettings
+        .querySelectorAll("input, select, textarea, button")
+        .forEach((el) => {
+          el.removeAttribute("tabindex");
+          el.setAttribute("aria-disabled", "false");
+        });
     } else {
       enhancementSettings.classList.add("disabled");
+      // Remove inputs from tab order (finding #20: disabled inputs were still focusable)
+      enhancementSettings
+        .querySelectorAll("input, select, textarea, button")
+        .forEach((el) => {
+          el.setAttribute("tabindex", "-1");
+          el.setAttribute("aria-disabled", "true");
+        });
     }
   }
 }
@@ -26,9 +52,12 @@ export function toggleEnhancementSettings(enabled) {
  */
 export function updateEnhancementUI(provider, config) {
   const enhancementEnabled = config.enhancementEnabled;
-  const hasApiKey =
-    config.enhancementApiKey && config.enhancementApiKey.trim().length > 0;
-  const shouldUseProviderEnh = apiGemini.shouldUseProviderEnhancement(
+  const hasEndpoint =
+    config.enhancementBaseUrl && config.enhancementBaseUrl.trim().length > 0;
+  const hasModel =
+    config.enhancementModel && config.enhancementModel.trim().length > 0;
+  const isConfigured = hasEndpoint && hasModel;
+  const shouldUseProviderEnh = apiEnhancement.shouldUseProviderEnhancement(
     provider,
     config,
   );
@@ -52,12 +81,12 @@ export function updateEnhancementUI(provider, config) {
     }
   } else {
     providerPriorityInfo.style.display = "none";
-    if (enhancementEnabled && hasApiKey) {
+    if (enhancementEnabled && isConfigured) {
       statusIndicator.className = "nig-status-indicator external-active";
       statusText.textContent = "External AI Enhancement Active";
     } else if (enhancementEnabled) {
       statusIndicator.className = "nig-status-indicator disabled";
-      statusText.textContent = "Enhancement Enabled (No API Key)";
+      statusText.textContent = "Enhancement Enabled (No Endpoint)";
     } else {
       statusIndicator.className = "nig-status-indicator disabled";
       statusText.textContent = "Enhancement Disabled";
@@ -156,7 +185,7 @@ async function saveUserPresetsToStorage(userPresetsMap) {
     );
   } catch (e) {
     console.error("[NIG] Failed to save enhancementUserPresets", e);
-    alert("Failed to save enhancement preset. See console for details.");
+    showToast("Failed to save enhancement preset. See console for details.", "error");
   }
 }
 
@@ -350,21 +379,6 @@ export async function handleEnhancementTemplateSelection(config) {
 }
 
 /**
- * Tests the enhancement functionality with a sample prompt
- */
-export async function testEnhancement(prompt, config) {
-  try {
-    const result = await apiGemini.enhancePromptWithGemini(prompt, config);
-    return {
-      original: prompt,
-      enhanced: result,
-    };
-  } catch (error) {
-    throw new Error(`Enhancement failed: ${error.message}`);
-  }
-}
-
-/**
  * Populates enhancement settings in the form
  */
 export async function populateEnhancementSettings(config) {
@@ -373,8 +387,39 @@ export async function populateEnhancementSettings(config) {
   toggleEnhancementSettings(config.enhancementEnabled);
   updateEnhancementUI(config.selectedProvider, config);
 
-  if (config.enhancementApiKey.trim().length > 0) {
-    document.getElementById("nig-enhancement-preview").style.display = "block";
+  // Enhancement model: select (dynamic fetch) vs manual text-input mode
+  const selectContainer = document.getElementById(
+    "nig-enhancement-model-container-select",
+  );
+  const manualContainer = document.getElementById(
+    "nig-enhancement-model-container-manual",
+  );
+  const modelManual = document.getElementById("nig-enhancement-model-manual");
+
+  // Always seed the manual input with the saved model so switching modes is lossless
+  if (modelManual) {
+    modelManual.value = config.enhancementModel || "";
+  }
+
+  if (config.enhancementModelManualInput) {
+    if (selectContainer) {
+      selectContainer.style.display = "none";
+    }
+    if (manualContainer) {
+      manualContainer.style.display = "block";
+    }
+  } else {
+    if (selectContainer) {
+      selectContainer.style.display = "block";
+    }
+    if (manualContainer) {
+      manualContainer.style.display = "none";
+    }
+    await models.loadEnhancementModels(
+      config.enhancementModel,
+      config.enhancementBaseUrl,
+      config.enhancementApiKey,
+    );
   }
 }
 
@@ -388,12 +433,20 @@ export async function saveEnhancementConfig() {
   );
   await storage.setConfigValue(
     "enhancementApiKey",
-    document.getElementById("nig-gemini-api-key").value.trim(),
+    document.getElementById("nig-enhancement-api-key").value.trim(),
   );
   await storage.setConfigValue(
-    "enhancementModel",
-    document.getElementById("nig-enhancement-model").value,
+    "enhancementBaseUrl",
+    document.getElementById("nig-enhancement-base-url").value.trim(),
   );
+
+  const isManualMode = isEnhancementManualMode();
+  const enhancementModelValue = isManualMode
+    ? document.getElementById("nig-enhancement-model-manual").value.trim()
+    : document.getElementById("nig-enhancement-model").value.trim();
+  await storage.setConfigValue("enhancementModel", enhancementModelValue);
+  await storage.setConfigValue("enhancementModelManualInput", isManualMode);
+
   await storage.setConfigValue(
     "enhancementTemplate",
     document.getElementById("nig-enhancement-template").value.trim(),
@@ -428,10 +481,15 @@ export function setupEnhancementEventListeners(panelElement) {
   const templateExampleBtn = panelElement.querySelector(
     "#nig-template-example",
   );
-  const testEnhancementBtn = panelElement.querySelector(
-    "#nig-test-enhancement",
+  const enhancementFetchBtn = panelElement.querySelector(
+    "#nig-enhancement-fetch-models",
   );
-  const geminiApiKeyInput = panelElement.querySelector("#nig-gemini-api-key");
+  const enhancementSwitchToManual = panelElement.querySelector(
+    "#nig-enhancement-switch-to-manual",
+  );
+  const enhancementSwitchToSelect = panelElement.querySelector(
+    "#nig-enhancement-switch-to-select",
+  );
 
   // Enhancement Template Selection Handler
   templateSelect.addEventListener("change", async (e) => {
@@ -495,18 +553,18 @@ export function setupEnhancementEventListeners(panelElement) {
         const rawText = (templateTextarea.value || "").trim();
 
         if (!rawText) {
-          alert("Cannot save an empty enhancement preset.");
+          showToast("Cannot save an empty enhancement preset.", "error");
           return;
         }
 
-        const name = prompt("Enter a name for this enhancement preset:", "");
+        const name = await showPrompt("Enter a name for this enhancement preset:", "", "Save Enhancement Preset");
         if (!name) {
           return;
         }
 
         const trimmedName = name.trim();
         if (!trimmedName) {
-          alert("Preset name cannot be empty.");
+          showToast("Preset name cannot be empty.", "error");
           return;
         }
 
@@ -557,11 +615,12 @@ export function setupEnhancementEventListeners(panelElement) {
           `user:${id}`,
         );
 
-        alert(`Enhancement preset "${trimmedName}" saved under User Presets.`);
+        showToast(`Enhancement preset "${trimmedName}" saved under User Presets.`, "success");
       } catch (e) {
         console.error("[NIG] Failed to save enhancement preset", e);
-        alert(
+        showToast(
           "Failed to save enhancement preset. Please check the console for details.",
+          "error",
         );
       }
     });
@@ -580,8 +639,9 @@ export function setupEnhancementEventListeners(panelElement) {
         const selected = templateSelectEl ? templateSelectEl.value : "";
 
         if (!selected || !selected.startsWith("user:")) {
-          alert(
+          showToast(
             'Please select a User Preset from the "User Presets" group to delete.',
+            "error",
           );
           return;
         }
@@ -591,12 +651,12 @@ export function setupEnhancementEventListeners(panelElement) {
         const existing = getNormalizedUserPresets(config);
 
         if (!existing[id]) {
-          alert("The selected user preset no longer exists or is invalid.");
+          showToast("The selected user preset no longer exists or is invalid.", "error");
           return;
         }
 
         const confirmMessage = `Delete user preset "${existing[id].name || id}"? This action cannot be undone.`;
-        if (!confirm(confirmMessage)) {
+        if (!(await showConfirm(confirmMessage, "Delete User Preset"))) {
           return;
         }
 
@@ -640,11 +700,12 @@ export function setupEnhancementEventListeners(panelElement) {
           }
         }
 
-        alert("User preset deleted.");
+        showToast("User preset deleted.", "success");
       } catch (e) {
         console.error("[NIG] Failed to delete enhancement user preset", e);
-        alert(
+        showToast(
           "Failed to delete user preset. Please check the console for details.",
+          "error",
         );
       }
     });
@@ -738,17 +799,63 @@ export function setupEnhancementEventListeners(panelElement) {
     updateEnhancementUI(provider, config);
   });
 
-  // API key input handling
-  geminiApiKeyInput.addEventListener("input", async (e) => {
-    const hasApiKey = e.target.value.trim().length > 0;
-    if (hasApiKey) {
-      panelElement.querySelector("#nig-enhancement-preview").style.display =
-        "block";
-    } else {
-      panelElement.querySelector("#nig-enhancement-preview").style.display =
-        "none";
-    }
-  });
+  // Enhancement model fetch (dynamic discovery) and select/manual mode toggling
+  if (enhancementFetchBtn) {
+    enhancementFetchBtn.addEventListener("click", () => {
+      const baseUrl = document
+        .getElementById("nig-enhancement-base-url")
+        .value.trim();
+      const apiKey = document
+        .getElementById("nig-enhancement-api-key")
+        .value.trim();
+      models.fetchEnhancementModels(baseUrl, apiKey);
+    });
+  }
+
+  if (enhancementSwitchToManual) {
+    enhancementSwitchToManual.addEventListener("click", (e) => {
+      e.preventDefault();
+      const selectContainer = document.getElementById(
+        "nig-enhancement-model-container-select",
+      );
+      const manualContainer = document.getElementById(
+        "nig-enhancement-model-container-manual",
+      );
+      const select = document.getElementById("nig-enhancement-model");
+      const manual = document.getElementById("nig-enhancement-model-manual");
+      // Preserve the current selection when switching to manual input
+      if (select && manual && !manual.value.trim()) {
+        const currentVal = select.value.trim();
+        if (currentVal) {
+          manual.value = currentVal;
+        }
+      }
+      if (selectContainer) {
+        selectContainer.style.display = "none";
+      }
+      if (manualContainer) {
+        manualContainer.style.display = "block";
+      }
+    });
+  }
+
+  if (enhancementSwitchToSelect) {
+    enhancementSwitchToSelect.addEventListener("click", (e) => {
+      e.preventDefault();
+      const selectContainer = document.getElementById(
+        "nig-enhancement-model-container-select",
+      );
+      const manualContainer = document.getElementById(
+        "nig-enhancement-model-container-manual",
+      );
+      if (selectContainer) {
+        selectContainer.style.display = "block";
+      }
+      if (manualContainer) {
+        manualContainer.style.display = "none";
+      }
+    });
+  }
 
   // Track manual edits to enhancement template:
   // Always persist latest raw text for resilience.
@@ -771,80 +878,4 @@ export function setupEnhancementEventListeners(panelElement) {
       }
     });
   }
-
-  // Test enhancement button
-  testEnhancementBtn.addEventListener("click", async () => {
-    const config = await storage.getConfig();
-    const maxTestLength = 4000;
-    const defaultPrompt =
-      "As dusk settles over the glass-domed city of Aurelia, bioluminescent vines unfurl along the skybridges, " +
-      "casting soft teal and amethyst reflections across the rain-slick streets below. A lone archivist in a " +
-      "weathered indigo cloak pauses at the edge of the highest promenade, holographic pages circling her like " +
-      "gentle fireflies, each fragment revealing glimpses of forgotten constellations and outlawed legends. " +
-      "Far beneath, maglev trams weave through layers of suspended gardens, mirrored water channels, and rising " +
-      "plumes of golden steam as hidden market stalls ignite with warm lantern light. In the distance, an ancient " +
-      "stone observatory fused with gleaming chrome spires pierces the cloudline, its rotating rings aligning " +
-      "slowly with an eclipse of twin moons. The air shimmers with drifting petals, neon signage in lost languages, " +
-      "and faint auroras bending around colossal statues half-consumed by ivy and circuitry.";
-
-    const originalPromptEl = document.getElementById("nig-original-prompt");
-    let testPrompt = originalPromptEl
-      ? (originalPromptEl.value || originalPromptEl.textContent || "").trim()
-      : "";
-
-    // If no user-provided prompt in the editable field, fallback to default narrative prompt
-    if (!testPrompt) {
-      testPrompt = defaultPrompt;
-      if (originalPromptEl) {
-        // Populate the editable area so the user can see/modify what was used
-        if ("value" in originalPromptEl) {
-          originalPromptEl.value = defaultPrompt;
-        } else {
-          originalPromptEl.textContent = defaultPrompt;
-        }
-      }
-    }
-
-    // Enforce a reasonable length limit for preview requests
-    if (testPrompt.length > maxTestLength) {
-      alert(
-        "Test prompt is too long. Please use 4000 characters or fewer for preview.",
-      );
-      return;
-    }
-
-    testEnhancementBtn.disabled = true;
-    const originalContent = testEnhancementBtn.innerHTML;
-    testEnhancementBtn.innerHTML =
-      '<span class="material-symbols-outlined">hourglass_empty</span>Testing...';
-
-    try {
-      const result = await testEnhancement(testPrompt, config);
-      const originalEl = document.getElementById("nig-original-prompt");
-      const enhancedEl = document.getElementById("nig-enhanced-prompt");
-
-      // Reflect the exact original prompt used for enhancement in the editable field
-      if (originalEl) {
-        if ("value" in originalEl) {
-          originalEl.value = result.original || "";
-        } else {
-          originalEl.textContent = result.original || "";
-        }
-      }
-
-      if (enhancedEl) {
-        enhancedEl.textContent = result.enhanced || "";
-      }
-    } catch (error) {
-      console.error("[NIG] Enhancement test failed", error);
-      const message =
-        error && error.message
-          ? error.message
-          : "Unknown error occurred while requesting enhancement.";
-      alert(`Enhancement test failed: ${message}`);
-    } finally {
-      testEnhancementBtn.disabled = false;
-      testEnhancementBtn.innerHTML = originalContent;
-    }
-  });
 }
