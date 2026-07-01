@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator
-// @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, Google Imagen, OpenAI). Features Gemini-enhanced prompts, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.1.1
+// @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, OpenAI). Features AI prompt enhancement via OpenAI-compatible endpoints, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
+// @version 6.2.0
 // @author MasuRii
 // @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
@@ -33,10 +33,13 @@
 
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
-___CSS_LOADER_EXPORT___.push([module.id, "@import url(https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap);"]);
-___CSS_LOADER_EXPORT___.push([module.id, "@import url(https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap);"]);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography and Font Loading === */
+___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography ===
+ * System fonts are used to avoid leaking @import Google Fonts into the
+ * host page. Inter and Fira Code are listed as optional preferred fonts;
+ * if the user has them installed locally they will be used, otherwise the
+ * system font stack applies.
+ */
 
 /* === CSS Custom Properties (Design Tokens) === */
 :root {
@@ -51,17 +54,17 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography and Font Loadin
   --nig-color-border: #55555a;
   --nig-color-border-light: #6a6a6e;
 
-  /* Accent Colors */
+  /* Accent Colors - success darkened from #10b981 to #047857 for WCAG AA contrast with white text (was ~2.5:1, now ~5.5:1) */
   --nig-color-accent-primary: #6366f1;
   --nig-color-accent-secondary: #8b5cf6;
-  --nig-color-accent-success: #10b981;
+  --nig-color-accent-success: #047857;
   --nig-color-accent-warning: #f59e0b;
   --nig-color-accent-error: #ef4444;
 
   /* Interactive States */
   --nig-color-hover-primary: #5855eb;
   --nig-color-hover-secondary: #7c3aed;
-  --nig-color-hover-success: #059669;
+  --nig-color-hover-success: #065f46;
   --nig-color-hover-error: #dc2626;
 
   /* Spacing Scale */
@@ -138,11 +141,22 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography and Font Loadin
   }
 }
 
-/* === Reduced Motion Support === */
+/* === Reduced Motion Support (scoped to userscript elements only) ===
+ * The original global *,*::before,*::after selector leaked into the host
+ * page and killed ALL site animations for reduced-motion users. Now scoped
+ * to userscript containers only.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .nig-modal-overlay,
+  .nig-modal-overlay *,
+  .nig-modal-overlay *::before,
+  .nig-modal-overlay *::after,
+  .nig-status-widget,
+  .nig-status-widget *,
+  .nig-button,
+  .nig-button *,
+  .nig-toast-container,
+  .nig-toast-container * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -159,23 +173,25 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography and Font Loadin
   font-size: 18px;
 }
 
-/* === File Input Styling === */
-input[type="file"] {
+/* === File Input Styling (scoped to userscript container) === */
+.nig-modal-content input[type="file"] {
   border: 2px dashed var(--nig-color-border);
   background: var(--nig-color-bg-primary);
   padding: var(--nig-space-xl);
   border-radius: var(--nig-radius-lg);
   color: var(--nig-color-text-secondary);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    background var(--nig-transition-normal);
   cursor: pointer;
 }
 
-input[type="file"]:hover {
+.nig-modal-content input[type="file"]:hover {
   border-color: var(--nig-color-accent-primary);
   background: var(--nig-color-bg-elevated);
 }
 
-input[type="file"]:focus {
+.nig-modal-content input[type="file"]:focus {
   outline: none;
   border-color: var(--nig-color-accent-primary);
   box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
@@ -221,7 +237,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   transform: translateY(0);
 }
 
@@ -296,20 +315,31 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   z-index: 10;
   font-size: var(--nig-font-size-2xl);
   font-weight: 300;
+  line-height: 1;
   cursor: pointer;
   color: var(--nig-color-text-muted);
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
   border-radius: var(--nig-radius-md);
-  transition: all var(--nig-transition-fast);
+  transition:
+    color var(--nig-transition-fast),
+    background var(--nig-transition-fast);
 }
 
-.nig-close-btn:hover {
+.nig-close-btn:hover,
+.nig-close-btn:focus-visible {
   color: var(--nig-color-text-primary);
   background: var(--nig-color-bg-tertiary);
+}
+
+.nig-close-btn:focus-visible {
+  outline: 2px solid var(--nig-color-accent-primary);
+  outline-offset: 2px;
 }
 
 .nig-modal-content h2 {
@@ -319,6 +349,20 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   font-size: var(--nig-font-size-2xl);
   font-weight: 600;
   letter-spacing: -0.025em;
+}
+
+.nig-version-badge {
+  display: inline-block;
+  font-size: var(--nig-font-size-xs);
+  font-weight: 500;
+  color: var(--nig-color-text-muted);
+  background: var(--nig-color-bg-tertiary);
+  padding: 2px var(--nig-space-sm);
+  border-radius: var(--nig-radius-sm);
+  margin-left: var(--nig-space-sm);
+  vertical-align: middle;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 /* === Form Elements === */
@@ -360,7 +404,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  transition: all var(--nig-transition-fast);
+  transition:
+    border-color var(--nig-transition-fast),
+    box-shadow var(--nig-transition-fast),
+    background var(--nig-transition-fast);
   outline: none;
 }
 
@@ -386,12 +433,8 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   transform: scale(1.1);
 }
 
-.nig-form-group input:focus {
-  border-color: var(--nig-color-accent-primary);
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
-  background: var(--nig-color-bg-elevated);
-}
-
+.nig-form-group input:focus,
+.nig-form-group select:focus,
 .nig-form-group textarea:focus {
   border-color: var(--nig-color-accent-primary);
   box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
@@ -462,7 +505,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   cursor: pointer;
   font-size: var(--nig-font-size-base);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   display: inline-flex;
   align-items: center;
@@ -486,7 +532,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-fetch-models-btn:hover {
@@ -504,7 +552,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-delete-btn:hover {
@@ -521,7 +571,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -542,7 +594,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   cursor: pointer;
   font-size: var(--nig-font-size-base);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
 }
 
@@ -560,39 +615,13 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   padding: var(--nig-space-sm) var(--nig-space-md);
   font-size: var(--nig-font-size-sm);
   cursor: pointer;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
   align-self: flex-start;
 }
 
 .nig-override-btn:hover {
-  background: var(--nig-color-hover-primary);
-  transform: translateY(-1px);
-}
-
-.nig-test-enhancement-btn {
-  background: var(--nig-color-accent-primary);
-  color: white;
-  border: none;
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-sm) var(--nig-space-lg);
-  font-size: var(--nig-font-size-sm);
-  cursor: pointer;
-  transition: all var(--nig-transition-normal);
-  display: flex;
-  align-items: center;
-  gap: var(--nig-space-sm);
-  width: 100%;
-  justify-content: center;
-}
-
-.nig-test-enhancement-btn:disabled {
-  background: var(--nig-color-bg-tertiary);
-  color: var(--nig-color-text-muted);
-  cursor: not-allowed;
-  transform: none;
-}
-
-.nig-test-enhancement-btn:hover:not(:disabled) {
   background: var(--nig-color-hover-primary);
   transform: translateY(-1px);
 }
@@ -605,7 +634,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   padding: var(--nig-space-xs) var(--nig-space-sm);
   font-size: var(--nig-font-size-xs);
   cursor: pointer;
-  transition: all var(--nig-transition-fast);
+  transition:
+    background var(--nig-transition-fast),
+    color var(--nig-transition-fast),
+    border-color var(--nig-transition-fast);
 }
 
 .nig-template-btn:hover {
@@ -622,82 +654,165 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   text-align: center;
 }
 
-/* === Enhancement Preview Layout === */
-.nig-preview-container {
-  display: flex;
-  align-items: stretch;
-  gap: var(--nig-space-md);
-  margin-top: var(--nig-space-sm);
-}
-
-.nig-preview-section {
-  flex: 1 1 0;
+/* === Toast Notifications (alert replacement) === */
+.nig-toast-container {
+  position: fixed;
+  bottom: var(--nig-space-xl);
+  right: var(--nig-space-xl);
+  z-index: 100100;
   display: flex;
   flex-direction: column;
-  gap: var(--nig-space-xs);
+  gap: var(--nig-space-sm);
+  pointer-events: none;
+  max-width: 380px;
 }
 
-.nig-preview-section h5 {
-  margin: 0 0 var(--nig-space-xs) 0;
-  font-size: var(--nig-font-size-sm);
-  font-weight: 600;
-  color: var(--nig-color-text-secondary);
-}
-
-/* Ensure both original and enhanced prompt areas share consistent sizing */
-#nig-original-prompt,
-#nig-enhanced-prompt,
-.nig-prompt-display {
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--nig-color-bg-tertiary);
-  border: 1px solid var(--nig-color-border);
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-md);
-  font-family: var(--nig-font-family-mono, "Fira Code", monospace);
-  font-size: var(--nig-font-size-sm);
+.nig-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
+  background: var(--nig-color-bg-secondary);
   color: var(--nig-color-text-primary);
-  min-height: 120px;
-  max-height: 260px;
-  line-height: 1.5;
-  overflow-y: auto;
+  padding: var(--nig-space-md) var(--nig-space-lg);
+  border-radius: var(--nig-radius-lg);
+  box-shadow: var(--nig-shadow-xl);
+  border: 1px solid var(--nig-color-border);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: var(--nig-font-size-sm);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(20px);
+  transition:
+    opacity var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
-/* Editable textarea (original) */
-#nig-original-prompt {
-  resize: vertical;
+.nig-toast.nig-toast-visible {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-/* Read-only enhanced prompt display */
-#nig-enhanced-prompt {
-  resize: none;
-}
-
-/* Center the arrow between the two sections */
-.nig-preview-arrow {
+.nig-toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 var(--nig-space-xs);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nig-toast-success .nig-toast-icon {
+  color: var(--nig-color-accent-success);
+}
+
+.nig-toast-error .nig-toast-icon {
+  color: var(--nig-color-accent-error);
+}
+
+.nig-toast-info .nig-toast-icon {
+  color: var(--nig-color-accent-primary);
+}
+
+.nig-toast-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.nig-toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
   color: var(--nig-color-text-muted);
+  font-size: var(--nig-font-size-lg);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--nig-radius-sm);
+  line-height: 1;
 }
 
-.nig-preview-arrow .material-symbols-outlined {
-  font-size: 28px;
+.nig-toast-close:hover,
+.nig-toast-close:focus-visible {
+  color: var(--nig-color-text-primary);
+  background: var(--nig-color-bg-tertiary);
+  outline: none;
 }
 
-/* Responsive layout: stack vertically on small screens */
-@media (width <= 600px) {
-  .nig-preview-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .nig-preview-arrow {
-    padding: var(--nig-space-xs) 0;
-    transform: rotate(90deg);
-  }
+.nig-toast-close:focus-visible {
+  outline: 2px solid var(--nig-color-accent-primary);
+  outline-offset: 1px;
 }
+
+/* === Confirm/Prompt Dialog Actions === */
+.nig-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--nig-space-md);
+  margin-top: var(--nig-space-lg);
+}
+
+.nig-confirm-message {
+  color: var(--nig-color-text-secondary);
+  line-height: 1.6;
+  margin: var(--nig-space-md) 0;
+}
+
+.nig-prompt-label {
+  display: block;
+  margin-bottom: var(--nig-space-sm);
+  font-weight: 500;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+}
+
+.nig-prompt-input {
+  width: 100%;
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  border-radius: var(--nig-radius-md);
+  border: 1px solid var(--nig-color-border);
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  outline: none;
+  transition:
+    border-color var(--nig-transition-fast),
+    box-shadow var(--nig-transition-fast);
+}
+
+.nig-prompt-input:focus {
+  border-color: var(--nig-color-accent-primary);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
+}
+
+/* === Error Modal Hint === */
+.nig-error-hint {
+  margin-top: var(--nig-space-md);
+  padding: var(--nig-space-md) var(--nig-space-lg);
+  background: var(--nig-color-bg-primary);
+  border: 1px solid var(--nig-color-accent-warning);
+  border-radius: var(--nig-radius-md);
+  color: var(--nig-color-accent-warning);
+  font-size: var(--nig-font-size-sm);
+  line-height: 1.5;
+}
+
 `, ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
@@ -742,7 +857,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   color: var(--nig-color-text-secondary);
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-fast);
+  transition:
+    background var(--nig-transition-fast),
+    color var(--nig-transition-fast),
+    border-color var(--nig-transition-fast);
   white-space: nowrap;
   border: 1px solid transparent;
   border-bottom: none;
@@ -796,7 +914,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   overflow: hidden;
   background: var(--nig-color-bg-tertiary);
   border: 1px solid var(--nig-color-border);
-  transition: all var(--nig-transition-normal);
+  transition:
+    box-shadow var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    border-color var(--nig-transition-normal);
 }
 
 .nig-image-container:hover {
@@ -822,10 +943,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   display: flex;
   gap: var(--nig-space-sm);
   background: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(6px);
   padding: var(--nig-space-sm);
   border-radius: var(--nig-radius-md);
-  opacity: 0;
+  opacity: 0.85;
   transition: opacity var(--nig-transition-normal);
 }
 
@@ -837,15 +958,17 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   background: rgb(0 0 0 / 80%);
   border: none;
   border-radius: var(--nig-radius-md);
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--nig-font-size-base);
   color: white;
-  transition: all var(--nig-transition-fast);
+  transition:
+    background var(--nig-transition-fast),
+    transform var(--nig-transition-fast);
 }
 
 .nig-image-actions button:hover {
@@ -876,7 +999,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   border-radius: var(--nig-radius-md);
   margin-bottom: var(--nig-space-md);
   border: 1px solid var(--nig-color-border);
-  transition: all var(--nig-transition-fast);
+  transition:
+    border-color var(--nig-transition-fast),
+    box-shadow var(--nig-transition-fast);
 }
 
 .nig-history-item:hover {
@@ -904,8 +1029,8 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   margin-bottom: var(--nig-space-xs);
   font-size: var(--nig-font-size-sm);
 
-  /* Use a dedicated dark color specific to history prompts only */
-  color: #d0d0d0a6;
+  /* Use a contrast-safe token for history prompts (was hardcoded #d0d0d0a6 which failed WCAG AA) */
+  color: var(--nig-color-text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -978,7 +1103,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   border: 1px solid var(--nig-color-border);
   border-radius: var(--nig-radius-lg);
   padding: var(--nig-space-xl);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
 }
 
 .nig-provider-settings:hover {
@@ -1111,68 +1238,15 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   font-size: var(--nig-font-size-sm);
 }
 
-/* === Enhancement Preview Layout === */
-.nig-enhancement-preview {
-  background: var(--nig-color-bg-primary);
-  border: 1px solid var(--nig-color-border);
-  border-radius: var(--nig-radius-lg);
-  padding: var(--nig-space-lg);
-  margin-top: var(--nig-space-lg);
-}
-
-.nig-preview-container {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: var(--nig-space-lg);
-  align-items: start;
-  margin-bottom: var(--nig-space-lg);
-}
-
-.nig-preview-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--nig-space-sm);
-}
-
-.nig-preview-section h5 {
-  margin: 0;
-  color: var(--nig-color-text-primary);
-  font-size: var(--nig-font-size-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.nig-preview-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--nig-color-accent-primary);
-  padding: var(--nig-space-sm);
-}
-
-.nig-prompt-display {
-  background: var(--nig-color-bg-tertiary);
-  border: 1px solid var(--nig-color-border);
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-md);
-  font-family: "Fira Code", Monaco, Consolas, monospace;
-  font-size: var(--nig-font-size-xs);
-  line-height: 1.4;
-  color: var(--nig-color-text-secondary);
-  max-height: 120px;
-  overflow-y: auto;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-}
-
 /* === Prompt Container === */
 .nig-prompt-container {
   background: var(--nig-color-bg-tertiary);
   border-radius: var(--nig-radius-md);
   margin-bottom: var(--nig-space-lg);
   border: 1px solid var(--nig-color-border);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    background var(--nig-transition-normal);
   overflow: hidden;
 }
 
@@ -1184,7 +1258,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   align-items: center;
   user-select: none;
   color: var(--nig-color-text-primary);
-  transition: all var(--nig-transition-fast);
+  transition:
+    color var(--nig-transition-fast),
+    background var(--nig-transition-fast);
   position: relative;
   z-index: 1;
 }
@@ -1197,7 +1273,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
 .nig-prompt-header::before {
   content: "▸";
   margin-right: var(--nig-space-md);
-  transition: all var(--nig-transition-normal);
+  transition:
+    transform var(--nig-transition-normal),
+    color var(--nig-transition-normal);
   color: var(--nig-color-text-muted);
   font-size: 14px;
   display: inline-block;
@@ -1217,7 +1295,12 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Tab System === */
   overflow-wrap: break-word;
   color: var(--nig-color-text-secondary);
   line-height: 1.6;
-  transition: all var(--nig-transition-normal);
+  transition:
+    max-height var(--nig-transition-normal),
+    opacity var(--nig-transition-normal),
+    padding var(--nig-transition-normal),
+    border-top-color var(--nig-transition-normal),
+    overflow var(--nig-transition-normal);
 }
 
 /* When expanded, show full prompt inside a scrollable area.
@@ -1460,16 +1543,6 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
   }
 
   /* Mobile Enhancement Styles */
-  .nig-preview-container {
-    grid-template-columns: 1fr;
-    gap: var(--nig-space-md);
-  }
-
-  .nig-preview-arrow {
-    transform: rotate(90deg);
-    justify-self: center;
-  }
-
   .nig-enhancement-status {
     margin-left: 0;
     margin-top: var(--nig-space-sm);
@@ -1659,7 +1732,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   border: 1px solid var(--nig-color-border);
   border-radius: var(--nig-radius-lg);
   padding: var(--nig-space-xl);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-utility-card:hover {
@@ -1747,7 +1823,9 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   align-items: center;
   justify-content: center;
   gap: var(--nig-space-sm);
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    color var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   font-family:
     Inter,
@@ -1757,7 +1835,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
 }
 
 .nig-btn-primary:hover {
-  background: var(--nig-color-hover-error);
+  background: var(--nig-color-hover-primary);
   transform: translateY(-1px);
   box-shadow: var(--nig-shadow-md);
 }
@@ -1780,7 +1858,10 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   align-items: center;
   justify-content: center;
   gap: var(--nig-space-xs);
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   font-family:
     Inter,
@@ -1834,6 +1915,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   display: none;
   align-items: center;
   gap: var(--nig-space-md);
+  max-width: calc(100vw - 2 * var(--nig-space-xl));
   font-family:
     Inter,
     -apple-system,
@@ -1841,9 +1923,13 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
     sans-serif;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal),
+    border-color var(--nig-transition-normal);
   border: 1px solid var(--nig-color-border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(6px);
 }
 
 .nig-status-icon {
@@ -1945,15 +2031,37 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #4af028;
-  opacity: 0.8;
+  background: var(--nig-color-text-muted);
+  opacity: 0.6;
+  transition:
+    background var(--nig-transition-fast),
+    opacity var(--nig-transition-fast);
+}
+
+/* State-specific indicator colors (JS sets these classes on the indicator) */
+.nig-status-indicator.provider-active {
+  background: var(--nig-color-accent-warning);
+  opacity: 1;
+}
+
+.nig-status-indicator.external-active {
+  background: var(--nig-color-accent-primary);
+  opacity: 1;
+}
+
+.nig-status-indicator.disabled {
+  background: var(--nig-color-text-muted);
+  opacity: 0.4;
 }
 
 /* === Enhancement Settings States === */
 .nig-enhancement-settings {
-  transition: all var(--nig-transition-normal);
+  transition: opacity var(--nig-transition-normal);
 }
 
+/* Disabled state: pointer-events + opacity for visual feedback.
+ * JS also sets tabindex=-1 and aria-disabled on inputs to remove them
+ * from the keyboard tab order (finding #20). */
 .nig-enhancement-settings.disabled {
   opacity: 0.5;
   pointer-events: none;
@@ -2342,111 +2450,33 @@ module.exports = styleTagTransform;
 
 /***/ },
 
-/***/ 20
+/***/ 770
 (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  CB: () => (/* binding */ deleteSelectedOpenAIProfile),
-  cG: () => (/* binding */ fetchGoogleModels),
-  VM: () => (/* binding */ fetchOpenAICompatModels),
-  YE: () => (/* binding */ loadCachedGoogleModels),
-  tH: () => (/* binding */ loadSelectedOpenAIProfile),
-  populateProviderForms: () => (/* binding */ populateProviderForms),
-  Yl: () => (/* binding */ saveProviderConfigs)
-});
-
-// UNUSED EXPORTS: fetchAIHordeModels, fetchPollinationsModels, loadCachedOpenAICompatModels, loadOpenAIProfiles
-
-;// ./src/config/models.ts
-const TOP_MODELS = [
-    { name: "Deliberate", desc: "Versatile, high-quality realism and detail." },
-    { name: "Anything Diffusion", desc: "Anime-style specialist." },
-    {
-        name: "ICBINP - I Can't Believe It's Not Photography",
-        desc: "Photorealistic focus; excels in lifelike portraits.",
-    },
-    {
-        name: "stable_diffusion",
-        desc: "The classic base model; reliable all-rounder.",
-    },
-    {
-        name: "AlbedoBase XL (SDXL)",
-        desc: "SDXL variant; strong for high-res, detailed scenes.",
-    },
-    {
-        name: "Nova Anime XL",
-        desc: "Anime and illustration; vibrant, dynamic characters.",
-    },
-    {
-        name: "Dreamshaper",
-        desc: "Creative and dreamy outputs; good for artistic concepts.",
-    },
-    { name: "Hentai Diffusion", desc: "NSFW/anime erotica specialist." },
-    { name: "CyberRealistic Pony", desc: "Realistic with a cyberpunk twist." },
-    {
-        name: "Flux.1-Schnell fp8 (Compact)",
-        desc: "Newer, fast-generation model for quick results.",
-    },
-];
-
-// EXTERNAL MODULE: ./src/utils/cache.ts
-var cache = __webpack_require__(165);
-// EXTERNAL MODULE: ./src/utils/storage.ts + 1 modules
-var storage = __webpack_require__(390);
-// EXTERNAL MODULE: ./src/utils/logger.ts
-var logger = __webpack_require__(187);
-;// ./src/api/models.ts
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CB: () => (/* binding */ deleteSelectedOpenAIProfile),
+/* harmony export */   VM: () => (/* binding */ fetchOpenAICompatModels),
+/* harmony export */   Yl: () => (/* binding */ saveProviderConfigs),
+/* harmony export */   jG: () => (/* binding */ loadEnhancementModels),
+/* harmony export */   populateProviderForms: () => (/* binding */ populateProviderForms),
+/* harmony export */   tH: () => (/* binding */ loadSelectedOpenAIProfile),
+/* harmony export */   xE: () => (/* binding */ fetchEnhancementModels)
+/* harmony export */ });
+/* unused harmony exports parsePollinationsModelsResponse, fetchPollinationsModels, fetchAIHordeModels, groupAIHordeModels, loadCachedOpenAICompatModels, loadOpenAIProfiles, buildEnhancementModelsRequest, isZenFreeModel, isZenEndpoint, parseEnhancementModelsResponse */
+/* harmony import */ var _utils_cache__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(165);
+/* harmony import */ var _utils_storage__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(201);
+/* harmony import */ var _utils_logger__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(187);
+/* harmony import */ var _utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(511);
 // --- IMPORTS ---
 
 
 
 
 // --- PUBLIC FUNCTIONS ---
-const POLLINATIONS_DEFAULT_MODEL = "sana";
-const POLLINATIONS_LEGACY_ALIASES = new Set(["flux", "turbo"]);
-const GOOGLE_CURATED_IMAGE_MODELS = [
-    {
-        id: "imagen-4.0-generate-001",
-        name: "Imagen 4 Standard",
-        methods: ["predict"],
-    },
-    {
-        id: "imagen-4.0-ultra-generate-001",
-        name: "Imagen 4 Ultra",
-        methods: ["predict"],
-    },
-    {
-        id: "imagen-4.0-fast-generate-001",
-        name: "Imagen 4 Fast",
-        methods: ["predict"],
-    },
-    {
-        id: "imagen-3.0-generate-002",
-        name: "Imagen 3",
-        methods: ["predict"],
-    },
-    {
-        id: "gemini-3.1-flash-image",
-        name: "Gemini 3.1 Flash Image",
-        methods: ["generateContent"],
-    },
-    {
-        id: "gemini-3-pro-image",
-        name: "Gemini 3 Pro Image",
-        methods: ["generateContent"],
-    },
-    {
-        id: "gemini-2.5-flash-image",
-        name: "Gemini 2.5 Flash Image",
-        methods: ["generateContent"],
-    },
-];
-const GOOGLE_CURATED_MODEL_IDS = new Set(GOOGLE_CURATED_IMAGE_MODELS.map((model) => model.id));
-const GOOGLE_GEMINI_IMAGE_MODEL_ALIASES = {
-    "gemini-3-pro-image-preview": "gemini-3-pro-image",
-};
+const POLLINATIONS_DEFAULT_MODEL = "zimage";
+const POLLINATIONS_LEGACY_ALIASES = new Set(["sana", "turbo"]);
+const POLLINATIONS_MODELS_ENDPOINT = "https://gen.pollinations.ai/image/models";
+const AI_HORDE_MODELS_ENDPOINT = "https://aihorde.net/api/v2/status/models?type=image";
 function normalizePollinationsModelName(model) {
     const value = typeof model === "string" ? model.trim() : "";
     if (!value || POLLINATIONS_LEGACY_ALIASES.has(value.toLowerCase())) {
@@ -2454,106 +2484,25 @@ function normalizePollinationsModelName(model) {
     }
     return value;
 }
-function normalizeGoogleModelId(id) {
-    const value = typeof id === "string" ? id.split("/").pop() : "";
-    return GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[value] || value;
-}
-function isImageCapableGoogleModel(model) {
-    const id = normalizeGoogleModelId(model.name || model.id || "");
-    const displayName = (model.displayName || model.name || "").toLowerCase();
-    const supportedMethods = model.supportedGenerationMethods || [];
-    return (GOOGLE_CURATED_MODEL_IDS.has(id) ||
-        (displayName.includes("image") &&
-            (supportedMethods.includes("generateContent") ||
-                supportedMethods.includes("predict"))) ||
-        (id.startsWith("imagen-") && supportedMethods.includes("predict")));
-}
-function mergeGoogleModels(apiModels) {
-    const byId = new Map();
-    GOOGLE_CURATED_IMAGE_MODELS.forEach((model) => {
-        byId.set(model.id, { ...model });
-    });
-    apiModels.filter(isImageCapableGoogleModel).forEach((model) => {
-        const id = normalizeGoogleModelId(model.name || model.id);
-        byId.set(id, {
-            id,
-            name: model.displayName || id,
-            methods: model.supportedGenerationMethods || [],
-        });
-    });
-    const models = Array.from(byId.values());
-    models.sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        if (aName.includes("imagen") && !bName.includes("imagen")) {
-            return -1;
-        }
-        if (!aName.includes("imagen") && bName.includes("imagen")) {
-            return 1;
-        }
-        return aName.localeCompare(bName);
-    });
-    return models;
-}
-function fetchGoogleModelsPage(apiKey, pageToken = "") {
-    const params = new URLSearchParams({ key: apiKey, pageSize: "1000" });
-    if (pageToken) {
-        params.set("pageToken", pageToken);
-    }
-    return new Promise((resolve, reject) => {
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: `https://generativelanguage.googleapis.com/v1beta/models?${params.toString()}`,
-            onload: (response) => {
-                try {
-                    resolve(JSON.parse(response.responseText));
-                }
-                catch (e) {
-                    reject(e);
-                }
-            },
-            onerror: reject,
-        });
-    });
-}
 /**
- * Fetches Google models from the API
- * @param {string} apiKey - The Google API Key
- * @returns {Promise<Array>} - The list of models
+ * Parses the Pollinations /image/models response (array of objects with name,
+ * category, etc.) into a sorted list of image model name strings.
+ * Filters out non-image models (e.g. video) using the category field.
+ * @param {Array} data - Array of model objects from gen.pollinations.ai/image/models
+ * @returns {string[]} Sorted image model names
  */
-async function fetchGoogleModels(apiKey) {
-    logger/* logInfo */.fH("NETWORK", "Fetching Google models from API");
-    try {
-        const allModels = [];
-        let pageToken = "";
-        do {
-            const data = await fetchGoogleModelsPage(apiKey, pageToken);
-            if (!data.models) {
-                throw new Error("Invalid response format from Google API");
-            }
-            allModels.push(...data.models);
-            pageToken = data.nextPageToken || "";
-        } while (pageToken);
-        const models = mergeGoogleModels(allModels);
-        await cache/* setCachedModels */.Hg("google", models);
-        logger/* logInfo */.fH("NETWORK", "Fetched and cached Google models", {
-            count: models.length,
-        });
-        return models;
+function parsePollinationsModelsResponse(data) {
+    if (!Array.isArray(data)) {
+        return [];
     }
-    catch (e) {
-        logger/* logError */.vV("NETWORK", "Failed to fetch or parse Google models", {
-            error: e.message,
-        });
-        throw e;
-    }
-}
-/**
- * Loads cached Google models
- * @returns {Promise<Array|null>} - The list of cached models or null
- */
-async function loadCachedGoogleModels() {
-    return await cache/* getCachedModelsForProvider */.bu("google");
+    return data
+        .filter((entry) => entry &&
+        typeof entry === "object" &&
+        typeof entry.name === "string" &&
+        entry.name.trim().length > 0 &&
+        (!entry.category || entry.category === "image"))
+        .map((entry) => entry.name.trim())
+        .sort((a, b) => a.localeCompare(b));
 }
 /**
  * Fetches Pollinations models and populates the dropdown
@@ -2562,47 +2511,47 @@ async function fetchPollinationsModels(selectedModel) {
     const select = document.getElementById("nig-pollinations-model");
     select.innerHTML = "<option>Loading models...</option>";
     try {
-        const cachedModels = await cache/* getCachedModelsForProvider */.bu("pollinations");
+        const cachedModels = await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .getCachedModelsForProvider */ .bu("pollinations", POLLINATIONS_MODELS_ENDPOINT);
         if (cachedModels && cachedModels.length > 0) {
-            logger/* logInfo */.fH("CACHE", "Loading Pollinations models from cache");
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("CACHE", "Loading Pollinations models from cache");
             populatePollinationsSelect(select, cachedModels, selectedModel);
             return;
         }
     }
     catch (error) {
-        logger/* logError */.vV("CACHE", "Failed to get cached Pollinations models", {
+        _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("CACHE", "Failed to get cached Pollinations models", {
             error: error.message,
         });
     }
-    logger/* logInfo */.fH("NETWORK", "Fetching Pollinations models from API");
+    _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", "Fetching Pollinations models from API");
     GM_xmlhttpRequest({
         method: "GET",
-        url: "https://image.pollinations.ai/models",
+        url: POLLINATIONS_MODELS_ENDPOINT,
         headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
         },
         onload: async (response) => {
             try {
-                const models = JSON.parse(response.responseText);
-                await cache/* setCachedModels */.Hg("pollinations", models);
-                logger/* logInfo */.fH("NETWORK", "Fetched and cached Pollinations models", {
+                const models = parsePollinationsModelsResponse(JSON.parse(response.responseText));
+                await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .setCachedModels */ .Hg("pollinations", models, POLLINATIONS_MODELS_ENDPOINT);
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", "Fetched and cached Pollinations models", {
                     count: models.length,
                 });
                 populatePollinationsSelect(select, models, selectedModel);
             }
             catch (e) {
-                logger/* logError */.vV("NETWORK", "Failed to parse Pollinations models", {
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to parse Pollinations models", {
                     error: e.message,
                 });
-                select.innerHTML = "<option>sana</option>";
+                select.innerHTML = "<option>zimage</option>";
                 select.value = POLLINATIONS_DEFAULT_MODEL;
             }
         },
         onerror: (error) => {
-            logger/* logError */.vV("NETWORK", "Failed to fetch Pollinations models", {
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to fetch Pollinations models", {
                 error: error,
             });
-            select.innerHTML = "<option>sana</option>";
+            select.innerHTML = "<option>zimage</option>";
             select.value = POLLINATIONS_DEFAULT_MODEL;
         },
     });
@@ -2640,33 +2589,33 @@ async function fetchAIHordeModels(selectedModel) {
     const select = document.getElementById("nig-horde-model");
     select.innerHTML = "<option>Loading models...</option>";
     try {
-        const cachedModels = await cache/* getCachedModelsForProvider */.bu("aiHorde");
+        const cachedModels = await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .getCachedModelsForProvider */ .bu("aiHorde", AI_HORDE_MODELS_ENDPOINT);
         if (cachedModels && cachedModels.length > 0) {
-            logger/* logInfo */.fH("CACHE", "Loading AI Horde models from cache");
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("CACHE", "Loading AI Horde models from cache");
             populateAIHordeSelect(select, cachedModels, selectedModel);
             return;
         }
     }
     catch (error) {
-        logger/* logError */.vV("CACHE", "Failed to get cached AI Horde models", {
+        _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("CACHE", "Failed to get cached AI Horde models", {
             error: error.message,
         });
     }
-    logger/* logInfo */.fH("NETWORK", "Fetching AI Horde models from API");
+    _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", "Fetching AI Horde models from API");
     GM_xmlhttpRequest({
         method: "GET",
-        url: "https://aihorde.net/api/v2/status/models?type=image",
+        url: AI_HORDE_MODELS_ENDPOINT,
         onload: async (response) => {
             try {
                 const apiModels = JSON.parse(response.responseText);
-                await cache/* setCachedModels */.Hg("aiHorde", apiModels);
-                logger/* logInfo */.fH("NETWORK", "Fetched and cached AI Horde models", {
+                await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .setCachedModels */ .Hg("aiHorde", apiModels, AI_HORDE_MODELS_ENDPOINT);
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", "Fetched and cached AI Horde models", {
                     count: apiModels.length,
                 });
                 populateAIHordeSelect(select, apiModels, selectedModel);
             }
             catch (e) {
-                logger/* logError */.vV("NETWORK", "Failed to parse AI Horde models", {
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to parse AI Horde models", {
                     error: e.message,
                 });
                 select.innerHTML = "<option>Stable Diffusion</option>";
@@ -2674,7 +2623,7 @@ async function fetchAIHordeModels(selectedModel) {
             }
         },
         onerror: (error) => {
-            logger/* logError */.vV("NETWORK", "Failed to fetch AI Horde models", {
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to fetch AI Horde models", {
                 error: error,
             });
             select.innerHTML = "<option>Stable Diffusion</option>";
@@ -2683,38 +2632,49 @@ async function fetchAIHordeModels(selectedModel) {
     });
 }
 /**
- * Populates the AI Horde model dropdown
+ * Groups AI Horde models into top (popular) and other buckets based on live
+ * API metadata (worker count), replacing the former static curated list.
+ * @param {Array} models - Array of AI Horde model objects with { name, count, ... }
+ * @returns {{ top: Array, other: Array }}
+ */
+function groupAIHordeModels(models) {
+    const sorted = [...models].sort((a, b) => (b.count || 0) - (a.count || 0));
+    const topCount = Math.min(10, sorted.length);
+    return {
+        top: sorted.slice(0, topCount),
+        other: sorted.slice(topCount),
+    };
+}
+/**
+ * Populates the AI Horde model dropdown.
+ * Top/popular grouping is derived from live API metadata (worker count),
+ * not from any hardcoded list.
  */
 function populateAIHordeSelect(select, models, selectedModel) {
     select.innerHTML = "";
-    const apiModelMap = new Map(models.map((m) => [m.name, m]));
-    const topModelNames = new Set(TOP_MODELS.map((m) => m.name));
+    const { top, other } = groupAIHordeModels(models);
+    const topCount = top.length;
     const topGroup = document.createElement("optgroup");
-    topGroup.label = "Top 10 Popular Models";
+    topGroup.label =
+        topCount > 0 ? `Top ${topCount} Popular Models` : "Popular Models";
     const otherGroup = document.createElement("optgroup");
     otherGroup.label = "Other Models";
-    // Add top models first
-    TOP_MODELS.forEach((topModel) => {
-        if (apiModelMap.has(topModel.name)) {
-            const apiData = apiModelMap.get(topModel.name);
-            const option = document.createElement("option");
-            option.value = topModel.name;
-            option.textContent = `${topModel.name} - ${topModel.desc} (${apiData.count} workers)`;
-            topGroup.appendChild(option);
-        }
-    });
-    // Add other models
-    const otherModels = models
-        .filter((m) => !topModelNames.has(m.name))
-        .sort((a, b) => b.count - a.count);
-    otherModels.forEach((model) => {
+    top.forEach((model) => {
         const option = document.createElement("option");
         option.value = model.name;
-        option.textContent = `${model.name} (${model.count} workers)`;
+        option.textContent = `${model.name} (${model.count || 0} workers)`;
+        topGroup.appendChild(option);
+    });
+    other.forEach((model) => {
+        const option = document.createElement("option");
+        option.value = model.name;
+        option.textContent = `${model.name} (${model.count || 0} workers)`;
         otherGroup.appendChild(option);
     });
     select.appendChild(topGroup);
-    select.appendChild(otherGroup);
+    if (otherGroup.childElementCount > 0) {
+        select.appendChild(otherGroup);
+    }
     if (Array.from(select.options).some((opt) => opt.value === selectedModel)) {
         select.value = selectedModel;
     }
@@ -2835,12 +2795,12 @@ async function fetchOpenAICompatModels() {
         .getElementById("nig-openai-compat-api-key")
         .value.trim();
     if (!baseUrl) {
-        alert("Please enter a Base URL first.");
+        (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)("Please enter a Base URL first.", "error");
         return;
     }
     const select = document.getElementById("nig-openai-compat-model");
     select.innerHTML = "<option>Fetching models...</option>";
-    logger/* logInfo */.fH("NETWORK", `Fetching OpenAI compatible models from ${baseUrl}`);
+    _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", `Fetching OpenAI compatible models from ${baseUrl}`);
     GM_xmlhttpRequest({
         method: "GET",
         url: `${baseUrl}/models`,
@@ -2866,13 +2826,12 @@ async function fetchOpenAICompatModels() {
                     // If no explicit image models found, try to identify them by name patterns
                     imageModels = data.data.filter((model) => {
                         const modelId = model.id.toLowerCase();
-                        return (modelId.includes("dall-e") ||
-                            modelId.includes("dalle") ||
+                        return (modelId.includes("gpt-image") ||
+                            modelId.includes("chatgpt-image") ||
                             modelId.includes("image") ||
                             modelId.includes("midjourney") ||
                             modelId.includes("stable diffusion") ||
-                            modelId.includes("flux") ||
-                            modelId.includes("imagen"));
+                            modelId.includes("flux"));
                     });
                 }
                 imageModels.sort((a, b) => {
@@ -2891,26 +2850,26 @@ async function fetchOpenAICompatModels() {
                 }
                 populateOpenAICompatSelect(select, imageModels, undefined);
                 // Cache the models for this profile
-                await cache/* setCachedOpenAICompatModels */.Bh(baseUrl, imageModels);
-                logger/* logInfo */.fH("NETWORK", `Successfully fetched and cached ${imageModels.length} models for ${baseUrl}`);
+                await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .setCachedOpenAICompatModels */ .Bh(baseUrl, imageModels);
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", `Successfully fetched and cached ${imageModels.length} models for ${baseUrl}`);
             }
             catch (error) {
-                logger/* logError */.vV("NETWORK", "Failed to parse OpenAI compatible models", {
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to parse OpenAI compatible models", {
                     error: error.message,
                 });
                 select.innerHTML = "<option>Failed to fetch models</option>";
-                alert(`Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`);
+                (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)(`Failed to fetch models. Check the Base URL and API Key. You can enter the model name manually. Error: ${error.message}`, "error");
                 // Switch to manual input mode
                 document.getElementById("nig-openai-model-container-select").style.display = "none";
                 document.getElementById("nig-openai-model-container-manual").style.display = "block";
             }
         },
         onerror: (error) => {
-            logger/* logError */.vV("NETWORK", "Failed to fetch OpenAI compatible models", {
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to fetch OpenAI compatible models", {
                 error,
             });
             select.innerHTML = "<option>Failed to fetch models</option>";
-            alert("Failed to fetch models. Check your network connection and the Base URL. Switching to manual input.");
+            (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)("Failed to fetch models. Check your network connection and the Base URL. Switching to manual input.", "error");
             // Switch to manual input mode
             document.getElementById("nig-openai-model-container-select").style.display = "none";
             document.getElementById("nig-openai-model-container-manual").style.display = "block";
@@ -2922,7 +2881,7 @@ async function fetchOpenAICompatModels() {
  */
 async function loadCachedOpenAICompatModels(profileUrl, selectedModel) {
     const select = document.getElementById("nig-openai-compat-model");
-    const cachedModels = await cache/* getCachedOpenAICompatModels */.tb(profileUrl);
+    const cachedModels = await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .getCachedOpenAICompatModels */ .tb(profileUrl);
     if (cachedModels && cachedModels.length > 0) {
         populateOpenAICompatSelect(select, cachedModels, selectedModel);
     }
@@ -2937,7 +2896,7 @@ async function loadCachedOpenAICompatModels(profileUrl, selectedModel) {
  */
 async function loadOpenAIProfiles() {
     const select = document.getElementById("nig-openai-compat-profile-select");
-    const config = await storage/* getConfig */.zj();
+    const config = await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .getConfig */ .zj();
     const profiles = config.openAICompatProfiles || {};
     const activeUrl = config.openAICompatActiveProfileUrl;
     select.innerHTML = "";
@@ -2964,7 +2923,7 @@ async function loadOpenAIProfiles() {
  */
 async function loadSelectedOpenAIProfile() {
     const select = document.getElementById("nig-openai-compat-profile-select");
-    const config = await storage/* getConfig */.zj();
+    const config = await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .getConfig */ .zj();
     const profiles = config.openAICompatProfiles || {};
     const selectedUrl = select.value;
     if (selectedUrl && profiles[selectedUrl]) {
@@ -2996,14 +2955,14 @@ async function deleteSelectedOpenAIProfile() {
     const select = document.getElementById("nig-openai-compat-profile-select");
     const selectedUrl = select.value;
     if (selectedUrl === "__new__") {
-        alert("You can't delete the 'Add New' option.");
+        (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)("You can't delete the 'Add New' option.", "error");
         return;
     }
-    if (confirm(`Delete profile for "${selectedUrl}"?`)) {
-        const config = await storage/* getConfig */.zj();
+    if (await (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showConfirm */ .GQ)(`Delete profile for "${selectedUrl}"?`, "Delete Profile")) {
+        const config = await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .getConfig */ .zj();
         const profiles = config.openAICompatProfiles || {};
         delete profiles[selectedUrl];
-        await storage/* setConfigValue */.yJ("openAICompatProfiles", profiles);
+        await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("openAICompatProfiles", profiles);
         // Clear form fields
         document.getElementById("nig-openai-compat-base-url").value = "";
         document.getElementById("nig-openai-compat-api-key").value = "";
@@ -3013,44 +2972,343 @@ async function deleteSelectedOpenAIProfile() {
         await loadOpenAIProfiles();
     }
 }
+// --- Enhancement Model Discovery ---
+/**
+ * Name patterns for models that are unambiguously NOT chat/text models.
+ * Used as a permissive fallback when no explicit capability metadata is present.
+ */
+const ENHANCEMENT_NON_CHAT_PATTERNS = [
+    /\bembed/i,
+    /\btts/i,
+    /whisper/i,
+    /moderation/i,
+    /\baudio\b/i,
+    /transcri/i,
+    /image/i,
+];
+/**
+ * Builds the request URL and headers for fetching enhancement models from an
+ * OpenAI-compatible /models endpoint.
+ *
+ * Authorization is omitted when no API key is provided, supporting no-auth
+ * local servers (Ollama, LM Studio, vLLM).
+ * @param {string} baseUrl - Enhancement endpoint base URL (e.g. https://api.openai.com/v1)
+ * @param {string} apiKey - Optional Bearer token; empty for no-auth servers
+ * @returns {{ url: string, headers: Record<string, string> }}
+ */
+function buildEnhancementModelsRequest(baseUrl, apiKey) {
+    const endpointUrl = typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+    const headers = { "Content-Type": "application/json" };
+    const key = typeof apiKey === "string" ? apiKey.trim() : "";
+    if (key) {
+        headers["Authorization"] = `Bearer ${key}`;
+    }
+    return { url: `${endpointUrl}/models`, headers };
+}
+/**
+ * Extracts model entries from common OpenAI-compatible /models response shapes.
+ * Handles: { data: [...] }, bare arrays, { models: [...] }, and string arrays.
+ * Returns deduplicated { id, meta } entries.
+ */
+function extractEnhancementModelEntries(data) {
+    let modelList = [];
+    if (data && Array.isArray(data.data)) {
+        modelList = data.data;
+    }
+    else if (Array.isArray(data)) {
+        modelList = data;
+    }
+    else if (data && Array.isArray(data.models)) {
+        modelList = data.models;
+    }
+    else {
+        return [];
+    }
+    const entries = [];
+    const seen = new Set();
+    for (const entry of modelList) {
+        let id = null;
+        let meta = {};
+        if (typeof entry === "string") {
+            id = entry;
+        }
+        else if (entry && typeof entry === "object") {
+            id = entry.id || entry.name || entry.model;
+            if (id) {
+                meta = entry;
+            }
+        }
+        if (typeof id === "string") {
+            id = id.trim();
+            if (id && !seen.has(id)) {
+                seen.add(id);
+                entries.push({ id, meta });
+            }
+        }
+    }
+    return entries;
+}
+/**
+ * Filters model entries to chat/text models.
+ * - Uses explicit endpoint/type metadata when available.
+ * - Falls back to name heuristics for providers with minimal metadata.
+ * - Never returns an empty list if the input had entries (falls back to all)
+ *   so local providers with minimal metadata are never left without options.
+ * @param {Array} entries - Array of { id, meta } entries
+ * @returns {Array} Filtered entries
+ */
+function filterEnhancementChatModels(entries) {
+    const isChat = (entry) => {
+        const meta = entry.meta || {};
+        // Explicit endpoint metadata — strongest signal
+        if (meta.endpoint === "/v1/chat/completions") {
+            return true;
+        }
+        if (Array.isArray(meta.endpoints) &&
+            meta.endpoints.includes("/v1/chat/completions")) {
+            return true;
+        }
+        // Explicit type metadata
+        if (typeof meta.type === "string" && meta.type.trim().length > 0) {
+            const t = meta.type.toLowerCase();
+            if (t.includes("image") ||
+                t.includes("embedding") ||
+                t.includes("audio") ||
+                t.includes("transcription") ||
+                t.includes("tts")) {
+                return false;
+            }
+            return true; // chat / text / llm / language
+        }
+        // No explicit metadata — use name heuristics (permissive for local servers)
+        const id = entry.id.toLowerCase();
+        if (ENHANCEMENT_NON_CHAT_PATTERNS.some((re) => re.test(id))) {
+            return false;
+        }
+        return true;
+    };
+    const filtered = entries.filter(isChat);
+    // Never leave the user with an empty list; fall back to all entries.
+    return filtered.length > 0 ? filtered : entries;
+}
+/**
+ * Determines if a model is free on OpenCode Zen.
+ * Free models include IDs containing "free" plus "big-pickle" (a stealth free model).
+ * The Zen /models API returns no pricing field, so the name heuristic is required.
+ * @param {string} modelId - The model ID to check
+ * @returns {boolean} true if the model is free on Zen
+ */
+function isZenFreeModel(modelId) {
+    const id = typeof modelId === "string" ? modelId.toLowerCase() : "";
+    return id.includes("free") || id === "big-pickle";
+}
+/**
+ * Determines if a base URL points to OpenCode Zen.
+ * @param {string} baseUrl - The enhancement endpoint base URL
+ * @returns {boolean} true if the URL is an OpenCode Zen endpoint
+ */
+function isZenEndpoint(baseUrl) {
+    return (typeof baseUrl === "string" && baseUrl.includes("opencode.ai/zen"));
+}
+/**
+ * Parses an OpenAI-compatible /models response into a sorted list of chat model ids.
+ * Pure function: no DOM, no network. Handles common response shapes and filters
+ * non-chat models (embeddings, tts, image, etc.) without excluding local providers
+ * that expose minimal metadata.
+ * @param {object|Array} data - Parsed JSON response from GET {baseUrl}/models
+ * @param {{ zenFreeOnly?: boolean }} [options] - When zenFreeOnly is true, filters to Zen free models only
+ * @returns {string[]} Sorted, deduplicated chat model ids
+ */
+function parseEnhancementModelsResponse(data, options = {}) {
+    const entries = extractEnhancementModelEntries(data);
+    let filtered = filterEnhancementChatModels(entries);
+    if (options.zenFreeOnly) {
+        filtered = filtered.filter((e) => isZenFreeModel(e.id));
+    }
+    return filtered.map((e) => e.id).sort((a, b) => a.localeCompare(b));
+}
+/**
+ * Populates the enhancement model <select> with fetched model ids.
+ * Preserves a saved model that is absent from the fetched list.
+ */
+function populateEnhancementModelSelect(select, modelIds, selectedModel) {
+    select.innerHTML = "";
+    modelIds.forEach((id) => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.textContent = id;
+        select.appendChild(option);
+    });
+    // Preserve a saved model that is absent from the fetched list
+    if (selectedModel && !modelIds.includes(selectedModel)) {
+        const option = document.createElement("option");
+        option.value = selectedModel;
+        option.textContent = `${selectedModel} (saved)`;
+        select.insertBefore(option, select.firstChild);
+    }
+    if (selectedModel &&
+        Array.from(select.options).some((opt) => opt.value === selectedModel)) {
+        select.value = selectedModel;
+    }
+    else if (modelIds.length > 0) {
+        select.value = modelIds[0];
+    }
+}
+/**
+ * Switches the enhancement model UI to manual input mode (used on fetch failure).
+ */
+function switchEnhancementToManual() {
+    const selectContainer = document.getElementById("nig-enhancement-model-container-select");
+    const manualContainer = document.getElementById("nig-enhancement-model-container-manual");
+    if (selectContainer) {
+        selectContainer.style.display = "none";
+    }
+    if (manualContainer) {
+        manualContainer.style.display = "block";
+    }
+}
+/**
+ * Fetches enhancement models from {enhancementBaseUrl}/models and populates the dropdown.
+ * @param {string} baseUrl - Enhancement endpoint base URL
+ * @param {string} apiKey - Optional Bearer token; empty for no-auth local servers
+ */
+async function fetchEnhancementModels(baseUrl, apiKey) {
+    const endpointUrl = typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+    if (!endpointUrl) {
+        (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)("Please enter an Enhancement Endpoint URL first.", "error");
+        return;
+    }
+    const key = typeof apiKey === "string" ? apiKey.trim() : "";
+    const select = document.getElementById("nig-enhancement-model");
+    if (!select) {
+        return;
+    }
+    select.innerHTML = "<option>Fetching models...</option>";
+    const { url, headers } = buildEnhancementModelsRequest(endpointUrl, key);
+    _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", `Fetching enhancement models from ${url}`);
+    GM_xmlhttpRequest({
+        method: "GET",
+        url,
+        headers,
+        onload: async (response) => {
+            try {
+                const data = JSON.parse(response.responseText);
+                const isZen = isZenEndpoint(endpointUrl);
+                const zenFreeOnly = isZen && !key;
+                const modelIds = parseEnhancementModelsResponse(data, { zenFreeOnly });
+                if (modelIds.length === 0) {
+                    throw new Error("No chat/text models found at this endpoint.");
+                }
+                await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .setCachedModels */ .Hg("enhancement", modelIds, endpointUrl);
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", `Fetched and cached ${modelIds.length} enhancement models`);
+                // Preserve the current selection (if it is a real model id) across refresh
+                const currentModel = select.value &&
+                    !select.value.toLowerCase().includes("fetch") &&
+                    !select.value.toLowerCase().includes("enter")
+                    ? select.value
+                    : "";
+                populateEnhancementModelSelect(select, modelIds, currentModel);
+            }
+            catch (error) {
+                _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to parse enhancement models", {
+                    error: error.message,
+                });
+                select.innerHTML = "<option>Failed to fetch models</option>";
+                (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)(`Failed to fetch enhancement models. Check the endpoint URL and API key. You can enter the model name manually. Error: ${error.message}`, "error");
+                switchEnhancementToManual();
+            }
+        },
+        onerror: (error) => {
+            _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("NETWORK", "Failed to fetch enhancement models", {
+                error,
+            });
+            select.innerHTML = "<option>Failed to fetch models</option>";
+            (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_3__/* .showToast */ .P0)("Failed to fetch enhancement models. Check your network connection and endpoint URL. Switching to manual input.", "error");
+            switchEnhancementToManual();
+        },
+    });
+}
+/**
+ * Loads cached enhancement models (if available) into the dropdown and preserves
+ * the saved model selection. Called when populating the enhancement settings.
+ * For Zen endpoints with no API key and an empty cache, auto-fetches the free
+ * model list so the dropdown is not blank.
+ * @param selectedModel - The currently saved enhancement model name
+ * @param baseUrl - The enhancement endpoint base URL (for cache validation)
+ * @param apiKey - Optional API key (used to decide auto-fetch for Zen)
+ */
+async function loadEnhancementModels(selectedModel, baseUrl, apiKey) {
+    const select = document.getElementById("nig-enhancement-model");
+    if (!select) {
+        return;
+    }
+    const normalizedBaseUrl = typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
+    try {
+        const cached = await _utils_cache__WEBPACK_IMPORTED_MODULE_0__/* .getCachedModelsForProvider */ .bu("enhancement", normalizedBaseUrl);
+        if (Array.isArray(cached) && cached.length > 0) {
+            populateEnhancementModelSelect(select, cached, selectedModel);
+            return;
+        }
+    }
+    catch (error) {
+        _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logError */ .vV("CACHE", "Failed to get cached enhancement models", {
+            error: error.message,
+        });
+    }
+    // No cache available: preserve the saved model or show a fetch prompt
+    select.innerHTML = "";
+    if (selectedModel && typeof selectedModel === "string" && selectedModel.trim()) {
+        const option = document.createElement("option");
+        option.value = selectedModel;
+        option.textContent = `${selectedModel} (saved — click Fetch to refresh list)`;
+        select.appendChild(option);
+        select.value = selectedModel;
+    }
+    else {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Enter endpoint URL and fetch...";
+        select.appendChild(option);
+    }
+    // Auto-fetch Zen free models when endpoint is Zen and no API key is set.
+    // Zen free models work without authentication, so auto-fetch is safe and
+    // prevents a blank dropdown for existing users after migration.
+    if (isZenEndpoint(normalizedBaseUrl) && !apiKey) {
+        _utils_logger__WEBPACK_IMPORTED_MODULE_2__/* .logInfo */ .fH("NETWORK", "Auto-fetching Zen free models for enhancement dropdown");
+        fetchEnhancementModels(normalizedBaseUrl, apiKey);
+    }
+}
 /**
  * Saves provider-specific configuration to storage
  */
 async function saveProviderConfigs() {
     // Pollinations configuration
-    await storage/* setConfigValue */.yJ("pollinationsModel", document.getElementById("nig-pollinations-model").value);
-    await storage/* setConfigValue */.yJ("pollinationsWidth", document.getElementById("nig-pollinations-width").value);
-    await storage/* setConfigValue */.yJ("pollinationsHeight", document.getElementById("nig-pollinations-height").value);
-    await storage/* setConfigValue */.yJ("pollinationsSeed", document.getElementById("nig-pollinations-seed").value.trim());
-    await storage/* setConfigValue */.yJ("pollinationsEnhance", document.getElementById("nig-pollinations-enhance").checked);
-    await storage/* setConfigValue */.yJ("pollinationsSafe", document.getElementById("nig-pollinations-safe").checked);
-    await storage/* setConfigValue */.yJ("pollinationsNologo", document.getElementById("nig-pollinations-nologo").checked);
-    await storage/* setConfigValue */.yJ("pollinationsPrivate", document.getElementById("nig-pollinations-private").checked);
-    await storage/* setConfigValue */.yJ("pollinationsToken", document.getElementById("nig-pollinations-token").value.trim());
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsModel", document.getElementById("nig-pollinations-model").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsWidth", document.getElementById("nig-pollinations-width").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsHeight", document.getElementById("nig-pollinations-height").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsSeed", document.getElementById("nig-pollinations-seed").value.trim());
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsEnhance", document.getElementById("nig-pollinations-enhance").checked);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsSafe", document.getElementById("nig-pollinations-safe").checked);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsNologo", document.getElementById("nig-pollinations-nologo").checked);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsPrivate", document.getElementById("nig-pollinations-private").checked);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("pollinationsToken", document.getElementById("nig-pollinations-token").value.trim());
     // AI Horde configuration
-    await storage/* setConfigValue */.yJ("aiHordeApiKey", document.getElementById("nig-horde-api-key").value.trim() || "0000000000");
-    await storage/* setConfigValue */.yJ("aiHordeModel", document.getElementById("nig-horde-model").value);
-    await storage/* setConfigValue */.yJ("aiHordeSampler", document.getElementById("nig-horde-sampler").value);
-    await storage/* setConfigValue */.yJ("aiHordeSteps", document.getElementById("nig-horde-steps").value);
-    await storage/* setConfigValue */.yJ("aiHordeCfgScale", document.getElementById("nig-horde-cfg").value);
-    await storage/* setConfigValue */.yJ("aiHordeWidth", document.getElementById("nig-horde-width").value);
-    await storage/* setConfigValue */.yJ("aiHordeHeight", document.getElementById("nig-horde-height").value);
-    await storage/* setConfigValue */.yJ("aiHordeSeed", document.getElementById("nig-horde-seed").value.trim());
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeApiKey", document.getElementById("nig-horde-api-key").value.trim() || "0000000000");
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeModel", document.getElementById("nig-horde-model").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeSampler", document.getElementById("nig-horde-sampler").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeSteps", document.getElementById("nig-horde-steps").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeCfgScale", document.getElementById("nig-horde-cfg").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeWidth", document.getElementById("nig-horde-width").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeHeight", document.getElementById("nig-horde-height").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordeSeed", document.getElementById("nig-horde-seed").value.trim());
     const postProcessing = Array.from(document.querySelectorAll('input[name="nig-horde-post"]:checked')).map((cb) => cb.value);
-    await storage/* setConfigValue */.yJ("aiHordePostProcessing", postProcessing);
-    // Google configuration
-    await storage/* setConfigValue */.yJ("googleApiKey", document.getElementById("nig-google-api-key").value.trim());
-    await storage/* setConfigValue */.yJ("model", document.getElementById("nig-model").value);
-    await storage/* setConfigValue */.yJ("numberOfImages", document.getElementById("nig-num-images").value);
-    await storage/* setConfigValue */.yJ("imageSize", document.getElementById("nig-image-size").value);
-    await storage/* setConfigValue */.yJ("aspectRatio", document.getElementById("nig-aspect-ratio").value);
-    await storage/* setConfigValue */.yJ("personGeneration", document.getElementById("nig-person-gen").value);
+    await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("aiHordePostProcessing", postProcessing);
     // OpenAI Compatible configuration
     const baseUrl = document
         .getElementById("nig-openai-compat-base-url")
         .value.trim();
     if (baseUrl) {
-        const profiles = await storage/* getConfigValue */.Ct("openAICompatProfiles");
+        const profiles = await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .getConfigValue */ .Ct("openAICompatProfiles");
         const isManualMode = document.getElementById("nig-openai-model-container-manual").style
             .display !== "none";
         const model = isManualMode
@@ -3060,9 +3318,9 @@ async function saveProviderConfigs() {
             apiKey: document.getElementById("nig-openai-compat-api-key").value.trim(),
             model: model,
         };
-        await storage/* setConfigValue */.yJ("openAICompatProfiles", profiles);
-        await storage/* setConfigValue */.yJ("openAICompatActiveProfileUrl", baseUrl);
-        await storage/* setConfigValue */.yJ("openAICompatModelManualInput", isManualMode);
+        await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("openAICompatProfiles", profiles);
+        await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("openAICompatActiveProfileUrl", baseUrl);
+        await _utils_storage__WEBPACK_IMPORTED_MODULE_1__/* .setConfigValue */ .yJ("openAICompatModelManualInput", isManualMode);
         // Refresh the OpenAI profiles dropdown to show the newly saved profile
         await loadOpenAIProfiles();
     }
@@ -3101,13 +3359,6 @@ async function populateProviderForms(config) {
         cb.checked = config.aiHordePostProcessing.includes(cb.value);
     });
     fetchAIHordeModels(config.aiHordeModel);
-    // Google settings
-    document.getElementById("nig-google-api-key").value = config.googleApiKey;
-    document.getElementById("nig-model").value = config.model;
-    document.getElementById("nig-num-images").value = config.numberOfImages;
-    document.getElementById("nig-image-size").value = config.imageSize;
-    document.getElementById("nig-aspect-ratio").value = config.aspectRatio;
-    document.getElementById("nig-person-gen").value = config.personGeneration;
     // OpenAI Compatible settings
     await loadOpenAIProfiles();
     if (config.openAICompatModelManualInput) {
@@ -3136,7 +3387,9 @@ async function populateProviderForms(config) {
 /* harmony export */ });
 /* unused harmony export initialize */
 /* harmony import */ var _utils_file__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(409);
+/* harmony import */ var _utils_uiUtils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(511);
 // Image Viewer Component
+
 
 /**
  * Helper function to determine if an image URL is base64 encoded
@@ -3169,28 +3422,37 @@ function create() {
     imageViewer.className = "nig-modal-overlay";
     imageViewer.style.display = "none";
     imageViewer.innerHTML = `
-		<div class="nig-modal-content">
-			<span class="nig-close-btn">&times;</span>
-			<div id="nig-prompt-container" class="nig-prompt-container">
-				<div class="nig-prompt-header"><span>Generated Image Prompt</span></div>
+		<div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-image-viewer-title">
+			<button type="button" class="nig-close-btn" aria-label="Close image viewer">&times;</button>
+			<div id="nig-prompt-container" class="nig-prompt-container" role="button" tabindex="0" aria-expanded="false" aria-controls="nig-prompt-text" aria-label="Toggle prompt visibility">
+				<div class="nig-prompt-header"><span id="nig-image-viewer-title" style="display:none;">Image Viewer</span><span>Generated Image Prompt</span></div>
 				<p id="nig-prompt-text" class="nig-prompt-text"></p>
 			</div>
 			<div id="nig-image-gallery" class="nig-image-gallery"></div>
 		</div>`;
     document.body.appendChild(imageViewer);
+    let viewerA11yCleanup = null;
     imageViewer.querySelector(".nig-close-btn").addEventListener("click", () => {
         imageViewer.style.display = "none";
-        // Import updateSystemStatus dynamically to avoid circular dependency
-        Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 498)).then((module) => {
-            if (typeof module.updateSystemStatus === "function") {
-                // This will be handled by the main application
-            }
-        });
+        if (viewerA11yCleanup) {
+            viewerA11yCleanup();
+            viewerA11yCleanup = null;
+        }
     });
     const promptContainer = imageViewer.querySelector("#nig-prompt-container");
-    promptContainer.addEventListener("click", () => {
-        promptContainer.classList.toggle("expanded");
+    function togglePrompt() {
+        const isExpanded = promptContainer.classList.toggle("expanded");
+        promptContainer.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+    }
+    promptContainer.addEventListener("click", togglePrompt);
+    promptContainer.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            togglePrompt();
+        }
     });
+    // Store cleanup for use in show()
+    imageViewer._nigA11yCleanup = null;
 }
 function show(imageUrls, prompt, provider, model = "Unknown") {
     if (!document.getElementById("nig-image-viewer")) {
@@ -3203,12 +3465,15 @@ function show(imageUrls, prompt, provider, model = "Unknown") {
     const promptText = imageViewer.querySelector("#nig-prompt-text");
     promptText.textContent = prompt;
     promptContainer.classList.remove("expanded");
+    promptContainer.setAttribute("aria-expanded", "false");
     const extension = provider === "Pollinations" || provider === "OpenAICompat" ? "jpg" : "png";
     imageUrls.forEach((url, index) => {
         const container = document.createElement("div");
         container.className = "nig-image-container";
         const img = document.createElement("img");
         img.src = url;
+        // Set aspect-ratio to reduce CLS (finding #24)
+        img.style.aspectRatio = "auto";
         // Add loading state for URL images
         if (!isBase64Image(url)) {
             img.loading = "lazy";
@@ -3271,6 +3536,9 @@ function show(imageUrls, prompt, provider, model = "Unknown") {
             };
             actions.appendChild(urlLinkBtn);
         }
+        // Add aria-labels to action buttons for screen readers
+        downloadBtn.setAttribute("aria-label", "Download image");
+        fullscreenBtn.setAttribute("aria-label", "View image fullscreen");
         actions.appendChild(downloadBtn);
         actions.appendChild(fullscreenBtn);
         container.appendChild(img);
@@ -3278,63 +3546,23 @@ function show(imageUrls, prompt, provider, model = "Unknown") {
         gallery.appendChild(container);
     });
     imageViewer.style.display = "flex";
+    // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+    if (imageViewer._nigA11yCleanup) {
+        imageViewer._nigA11yCleanup();
+    }
+    imageViewer._nigA11yCleanup = (0,_utils_uiUtils__WEBPACK_IMPORTED_MODULE_1__/* .setupModalA11y */ .nI)(imageViewer, {
+        closeOnEscape: true,
+        onClose: () => {
+            imageViewer.style.display = "none";
+            if (imageViewer._nigA11yCleanup) {
+                imageViewer._nigA11yCleanup();
+                imageViewer._nigA11yCleanup = null;
+            }
+        },
+    });
 }
 function initialize() {
     create();
-}
-
-
-/***/ },
-
-/***/ 498
-(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   v: () => (/* binding */ create),
-/* harmony export */   y: () => (/* binding */ update)
-/* harmony export */ });
-let widgetElement = null;
-/**
- * Creates the status widget DOM element and appends it to the body.
- * This should only be called once during initialization.
- */
-function create() {
-    if (widgetElement) {
-        return;
-    }
-    widgetElement = document.createElement("div");
-    widgetElement.id = "nig-status-widget";
-    widgetElement.className = "nig-status-widget";
-    widgetElement.innerHTML = `<div class="nig-status-icon"></div><span class="nig-status-text"></span>`;
-    document.body.appendChild(widgetElement);
-}
-/**
- * Updates the state and content of the status widget.
- * @param {'hidden'|'loading'|'success'|'error'} state - The visual state of the widget.
- * @param {string} text - The text to display.
- * @param {function|null} [onClickHandler=null] - An optional click handler for the widget.
- */
-function update(state, text, onClickHandler = null) {
-    if (!widgetElement) {
-        return;
-    }
-    widgetElement.classList.remove("loading", "success", "error");
-    widgetElement.onclick = onClickHandler;
-    if (state === "hidden") {
-        widgetElement.style.display = "none";
-        return;
-    }
-    widgetElement.style.display = "flex";
-    widgetElement.querySelector(".nig-status-text").textContent = text;
-    widgetElement.classList.add(state);
-    const icon = widgetElement.querySelector(".nig-status-icon");
-    icon.innerHTML = ""; // Clear previous icon
-    if (state === "success") {
-        icon.innerHTML = "✅";
-    }
-    else if (state === "error") {
-        icon.innerHTML = "❌";
-    }
 }
 
 
@@ -3344,9 +3572,12 @@ function update(state, text, onClickHandler = null) {
 (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   C: () => (/* binding */ CONFIG_SCHEMA_VERSION),
 /* harmony export */   z: () => (/* binding */ DEFAULTS)
 /* harmony export */ });
+const CONFIG_SCHEMA_VERSION = 2;
 const DEFAULTS = {
+    configSchemaVersion: 1,
     selectedProvider: "Pollinations",
     loggingEnabled: false,
     // Prompt Styling
@@ -3354,11 +3585,12 @@ const DEFAULTS = {
     subPromptStyle: "none",
     customStyleEnabled: false,
     customStyleText: "",
-    // AI Prompt Enhancement
-    enhancementEnabled: false,
-    enhancementProvider: "gemini", // 'gemini', 'disabled'
-    enhancementApiKey: "",
-    enhancementModel: "models/gemini-2.5-pro",
+    // AI Prompt Enhancement (OpenAI-compatible /chat/completions endpoint)
+    enhancementEnabled: true,
+    enhancementBaseUrl: "https://opencode.ai/zen/v1", // OpenCode Zen: free models work with no API key
+    enhancementApiKey: "", // Bearer token; leave empty for Zen free models or no-auth local servers
+    enhancementModel: "big-pickle", // OpenCode Zen free model (works without API key)
+    enhancementModelManualInput: false, // false = dropdown (dynamic fetch), true = manual text input
     // Default enhancement behavior is driven by the selected preset.
     // This base template is aligned with the "Standard Enhancement" preset.
     enhancementTemplate: "Extract visual elements from this text and craft a concise, image-ready prompt as a flowing paragraph. Focus on: clear subjects, setting and environment, lighting/mood/color palette, and artistic style/composition/framing. Omit narrative, dialogue, text overlays, and non-visual details. Use vivid, concrete descriptors separated by commas or short phrases. End with quality boosters such as highly detailed, sharp focus, high resolution, masterpiece. Generated Prompt Structure: Start with core subjects, layer in scene and mood, then add style and technical details.",
@@ -3368,13 +3600,6 @@ const DEFAULTS = {
     // Enhancement Retry and Fallback Configuration
     enhancementMaxRetriesPerModel: 2,
     enhancementRetryDelay: 1000,
-    enhancementModelsFallback: [
-        "models/gemini-2.5-pro",
-        "models/gemini-flash-latest",
-        "models/gemini-flash-lite-latest",
-        "models/gemini-2.5-flash",
-        "models/gemini-2.5-flash-lite",
-    ],
     enhancementLogLevel: "info", // 'debug', 'info', 'warn', 'error'
     enhancementAlwaysFallback: true,
     // Preset Enhancement Prompts
@@ -3432,13 +3657,6 @@ const DEFAULTS = {
     // Global Negative Prompting
     enableNegPrompt: true,
     globalNegPrompt: "ugly, blurry, deformed, disfigured, poor details, bad anatomy, low quality",
-    // Google
-    googleApiKey: "",
-    model: "imagen-4.0-generate-001",
-    numberOfImages: 1,
-    imageSize: "1024",
-    aspectRatio: "1:1",
-    personGeneration: "allow_adult",
     // AI Horde
     aiHordeApiKey: "0000000000",
     aiHordeModel: "AlbedoBase XL (SDXL)",
@@ -3450,7 +3668,7 @@ const DEFAULTS = {
     aiHordePostProcessing: [],
     aiHordeSeed: "",
     // Pollinations.ai
-    pollinationsModel: "sana",
+    pollinationsModel: "zimage",
     pollinationsWidth: 512,
     pollinationsHeight: 512,
     pollinationsSeed: "",
@@ -3480,10 +3698,48 @@ const DEFAULTS = {
 /* harmony export */   bu: () => (/* binding */ getCachedModelsForProvider),
 /* harmony export */   tb: () => (/* binding */ getCachedOpenAICompatModels)
 /* harmony export */ });
-/* unused harmony exports CACHE_EXPIRATION_MS, getCachedModels, clearCachedOpenAICompatModels */
+/* unused harmony exports CACHE_EXPIRATION_MS, CACHE_SCHEMA_VERSION, getCachedModels, clearCachedOpenAICompatModels */
 /* harmony import */ var _logger__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(187);
+/* harmony import */ var _uiUtils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(511);
 
-const CACHE_EXPIRATION_MS = (/* unused pure expression or super */ null && (24 * 60 * 60 * 1000)); // 24 hours
+
+const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_SCHEMA_VERSION = 2;
+// Cache entry shape (schema v2):
+//   { models: any[], timestamp: number, endpoint?: string, schemaVersion: number }
+//
+// Legacy shape (schema v1 / unversioned):
+//   { [provider]: any[] }  ← bare array of models with no metadata
+// Legacy entries are treated as cache misses and overwritten on next fetch.
+/**
+ * Validates a cache entry against the current schema, TTL, and endpoint.
+ * @param entry - The cache entry to validate
+ * @param endpoint - Optional endpoint URL that must match the stored value
+ * @returns true if the entry is valid, fresh, and endpoint-matched
+ */
+function isCacheEntryValid(entry, endpoint) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return false;
+    }
+    if (entry.schemaVersion !== CACHE_SCHEMA_VERSION) {
+        return false;
+    }
+    if (typeof entry.timestamp !== "number") {
+        return false;
+    }
+    if (Date.now() - entry.timestamp > CACHE_EXPIRATION_MS) {
+        return false;
+    }
+    if (endpoint &&
+        typeof entry.endpoint === "string" &&
+        entry.endpoint !== endpoint) {
+        return false;
+    }
+    if (!Array.isArray(entry.models)) {
+        return false;
+    }
+    return true;
+}
 async function getCachedModels() {
     try {
         const cachedData = await GM_getValue("cachedModels", "{}");
@@ -3506,14 +3762,22 @@ async function getCachedModels() {
     }
 }
 /**
- * Gets cached models for a specific provider
- * @param {string} provider - The provider name (e.g., 'pollinations', 'aiHorde')
- * @returns {Promise<Array|null>} Array of cached models or null if not found
+ * Gets cached models for a specific provider.
+ * Returns the models array only when the cache entry is valid (correct schema
+ * version, not expired, endpoint matches). Legacy bare-array entries and
+ * expired/endpoint-mismatched entries are treated as cache misses (null).
+ * @param provider - The provider name (e.g. 'pollinations', 'aiHorde')
+ * @param endpoint - Optional endpoint URL to validate against the stored value
+ * @returns {Promise<Array|null>} Array of cached models or null if not found/expired
  */
-async function getCachedModelsForProvider(provider) {
+async function getCachedModelsForProvider(provider, endpoint) {
     try {
         const cache = await getCachedModels();
-        return cache[provider] || null;
+        const entry = cache[provider];
+        if (isCacheEntryValid(entry, endpoint)) {
+            return entry.models;
+        }
+        return null;
     }
     catch (error) {
         (0,_logger__WEBPACK_IMPORTED_MODULE_0__/* .log */ .Rm)("error", "CACHE", `Failed to get cached models for ${provider}`, {
@@ -3522,10 +3786,23 @@ async function getCachedModelsForProvider(provider) {
         return null;
     }
 }
-async function setCachedModels(provider, models) {
+/**
+ * Sets cached models for a specific provider with timestamp, endpoint, and
+ * schema version metadata so the cache can auto-expire and invalidate on
+ * endpoint changes.
+ * @param provider - The provider name
+ * @param models - Array of model objects/strings to cache
+ * @param endpoint - Optional endpoint URL the models were fetched from
+ */
+async function setCachedModels(provider, models, endpoint) {
     try {
         const cache = await getCachedModels();
-        cache[provider] = models;
+        cache[provider] = {
+            models: models,
+            timestamp: Date.now(),
+            endpoint: endpoint || null,
+            schemaVersion: CACHE_SCHEMA_VERSION,
+        };
         await GM_setValue("cachedModels", JSON.stringify(cache));
         (0,_logger__WEBPACK_IMPORTED_MODULE_0__/* .log */ .Rm)("info", "CACHE", `Cached models for ${provider}`);
     }
@@ -3566,7 +3843,7 @@ async function clearCachedModels(provider = null) {
             // Also clear the main cached models (Pollinations, AI Horde, etc.)
             await GM_setValue("cachedModels", "{}");
             (0,_logger__WEBPACK_IMPORTED_MODULE_0__/* .logInfo */ .fH)("CACHE", "Cleared all cached models and reset OpenAI Compatible model selections.");
-            alert("All cached models have been cleared. They will be re-fetched when you next open the settings.");
+            (0,_uiUtils__WEBPACK_IMPORTED_MODULE_1__/* .showToast */ .P0)("All cached models have been cleared. They will be re-fetched when you next open the settings.", "success");
         }
     }
     catch (error) {
@@ -3711,7 +3988,7 @@ function getScriptName() {
 /* harmony export */   xx: () => (/* binding */ loadEnhancementLogHistory)
 /* harmony export */ });
 /* unused harmony export formatLogEntry */
-/* harmony import */ var _storage__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(390);
+/* harmony import */ var _storage__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(201);
 
 let loggingEnabled = false;
 let enhancementLogHistory = [];
@@ -3853,7 +4130,7 @@ function formatLogEntry(entry) {
 
 /***/ },
 
-/***/ 390
+/***/ 201
 (__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 
@@ -3874,6 +4151,73 @@ __webpack_require__.d(__webpack_exports__, {
 
 // EXTERNAL MODULE: ./src/config/defaults.ts
 var defaults = __webpack_require__(916);
+;// ./src/config/migration.ts
+// src/config/migration.ts
+// Schema-versioned config migration for existing users.
+//
+// When DEFAULTS change in ways that existing stored values should be updated
+// (e.g. new Zen enhancement defaults), a migration step runs on config load to
+// upgrade stale/empty settings while preserving truly custom user values.
+
+const ZEN_DEFAULT_URL = defaults/* DEFAULTS */.z.enhancementBaseUrl;
+const ZEN_DEFAULT_MODEL = defaults/* DEFAULTS */.z.enhancementModel;
+function isNonEmptyString(value) {
+    return typeof value === "string" && value.trim().length > 0;
+}
+function isZenEndpoint(baseUrl) {
+    return typeof baseUrl === "string" && baseUrl.includes("opencode.ai/zen");
+}
+/**
+ * Determines whether a stored enhancement model is a stale legacy value that
+ * should be replaced with the Zen default.
+ * Stale = empty, non-string, or provider-prefixed (e.g. "models/...").
+ */
+function isStaleModel(model) {
+    if (!isNonEmptyString(model)) {
+        return true;
+    }
+    return model.startsWith("models/");
+}
+/**
+ * Migrates a config object to the current schema version.
+ *
+ * - Skips entirely when configSchemaVersion is already current.
+ * - For schema v1 → v2: upgrades empty/stale enhancement settings to Zen
+ *   defaults (https://opencode.ai/zen/v1, big-pickle, dropdown mode) while
+ *   preserving non-empty custom endpoints and models.
+ * - Bumps configSchemaVersion to CONFIG_SCHEMA_VERSION after migration.
+ *
+ * @param config - The raw config object loaded from storage
+ * @returns The migrated config object (same reference if no migration needed)
+ */
+function migrateConfig(config) {
+    const version = typeof config?.configSchemaVersion === "number"
+        ? config.configSchemaVersion
+        : 1;
+    if (version >= defaults/* CONFIG_SCHEMA_VERSION */.C) {
+        return config;
+    }
+    const migrated = { ...config };
+    // --- v1 → v2: Zen enhancement defaults migration ---
+    if (version < 2) {
+        const hasCustomEndpoint = isNonEmptyString(migrated.enhancementBaseUrl);
+        const hasCustomModel = !isStaleModel(migrated.enhancementModel);
+        if (!hasCustomEndpoint) {
+            migrated.enhancementBaseUrl = ZEN_DEFAULT_URL;
+        }
+        if (!hasCustomModel) {
+            migrated.enhancementModel = ZEN_DEFAULT_MODEL;
+        }
+        // When any enhancement setting was migrated to Zen, ensure dropdown mode
+        // so the user sees the free-model list rather than a blank manual input.
+        if ((!hasCustomEndpoint || !hasCustomModel) && isZenEndpoint(migrated.enhancementBaseUrl)) {
+            migrated.enhancementModelManualInput = false;
+        }
+    }
+    migrated.configSchemaVersion = defaults/* CONFIG_SCHEMA_VERSION */.C;
+    return migrated;
+}
+
 ;// ./src/utils/linkValidator.ts
 /**
  * Link validation utility for checking image URL accessibility
@@ -4064,6 +4408,7 @@ async function filterExpiredLinks(history, progressCallback = null) {
 ;// ./src/utils/storage.ts
 
 
+
 /**
  * Retrieves a single configuration value from storage.
  * @param {string} key - The key of the config value to retrieve.
@@ -4074,6 +4419,8 @@ async function getConfigValue(key) {
 }
 /**
  * Retrieves the entire configuration object from storage.
+ * Runs schema-versioned migration on load to upgrade stale/empty settings
+ * (e.g. Zen enhancement defaults) for existing users.
  * @returns {Promise<object>} The complete configuration object.
  */
 async function getConfig() {
@@ -4081,7 +4428,16 @@ async function getConfig() {
     for (const key in defaults/* DEFAULTS */.z) {
         config[key] = await GM_getValue(key, defaults/* DEFAULTS */.z[key]);
     }
-    return config;
+    // Run config migration if the stored schema version is outdated
+    const migrated = migrateConfig(config);
+    if (migrated !== config) {
+        for (const key in migrated) {
+            if (migrated[key] !== config[key]) {
+                await GM_setValue(key, migrated[key]);
+            }
+        }
+    }
+    return migrated;
 }
 /**
  * Sets a configuration value in storage.
@@ -4255,6 +4611,392 @@ async function cleanHistoryEnhanced(progressCallback = null) {
 }
 
 
+/***/ },
+
+/***/ 511
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   GQ: () => (/* binding */ showConfirm),
+/* harmony export */   P0: () => (/* binding */ showToast),
+/* harmony export */   ZD: () => (/* binding */ escapeHtml),
+/* harmony export */   nI: () => (/* binding */ setupModalA11y),
+/* harmony export */   q9: () => (/* binding */ showPrompt)
+/* harmony export */ });
+/* harmony import */ var _logger__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(187);
+/**
+ * UI Utilities for the Novel Image Generator userscript.
+ *
+ * Provides accessible replacements for native alert/confirm/prompt dialogs,
+ * HTML escaping for dynamic content, and modal accessibility helpers
+ * (focus trap, Escape-to-close, scroll lock, ARIA attributes).
+ *
+ * These utilities ensure the userscript never leaks native browser dialogs
+ * into the host page and that all dynamic content is safely escaped.
+ */
+
+// --- SCROLL LOCK COUNTER ---
+// Tracks how many modals are open so body scroll lock is only released
+// when the last modal closes. Prevents interference with host page when
+// no userscript modal is visible.
+let modalOpenCount = 0;
+let savedBodyOverflow = null;
+function lockScroll() {
+    if (modalOpenCount === 0) {
+        savedBodyOverflow = document.body.style.overflow || "";
+        document.body.style.overflow = "hidden";
+    }
+    modalOpenCount++;
+}
+function unlockScroll() {
+    modalOpenCount = Math.max(0, modalOpenCount - 1);
+    if (modalOpenCount === 0 && savedBodyOverflow !== null) {
+        document.body.style.overflow = savedBodyOverflow;
+        savedBodyOverflow = null;
+    }
+}
+// --- HTML ESCAPE ---
+/**
+ * Escapes HTML special characters in a string to prevent XSS when
+ * inserting dynamic content via innerHTML.
+ *
+ * Escapes: & < > " '
+ *
+ * @param str - The string to escape (any type; coerced to string)
+ * @returns The HTML-safe string
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) {
+        return "";
+    }
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+// --- FOCUS MANAGEMENT ---
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/**
+ * Returns all focusable elements within a container, in DOM order.
+ */
+function getFocusable(container) {
+    const els = container.querySelectorAll(FOCUSABLE_SELECTOR);
+    const result = [];
+    for (let i = 0; i < els.length; i++) {
+        const el = els[i];
+        if (el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement) {
+            result.push(el);
+        }
+    }
+    return result;
+}
+/**
+ * Sets up full modal accessibility: ARIA roles, focus trap, Escape-to-close,
+ * scroll lock, focus management on open, and focus restoration on close.
+ *
+ * @param modalElement - The modal overlay element (the fixed-position container)
+ * @param options - Configuration options
+ * @param options.onClose - Callback when the modal is closed via Escape
+ * @param options.labelledBy - ID of the element that labels the dialog
+ * @param options.closeOnEscape - Whether Escape closes the modal (default: true)
+ * @returns A cleanup function that removes all listeners and restores state
+ */
+function setupModalA11y(modalElement, options) {
+    const opts = options || {};
+    const onClose = opts.onClose;
+    const labelledBy = opts.labelledBy;
+    const closeOnEscape = opts.closeOnEscape !== false;
+    // Set ARIA attributes
+    modalElement.setAttribute("role", "dialog");
+    modalElement.setAttribute("aria-modal", "true");
+    if (labelledBy) {
+        modalElement.setAttribute("aria-labelledby", labelledBy);
+    }
+    // Lock scroll
+    lockScroll();
+    // Save the currently focused element to restore later
+    const previouslyFocused = document.activeElement;
+    // Move focus into the modal
+    const focusable = getFocusable(modalElement);
+    if (focusable.length > 0) {
+        focusable[0].focus();
+    }
+    else {
+        modalElement.setAttribute("tabindex", "-1");
+        modalElement.focus();
+    }
+    // Focus trap: cycle focus within the modal
+    function handleKeydown(e) {
+        if (e.key === "Escape" && closeOnEscape) {
+            e.preventDefault();
+            e.stopPropagation();
+            cleanup();
+            if (onClose) {
+                onClose();
+            }
+            return;
+        }
+        if (e.key === "Tab") {
+            const currentFocusable = getFocusable(modalElement);
+            if (currentFocusable.length === 0) {
+                e.preventDefault();
+                return;
+            }
+            const first = currentFocusable[0];
+            const last = currentFocusable[currentFocusable.length - 1];
+            if (e.shiftKey) {
+                if (document.activeElement === first || !modalElement.contains(document.activeElement)) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            }
+            else {
+                if (document.activeElement === last || !modalElement.contains(document.activeElement)) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        }
+    }
+    modalElement.addEventListener("keydown", handleKeydown);
+    function cleanup() {
+        modalElement.removeEventListener("keydown", handleKeydown);
+        modalElement.removeAttribute("aria-modal");
+        unlockScroll();
+        // Restore focus to the element that had it before the modal opened
+        if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+            try {
+                previouslyFocused.focus();
+            }
+            catch (_e) {
+                document.body.focus();
+            }
+        }
+    }
+    return cleanup;
+}
+// --- TOAST NOTIFICATION (replaces alert) ---
+let toastContainer = null;
+function ensureToastContainer() {
+    if (toastContainer && document.body.contains(toastContainer)) {
+        return toastContainer;
+    }
+    toastContainer = document.createElement("div");
+    toastContainer.id = "nig-toast-container";
+    toastContainer.className = "nig-toast-container";
+    toastContainer.setAttribute("role", "status");
+    toastContainer.setAttribute("aria-live", "polite");
+    toastContainer.setAttribute("aria-atomic", "true");
+    document.body.appendChild(toastContainer);
+    return toastContainer;
+}
+/**
+ * Shows a non-blocking toast notification (replacement for native alert()).
+ *
+ * @param message - The message to display (will be escaped)
+ * @param type - The visual style: 'info', 'success', or 'error'
+ * @param duration - How long to display in ms (default: 4000)
+ */
+function showToast(message, type = "info", duration = 4000) {
+    try {
+        const container = ensureToastContainer();
+        const toast = document.createElement("div");
+        toast.className = `nig-toast nig-toast-${type}`;
+        toast.setAttribute("role", "alert");
+        const icon = document.createElement("span");
+        icon.className = "nig-toast-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = type === "success" ? "✓" : type === "error" ? "✕" : "ℹ";
+        const text = document.createElement("span");
+        text.className = "nig-toast-text";
+        // Use textContent for XSS safety
+        text.textContent = String(message);
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "nig-toast-close";
+        closeBtn.setAttribute("aria-label", "Dismiss notification");
+        closeBtn.textContent = "×";
+        toast.appendChild(icon);
+        toast.appendChild(text);
+        toast.appendChild(closeBtn);
+        container.appendChild(toast);
+        // Animate in
+        requestAnimationFrame(() => toast.classList.add("nig-toast-visible"));
+        let dismissed = false;
+        const dismiss = () => {
+            if (dismissed) {
+                return;
+            }
+            dismissed = true;
+            toast.classList.remove("nig-toast-visible");
+            setTimeout(() => toast.remove(), 300);
+        };
+        closeBtn.addEventListener("click", dismiss);
+        if (duration > 0) {
+            setTimeout(dismiss, duration);
+        }
+    }
+    catch (e) {
+        // Fallback to console if toast system fails
+        console.log(`[NIG ${type}]`, message);
+    }
+}
+// --- CONFIRMATION DIALOG (replaces confirm) ---
+/**
+ * Shows an accessible confirmation dialog (replacement for native confirm()).
+ *
+ * @param message - The confirmation message to display
+ * @param title - Optional title for the dialog (default: "Please Confirm")
+ * @returns Promise that resolves to true if confirmed, false if cancelled
+ */
+function showConfirm(message, title = "Please Confirm") {
+    return new Promise((resolve) => {
+        try {
+            const overlay = document.createElement("div");
+            overlay.className = "nig-modal-overlay nig-confirm-overlay";
+            overlay.style.display = "flex";
+            const titleId = "nig-confirm-title-" + Date.now();
+            overlay.innerHTML = `
+        <div class="nig-modal-content nig-confirm-dialog" style="max-width: 450px;">
+          <button type="button" class="nig-close-btn" aria-label="Close dialog">&times;</button>
+          <h2 id="${titleId}">${escapeHtml(title)}</h2>
+          <p class="nig-confirm-message"></p>
+          <div class="nig-confirm-actions">
+            <button type="button" class="nig-btn-secondary nig-confirm-cancel">Cancel</button>
+            <button type="button" class="nig-save-btn nig-confirm-ok">Confirm</button>
+          </div>
+        </div>`;
+            document.body.appendChild(overlay);
+            // Set message via textContent for XSS safety
+            const msgEl = overlay.querySelector(".nig-confirm-message");
+            if (msgEl) {
+                msgEl.textContent = String(message);
+            }
+            let resolved = false;
+            const cleanup = setupModalA11y(overlay, {
+                labelledBy: titleId,
+                closeOnEscape: true,
+            });
+            const close = (result) => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                cleanup();
+                overlay.remove();
+                resolve(result);
+            };
+            overlay.querySelector(".nig-close-btn")?.addEventListener("click", () => close(false));
+            overlay.querySelector(".nig-confirm-cancel")?.addEventListener("click", () => close(false));
+            overlay.querySelector(".nig-confirm-ok")?.addEventListener("click", () => close(true));
+            // Click on overlay backdrop (not content) cancels
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) {
+                    close(false);
+                }
+            });
+        }
+        catch (e) {
+            _logger__WEBPACK_IMPORTED_MODULE_0__/* .logError */ .vV("UI", "Failed to show confirm dialog", {
+                error: (e)?.message,
+            });
+            resolve(false);
+        }
+    });
+}
+// --- PROMPT DIALOG (replaces prompt) ---
+/**
+ * Shows an accessible input prompt dialog (replacement for native prompt()).
+ *
+ * @param message - The prompt message to display
+ * @param defaultValue - Optional default value for the input
+ * @param title - Optional title for the dialog (default: "Input Required")
+ * @returns Promise that resolves to the entered string, or null if cancelled
+ */
+function showPrompt(message, defaultValue = "", title = "Input Required") {
+    return new Promise((resolve) => {
+        try {
+            const overlay = document.createElement("div");
+            overlay.className = "nig-modal-overlay nig-prompt-overlay";
+            overlay.style.display = "flex";
+            const titleId = "nig-prompt-title-" + Date.now();
+            const inputId = "nig-prompt-input-" + Date.now();
+            overlay.innerHTML = `
+        <div class="nig-modal-content nig-prompt-dialog" style="max-width: 450px;">
+          <button type="button" class="nig-close-btn" aria-label="Close dialog">&times;</button>
+          <h2 id="${titleId}">${escapeHtml(title)}</h2>
+          <label class="nig-prompt-label" for="${inputId}"></label>
+          <input type="text" id="${inputId}" class="nig-prompt-input" />
+          <div class="nig-confirm-actions" style="margin-top: var(--nig-space-xl);">
+            <button type="button" class="nig-btn-secondary nig-prompt-cancel">Cancel</button>
+            <button type="button" class="nig-save-btn nig-prompt-ok">OK</button>
+          </div>
+        </div>`;
+            document.body.appendChild(overlay);
+            // Set message via textContent for XSS safety
+            const labelEl = overlay.querySelector(".nig-prompt-label");
+            if (labelEl) {
+                labelEl.textContent = String(message);
+            }
+            const inputEl = overlay.querySelector("#" + inputId);
+            if (inputEl) {
+                inputEl.value = defaultValue;
+            }
+            let resolved = false;
+            const cleanup = setupModalA11y(overlay, {
+                labelledBy: titleId,
+                closeOnEscape: true,
+            });
+            // Focus the input after modal a11y setup
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.select();
+            }
+            const close = (result) => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                cleanup();
+                overlay.remove();
+                resolve(result);
+            };
+            const submit = () => {
+                if (inputEl) {
+                    const val = inputEl.value.trim();
+                    close(val);
+                }
+            };
+            overlay.querySelector(".nig-close-btn")?.addEventListener("click", () => close(null));
+            overlay.querySelector(".nig-prompt-cancel")?.addEventListener("click", () => close(null));
+            overlay.querySelector(".nig-prompt-ok")?.addEventListener("click", submit);
+            if (inputEl) {
+                inputEl.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        submit();
+                    }
+                });
+            }
+            // Click on overlay backdrop cancels
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) {
+                    close(null);
+                }
+            });
+        }
+        catch (e) {
+            _logger__WEBPACK_IMPORTED_MODULE_0__/* .logError */ .vV("UI", "Failed to show prompt dialog", {
+                error: (e)?.message,
+            });
+            resolve(null);
+        }
+    });
+}
+
+
 /***/ }
 
 /******/ 	});
@@ -4370,8 +5112,8 @@ var update = injectStylesIntoStyleTag_default()(main/* default */.A, options);
 
 // EXTERNAL MODULE: ./src/utils/logger.ts
 var logger = __webpack_require__(187);
-// EXTERNAL MODULE: ./src/utils/storage.ts + 1 modules
-var storage = __webpack_require__(390);
+// EXTERNAL MODULE: ./src/utils/storage.ts + 2 modules
+var storage = __webpack_require__(201);
 ;// ./src/utils/error.ts
 /**
  * Parses a raw error string into a user-friendly message and a retryable status.
@@ -4535,7 +5277,7 @@ function parseErrorMessage(errorString, provider = null, providerProfileUrl = nu
 ;// ./src/utils/promptUtils.ts
 /**
  * Prompt Utilities for cleaning and formatting prompts
- * Provides functionality to clean prompts for API transmission while preserving display formatting
+ * Provides functionality to clean prompts for API transmission
  */
 /**
  * Cleans excessive newline characters from prompts for API transmission
@@ -4551,23 +5293,6 @@ function cleanPromptForApi(prompt) {
     return prompt
         .replace(/\n{3,}/g, "\n\n") // Replace 3+ newlines with 2 newlines
         .replace(/^\n+|\n+$/g, "") // Remove leading and trailing newlines
-        .trim();
-}
-/**
- * Preserves display formatting by normalizing newlines to consistent format
- * Ensures consistent newline representation for display purposes
- * @param {string} prompt - The prompt to normalize for display
- * @returns {string} - The prompt with normalized newlines for display
- */
-function preserveDisplayFormatting(prompt) {
-    if (!prompt || typeof prompt !== "string") {
-        return prompt;
-    }
-    return prompt
-        .replace(/\r\n/g, "\n") // Convert Windows newlines to Unix newlines
-        .replace(/\r/g, "\n") // Convert Mac newlines to Unix newlines
-        .replace(/[ \t]+\n/g, "\n") // Remove trailing spaces/tabs before newlines
-        .replace(/\n{3,}/g, "\n\n\n") // Ensure at most 3 newlines for display
         .trim();
 }
 /**
@@ -4620,61 +5345,155 @@ function getApiReadyPrompt(prompt, context = "api") {
     }
     return cleanedPrompt;
 }
+
+;// ./src/utils/abortRegistry.ts
 /**
- * Main function to get a prompt ready for display
- * Preserves user formatting while normalizing newlines
- * @param {string} prompt - The prompt to process for display
- * @returns {string} - The display-ready prompt
+ * Abort Registry — tracks active GM_xmlhttpRequest handles and setTimeout timers
+ * so that in-flight generation/enhancement/polling can be cancelled by the user.
+ *
+ * Each generate() call captures the cancel token at start; onload/onerror handlers
+ * compare the live token to detect cancellation and skip callbacks silently.
  */
-function getDisplayReadyPrompt(prompt) {
-    if (!isValidPrompt(prompt)) {
-        return prompt || "";
-    }
-    return preserveDisplayFormatting(prompt);
-}
+const activeRequests = new Set();
+const activeTimers = new Set();
+let cancelToken = 0;
 /**
- * Processes prompt for specific use case
- * @param {string} prompt - The prompt to process
- * @param {string} useCase - 'api', 'display', or 'both'
- * @param {string} context - Context for logging
- * @returns {object} - Object containing original, cleaned, and display versions
+ * Returns the current cancel token. Callers capture this at the start of a
+ * generate/enhance cycle and compare it later to detect cancellation.
  */
-function processPrompt(prompt, useCase = "both", context = "general") {
-    const originalPrompt = prompt || "";
-    if (!isValidPrompt(originalPrompt)) {
-        return {
-            original: originalPrompt,
-            cleaned: originalPrompt,
-            display: originalPrompt,
-        };
-    }
-    const cleaned = getApiReadyPrompt(originalPrompt, context);
-    const display = getDisplayReadyPrompt(originalPrompt);
-    return {
-        original: originalPrompt,
-        cleaned: useCase === "display" ? originalPrompt : cleaned,
-        display: useCase === "api" ? cleaned : display,
-    };
-}
-
-;// ./src/api/gemini.ts
-
-
-const DEFAULT_ENHANCEMENT_MAX_OUTPUT_TOKENS = 8192;
-const KNOWN_ENHANCEMENT_OUTPUT_TOKEN_LIMITS = {
-    "gemini-2.5-pro": 65536,
-    "gemini-2.5-flash": 65536,
-    "gemini-2.5-flash-lite": 65536,
-};
-function getEnhancementMaxOutputTokens(model) {
-    const normalizedModel = model.startsWith("models/")
-        ? model.substring(7)
-        : model;
-    return (KNOWN_ENHANCEMENT_OUTPUT_TOKEN_LIMITS[normalizedModel] ||
-        DEFAULT_ENHANCEMENT_MAX_OUTPUT_TOKENS);
+function getCancelToken() {
+    return cancelToken;
 }
 /**
- * Determines if the selected provider's built-in enhancement should be used.
+ * Tracks a GM_xmlhttpRequest handle so it can be aborted on cancel.
+ * Returns the handle for convenience.
+ */
+function trackRequest(handle) {
+    if (handle) {
+        activeRequests.add(handle);
+    }
+    return handle;
+}
+/**
+ * Removes a handle from tracking (called after onload/onerror completes).
+ */
+function untrackRequest(handle) {
+    activeRequests.delete(handle);
+}
+/**
+ * Tracks a setTimeout timer ID so it can be cleared on cancel.
+ * Returns the timer ID for convenience.
+ */
+function trackTimer(timerId) {
+    if (timerId) {
+        activeTimers.add(timerId);
+    }
+    return timerId;
+}
+/**
+ * Removes a timer from tracking.
+ */
+function untrackTimer(timerId) {
+    activeTimers.delete(timerId);
+}
+/**
+ * Aborts all tracked requests and clears all tracked timers.
+ * Increments the cancel token so in-flight callbacks detect cancellation.
+ * Returns the total number of requests and timers that were cancelled.
+ */
+function abortAll() {
+    cancelToken++;
+    let count = 0;
+    for (const handle of activeRequests) {
+        try {
+            const h = handle;
+            if (typeof h.abort === "function") {
+                h.abort();
+            }
+        }
+        catch {
+            // Ignore abort errors
+        }
+        count++;
+    }
+    activeRequests.clear();
+    for (const timer of activeTimers) {
+        try {
+            clearTimeout(timer);
+        }
+        catch {
+            // Ignore clear errors
+        }
+        count++;
+    }
+    activeTimers.clear();
+    return count;
+}
+/**
+ * Returns true when there are active requests or timers being tracked.
+ */
+function hasActive() {
+    return activeRequests.size > 0 || activeTimers.size > 0;
+}
+
+;// ./src/api/enhancement.ts
+
+
+
+/**
+ * Extracts the Retry-After delay (in milliseconds) from an HTTP response.
+ * Returns null when no valid Retry-After header is present.
+ * @param {object} response - GM_xmlhttpRequest response object
+ * @returns {number|null} Delay in ms, or null
+ */
+function parseRetryAfter(response) {
+    if (!response) {
+        return null;
+    }
+    const headers = response.responseHeaders || "";
+    const match = headers.match(/^retry-after:\s*(\d+)/im);
+    if (match) {
+        return Math.min(parseInt(match[1], 10) * 1000, 60000);
+    }
+    return null;
+}
+/**
+ * Detects if response content is HTML instead of JSON.
+ * Mirrors the pattern from openAI.ts for consistent error handling.
+ * @param {string} responseText - The response text to check
+ * @returns {boolean} - True if content appears to be HTML
+ */
+function isHtmlResponse(responseText) {
+    const trimmed = responseText.trim().toLowerCase();
+    return (trimmed.startsWith("<!doctype") ||
+        trimmed.startsWith("<html") ||
+        trimmed.includes("<!doctype") ||
+        trimmed.includes("<html>") ||
+        trimmed.startsWith("<!") ||
+        trimmed.startsWith("<head>") ||
+        trimmed.includes("<title>"));
+}
+/**
+ * Safely parses JSON with enhanced error handling.
+ * @param {string} responseText - The response text to parse
+ * @param {string} endpointUrl - The endpoint URL for context in error messages
+ * @returns {object} - Parsed JSON object
+ */
+function safeJsonParse(responseText, endpointUrl) {
+    try {
+        return JSON.parse(responseText);
+    }
+    catch (e) {
+        if (isHtmlResponse(responseText)) {
+            throw new Error(`Received HTML response instead of JSON from ${endpointUrl}. This usually indicates endpoint configuration issues or authentication problems.`);
+        }
+        throw new Error(`JSON parsing error: ${e.message}. This may indicate server issues or malformed response.`);
+    }
+}
+/**
+ * Determines if the selected image provider's built-in enhancement should be used.
+ * This is provider-agnostic: it checks the IMAGE provider (e.g., Pollinations)
+ * for built-in enhancement, not the enhancement endpoint provider.
  * @param {string} provider - The name of the image generation provider.
  * @param {object} config - The current script configuration.
  * @returns {boolean} - True if provider enhancement should be used.
@@ -4696,32 +5515,31 @@ function shouldUseProviderEnhancement(provider, config) {
     (0,logger/* logDebug */.MD)("ENHANCEMENT", "Provider priority decision completed", {
         shouldUseProviderEnhancement: shouldUse,
         willUseExternalAI: config.enhancementEnabled &&
-            config.enhancementApiKey &&
+            config.enhancementBaseUrl &&
             (!shouldUse || config.enhancementOverrideProvider),
     });
     return shouldUse;
 }
 /**
- * Enhances a given prompt using the Google Gemini API with robust retry and fallback logic.
+ * Enhances a given prompt using an OpenAI-compatible /chat/completions endpoint
+ * with robust retry and fallback logic.
+ *
+ * Supports any OpenAI-compatible provider (cloud or local) including OpenAI,
+ * OpenRouter, Ollama, LM Studio, and vLLM.
+ *
  * @param {string} originalPrompt - The user's original prompt.
  * @param {object} config - The current script configuration.
  * @returns {Promise<string>} The enhanced prompt.
  */
-async function enhancePromptWithGemini(originalPrompt, config) {
+async function enhancePrompt(originalPrompt, config) {
     const startTime = Date.now();
-    // Resolve effective enhancement instruction that RESPECTS user style/main/sub-style
-    const { enhancementApiKey: apiKey, enhancementModel: rawModel, enhancementTemplate: userTemplateOverride, 
-    // enhancementTemplateSelected,
-    mainPromptStyle, subPromptStyle, customStyleEnabled, customStyleText, enhancementMaxRetriesPerModel = 2, enhancementRetryDelay = 1000, enhancementModelsFallback = [
-        "models/gemini-2.5-pro",
-        "models/gemini-flash-latest",
-        "models/gemini-flash-lite-latest",
-        "models/gemini-2.5-flash",
-        "models/gemini-2.5-flash-lite",
-    ], _enhancementLogLevel = "info", enhancementAlwaysFallback = true, } = config;
+    const myToken = getCancelToken();
+    const { enhancementBaseUrl: baseUrl, enhancementApiKey: apiKey, enhancementModel: rawModel, enhancementTemplate: userTemplateOverride, mainPromptStyle, subPromptStyle, customStyleEnabled, customStyleText, enhancementMaxRetriesPerModel = 2, enhancementRetryDelay = 1000, enhancementAlwaysFallback = true, } = config;
+    const model = typeof rawModel === "string" ? rawModel.trim() : "";
+    const endpointUrl = typeof baseUrl === "string" ? baseUrl.trim().replace(/\/+$/, "") : "";
     // Build a style-respecting instruction layer:
-    // - If custom style is enabled, explicitly tell Gemini to preserve and reinforce it.
-    // - Else if main/sub styles are set, tell Gemini to keep them.
+    // - If custom style is enabled, explicitly tell the model to preserve and reinforce it.
+    // - Else if main/sub styles are set, tell the model to keep them.
     // - Otherwise, no extra constraint.
     const styleDirectives = (() => {
         if (customStyleEnabled &&
@@ -4746,20 +5564,17 @@ async function enhancePromptWithGemini(originalPrompt, config) {
             return [
                 `The user has selected main style "${mainPromptStyle}".`,
                 `You MUST preserve and honor this style as the primary aesthetic.`,
-                `Do NOT override it with photorealistic/technical photography language unless this style explicitly implies it.`,
+                `Do NOT override them with photorealistic/technical photography language unless this style explicitly implies it.`,
                 `All enhancements must be consistent with this selected style.`,
             ].join(" ");
         }
         return "";
     })();
-    // Base template to use:
-    // - Prefer userTemplateOverride when provided (from UI textarea).
-    // - Otherwise, derive from presets (standard/safety/artistic/technical/character) via DEFAULTS.enhancementTemplate in config.
-    //   (config should already contain the selected preset mapping.)
+    // Base template: prefer user override from UI textarea, otherwise use config default.
     const baseTemplate = userTemplateOverride && userTemplateOverride.trim().length > 0
         ? userTemplateOverride.trim()
         : (config.enhancementTemplate || "").trim();
-    // Merge base template and style directives into final template sent to Gemini.
+    // Merge base template and style directives into the system message.
     const mergedTemplate = [
         baseTemplate ||
             "Extract visual, image-ready elements from the text without changing its intended style.",
@@ -4767,92 +5582,68 @@ async function enhancePromptWithGemini(originalPrompt, config) {
     ]
         .filter(Boolean)
         .join(" ");
-    if (!apiKey) {
-        throw new Error("Gemini API key is required for prompt enhancement.");
+    if (!endpointUrl) {
+        throw new Error("Enhancement endpoint URL is required for prompt enhancement.");
     }
-    // Build model list with primary model first, followed by fallbacks
-    const modelsList = [
-        rawModel,
-        ...enhancementModelsFallback.filter((m) => m !== rawModel),
-    ];
-    // High-level enhancement start: informational and toggle-controlled.
-    (0,logger/* logInfo */.fH)("ENHANCEMENT", "Starting robust prompt enhancement with Gemini AI", {
+    if (!model) {
+        throw new Error("Enhancement model is required for prompt enhancement.");
+    }
+    (0,logger/* logInfo */.fH)("ENHANCEMENT", "Starting prompt enhancement via OpenAI-compatible endpoint", {
         originalLength: originalPrompt.length,
-        primaryModel: rawModel,
-        fallbackModels: enhancementModelsFallback,
-        totalModels: modelsList.length,
-        maxRetriesPerModel: enhancementMaxRetriesPerModel,
+        endpointUrl,
+        model,
+        maxRetries: enhancementMaxRetriesPerModel,
         apiKeyPresent: Boolean(apiKey),
     });
     let lastError = null;
-    // Try each model in the list
-    for (let modelIndex = 0; modelIndex < modelsList.length; modelIndex++) {
-        const modelWithPrefix = modelsList[modelIndex];
-        const model = modelWithPrefix.startsWith("models/")
-            ? modelWithPrefix.substring(7)
-            : modelWithPrefix;
-        const isPrimaryModel = modelIndex === 0;
-        (0,logger/* logInfo */.fH)("ENHANCEMENT", `Attempting enhancement with model: ${model}`, {
-            modelIndex: modelIndex + 1,
-            totalModels: modelsList.length,
-            isPrimaryModel,
-            modelName: model,
-        });
-        let attemptsForThisModel = 0;
-        // Retry logic for each model
-        while (attemptsForThisModel < enhancementMaxRetriesPerModel) {
-            attemptsForThisModel++;
-            try {
-                const enhancedText = await attemptEnhancementWithModel(originalPrompt, model, mergedTemplate, apiKey, isPrimaryModel, attemptsForThisModel, enhancementMaxRetriesPerModel);
-                const duration = Date.now() - startTime;
-                (0,logger/* logInfo */.fH)("ENHANCEMENT", "Prompt enhancement successful", {
-                    model,
-                    attempts: attemptsForThisModel,
-                    duration,
-                    totalModelsTried: modelIndex + 1,
-                });
-                return enhancedText;
+    let attempts = 0;
+    while (attempts < enhancementMaxRetriesPerModel) {
+        attempts++;
+        try {
+            const enhancedText = await attemptEnhancement(originalPrompt, model, mergedTemplate, endpointUrl, apiKey, attempts, enhancementMaxRetriesPerModel, myToken);
+            const duration = Date.now() - startTime;
+            (0,logger/* logInfo */.fH)("ENHANCEMENT", "Prompt enhancement successful", {
+                model,
+                attempts,
+                duration,
+            });
+            return enhancedText;
+        }
+        catch (error) {
+            lastError = error;
+            // Don't retry if the request was cancelled by the user
+            if (getCancelToken() !== myToken) {
+                throw error;
             }
-            catch (error) {
-                lastError = error;
-                // Routine enhancement attempt failure for a specific model/attempt.
-                // Use non-critical level so it respects the logging toggle while still being captured in enhancement logs when enabled.
-                (0,logger/* logInfo */.fH)("ENHANCEMENT", `Enhancement failed for model ${model} (attempt ${attemptsForThisModel}/${enhancementMaxRetriesPerModel})`, {
-                    model,
-                    attemptNumber: attemptsForThisModel,
-                    error: error.message,
-                    isPrimaryModel,
+            (0,logger/* logInfo */.fH)("ENHANCEMENT", `Enhancement failed (attempt ${attempts}/${enhancementMaxRetriesPerModel})`, {
+                model,
+                attemptNumber: attempts,
+                error: error.message,
+            });
+            // If this is not the last retry, wait before retrying
+            if (attempts < enhancementMaxRetriesPerModel) {
+                // Use Retry-After header value if available (e.g. from 429), otherwise default delay
+                const delay = error.retryAfter !== undefined && error.retryAfter !== null
+                    ? error.retryAfter
+                    : enhancementRetryDelay;
+                (0,logger/* logInfo */.fH)("ENHANCEMENT", `Retrying after delay`, {
+                    retryDelay: delay,
+                    nextAttempt: attempts + 1,
+                    isRateLimited: error.status === 429,
                 });
-                // If this is not the last retry for this model, wait before retrying
-                if (attemptsForThisModel < enhancementMaxRetriesPerModel) {
-                    (0,logger/* logInfo */.fH)("ENHANCEMENT", `Retrying model ${model} after delay`, {
-                        retryDelay: enhancementRetryDelay,
-                        nextAttempt: attemptsForThisModel + 1,
-                    });
-                    await sleep(enhancementRetryDelay);
-                }
+                await sleep(delay);
             }
         }
-        // If we exhausted retries for this model, try the next one.
-        // This is expected operational behavior, so keep it toggle-controlled.
-        (0,logger/* logInfo */.fH)("ENHANCEMENT", `Exhausted retries for model ${model}, switching to next model`, {
-            model,
-            attemptsMade: attemptsForThisModel,
-            maxRetries: enhancementMaxRetriesPerModel,
-            nextModelIndex: modelIndex + 1,
-            remainingModels: modelsList.length - modelIndex - 1,
-        });
     }
-    // All models failed
+    // All retries exhausted
     const duration = Date.now() - startTime;
-    (0,logger/* logError */.vV)("ENHANCEMENT", "All models and retries exhausted for prompt enhancement", {
-        totalModelsTried: modelsList.length,
+    (0,logger/* logError */.vV)("ENHANCEMENT", "All retries exhausted for prompt enhancement", {
+        totalAttempts: attempts,
         duration,
         lastError: lastError?.message,
         originalPrompt: originalPrompt.substring(0, 100) +
             (originalPrompt.length > 100 ? "..." : ""),
     });
-    // Enhanced fallback behavior
     if (enhancementAlwaysFallback) {
         const fallbackPrompt = createBasicEnhancementFallback(originalPrompt);
         (0,logger/* logInfo */.fH)("ENHANCEMENT", "Providing basic enhancement fallback", {
@@ -4862,52 +5653,69 @@ async function enhancePromptWithGemini(originalPrompt, config) {
         });
         return fallbackPrompt;
     }
-    throw new Error(`All enhancement models failed. Last error: ${lastError?.message || "Unknown error"}`);
+    throw new Error(`All enhancement attempts failed. Last error: ${lastError?.message || "Unknown error"}`);
 }
 /**
- * Attempts enhancement with a specific model
+ * Attempts enhancement with the configured model via /chat/completions.
  */
-async function attemptEnhancementWithModel(originalPrompt, model, template, apiKey, isPrimaryModel, _attemptNumber, _maxRetries) {
-    // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
-    const cleanPrompt = getApiReadyPrompt(originalPrompt, "gemini_enhancement");
-    const enhancementPrompt = template
-        ? `${template}\n\nOriginal prompt: "${cleanPrompt}"\n\nEnhanced prompt:`
-        : `Convert this text into a focused visual description for image generation... \n\n"${cleanPrompt}"\n\nEnhanced version:`;
+async function attemptEnhancement(originalPrompt, model, template, endpointUrl, apiKey, _attemptNumber, _maxRetries, myToken) {
+    const cleanPrompt = getApiReadyPrompt(originalPrompt, "enhancement");
+    const url = `${endpointUrl}/chat/completions`;
     const requestData = {
-        contents: [{ parts: [{ text: enhancementPrompt }] }],
-        generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: getEnhancementMaxOutputTokens(model),
-        },
+        model,
+        messages: [
+            { role: "system", content: template },
+            { role: "user", content: cleanPrompt },
+        ],
+        temperature: 0.7,
+        stream: false,
     };
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const headers = { "Content-Type": "application/json" };
+    // Send Bearer auth only when an API key is configured (supports no-auth local servers).
+    if (apiKey && apiKey.trim().length > 0) {
+        headers["Authorization"] = `Bearer ${apiKey.trim()}`;
+    }
     return new Promise((resolve, reject) => {
-        // Use shorter timeout for fallback models to speed up switching
-        const timeout = isPrimaryModel ? 45000 : 30000;
-        GM_xmlhttpRequest({
+        const timeout = 45000;
+        const xhr = GM_xmlhttpRequest({
             method: "POST",
-            url: apiUrl,
-            headers: { "Content-Type": "application/json" },
+            url,
+            headers,
             data: JSON.stringify(requestData),
-            timeout: timeout,
+            timeout,
             onload: (response) => {
+                untrackRequest(xhr);
+                if (getCancelToken() !== myToken) {
+                    reject(new Error("Request canceled"));
+                    return;
+                }
+                // Handle HTTP 429 rate-limiting with Retry-After support
+                if (response.status === 429) {
+                    const retryAfter = parseRetryAfter(response);
+                    reject(Object.assign(new Error("Rate limited (429)"), {
+                        retryable: true,
+                        retryAfter,
+                        status: 429,
+                    }));
+                    return;
+                }
                 try {
                     if (!response.responseText) {
-                        throw new Error("Empty response received from Gemini API");
+                        throw new Error("Empty response received from enhancement endpoint");
                     }
-                    const data = JSON.parse(response.responseText);
+                    const data = safeJsonParse(response.responseText, endpointUrl);
+                    // Check for OpenAI-compatible error shape
                     if (data.error) {
-                        throw new Error(data.error.message || "Gemini API error");
+                        throw new Error(data.error.message || "Enhancement API error");
                     }
-                    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const enhancedText = data.candidates[0].content.parts[0].text.trim();
+                    const content = data.choices?.[0]?.message?.content;
+                    if (content && typeof content === "string" && content.trim().length > 0) {
+                        const enhancedText = content.trim();
                         const cleanedText = enhancedText.replace(/^["']|["']$/g, "");
                         resolve(cleanedText);
                     }
                     else {
-                        throw new Error("No enhancement result received from Gemini API");
+                        throw new Error("No enhancement result received from endpoint");
                     }
                 }
                 catch (e) {
@@ -4915,21 +5723,31 @@ async function attemptEnhancementWithModel(originalPrompt, model, template, apiK
                 }
             },
             onerror: () => {
+                untrackRequest(xhr);
+                if (getCancelToken() !== myToken) {
+                    reject(new Error("Request canceled"));
+                    return;
+                }
                 reject(new Error("Network error during enhancement request."));
             },
             ontimeout: () => {
+                untrackRequest(xhr);
+                if (getCancelToken() !== myToken) {
+                    reject(new Error("Request canceled"));
+                    return;
+                }
                 reject(new Error(`Enhancement request timed out after ${timeout / 1000} seconds.`));
             },
         });
+        trackRequest(xhr);
     });
 }
 /**
- * Creates a basic enhancement fallback when all models fail
+ * Creates a basic enhancement fallback when all retries fail.
+ * Provider-agnostic heuristic-based enhancement.
  */
 function createBasicEnhancementFallback(originalPrompt) {
-    // Simple heuristic-based enhancement
     let enhanced = originalPrompt;
-    // Add common quality boosters if not already present
     const qualityBoosters = [
         "highly detailed",
         "sharp focus",
@@ -4940,7 +5758,6 @@ function createBasicEnhancementFallback(originalPrompt) {
     if (!hasQualityTerms) {
         enhanced += ", " + qualityBoosters.join(", ");
     }
-    // Clean up any double commas
     enhanced = enhanced.replace(/,+/g, ",").replace(/,\s*$/, "");
     return enhanced;
 }
@@ -4951,167 +5768,6 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-;// ./src/api/google.ts
-
-
-
-const GOOGLE_GEMINI_IMAGE_MODEL_ALIASES = {
-    "gemini-3-pro-image-preview": "gemini-3-pro-image",
-    "models/gemini-3-pro-image-preview": "gemini-3-pro-image",
-};
-const GOOGLE_GEMINI_IMAGE_MODELS = new Set([
-    "gemini-3.1-flash-image",
-    "gemini-3-pro-image",
-    "gemini-2.5-flash-image",
-]);
-function normalizeGoogleModel(rawModel) {
-    const modelName = typeof rawModel === "string" ? rawModel.trim() : "";
-    const withoutPrefix = modelName.startsWith("models/")
-        ? modelName.substring(7)
-        : modelName;
-    return GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[modelName] ||
-        GOOGLE_GEMINI_IMAGE_MODEL_ALIASES[withoutPrefix] ||
-        withoutPrefix ||
-        "imagen-4.0-generate-001";
-}
-function isGeminiImageModel(model) {
-    return model.startsWith("gemini-") || GOOGLE_GEMINI_IMAGE_MODELS.has(model);
-}
-function getImageSizeLabel(imageSize) {
-    const sizeNum = parseInt(imageSize, 10);
-    return sizeNum >= 2048 ? "2K" : "1K";
-}
-function getPromptWithInlineNegative(prompt, globalNegPrompt, enableNegPrompt) {
-    const basePositive = typeof prompt === "string" ? prompt : "";
-    const negText = (globalNegPrompt || "").trim();
-    const hasValidNegative = Boolean(enableNegPrompt) && negText.length > 0;
-    const finalPrompt = hasValidNegative
-        ? `${basePositive}, negative prompt: ${negText}`
-        : basePositive;
-    return {
-        basePositive,
-        cleanPrompt: getApiReadyPrompt(finalPrompt, "google_api_final"),
-        hasValidNegative,
-        negText,
-    };
-}
-/**
- * Generates an image using the Google Imagen or Gemini image generation API.
- * @param {string} prompt - The generation prompt.
- * @param {object} callbacks - An object containing onSuccess and onFailure callbacks.
- */
-async function generate(prompt, { onSuccess, onFailure }) {
-    const config = await (0,storage/* getConfig */.zj)();
-    const { model: configuredModel, googleApiKey, numberOfImages, aspectRatio, personGeneration, imageSize, enableNegPrompt, globalNegPrompt, } = config;
-    const model = normalizeGoogleModel(configuredModel);
-    const { basePositive, cleanPrompt, hasValidNegative, negText } = getPromptWithInlineNegative(prompt, globalNegPrompt, enableNegPrompt);
-    // Debug-only diagnostics respecting the global logging toggle
-    (0,logger/* logDebug */.MD)("GOOGLE", "Prompt construction", {
-        path: "google_provider_prompt",
-        basePositivePromptLength: basePositive.length,
-        hasNegativePrompt: hasValidNegative,
-        enableNegPrompt: Boolean(enableNegPrompt),
-        negativePromptLength: hasValidNegative ? negText.length : 0,
-        finalPromptLength: cleanPrompt.length,
-        finalPromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
-        configuredModel,
-        normalizedModel: model,
-    });
-    if (isGeminiImageModel(model)) {
-        const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent`;
-        const imageConfig = {
-            aspectRatio: aspectRatio,
-            imageSize: getImageSizeLabel(imageSize),
-        };
-        const payload = {
-            contents: [{ parts: [{ text: cleanPrompt }] }],
-            generationConfig: {
-                responseModalities: ["IMAGE"],
-                responseFormat: {
-                    image: imageConfig,
-                },
-            },
-        };
-        GM_xmlhttpRequest({
-            method: "POST",
-            url,
-            headers: {
-                "x-goog-api-key": googleApiKey,
-                "Content-Type": "application/json",
-            },
-            data: JSON.stringify(payload),
-            onload: (response) => {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (data.error) {
-                        throw new Error(JSON.stringify(data.error));
-                    }
-                    if (!data.candidates ||
-                        !data.candidates[0] ||
-                        !data.candidates[0].content ||
-                        !data.candidates[0].content.parts) {
-                        throw new Error("No image data found in response");
-                    }
-                    const imageUrls = data.candidates[0].content.parts
-                        .filter((p) => p.inlineData && p.inlineData.data)
-                        .map((p) => `data:${p.inlineData.mimeType || "image/png"};base64,${p.inlineData.data}`);
-                    onSuccess(imageUrls, cleanPrompt, "Google", model);
-                }
-                catch (e) {
-                    onFailure(e.message, prompt, "Google");
-                }
-            },
-            onerror: (error) => onFailure(JSON.stringify(error), prompt, "Google"),
-        });
-    }
-    else {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`;
-        const parameters = {
-            sampleCount: parseInt(numberOfImages, 10),
-            aspectRatio,
-            personGeneration,
-        };
-        const isNewImagen = model.startsWith("imagen-3") || model.startsWith("imagen-4");
-        if (model.includes("fast")) {
-            // Fast Imagen models don't support imageSize.
-        }
-        else if (isNewImagen) {
-            parameters.imageSize = getImageSizeLabel(imageSize);
-        }
-        else {
-            // Legacy/unverified models may still expect a numeric imageSize.
-            parameters.imageSize = parseInt(imageSize, 10);
-        }
-        GM_xmlhttpRequest({
-            method: "POST",
-            url,
-            headers: {
-                "x-goog-api-key": googleApiKey,
-                "Content-Type": "application/json",
-            },
-            data: JSON.stringify({
-                instances: [{ prompt: cleanPrompt }],
-                parameters,
-            }),
-            onload: (response) => {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (data.error) {
-                        throw new Error(JSON.stringify(data.error));
-                    }
-                    const imageUrls = data.predictions.map((p) => `data:image/png;base64,${p.bytesB64Encoded}`);
-                    // Pass the exact FinalPrompt string used for the API to the viewer/history
-                    onSuccess(imageUrls, cleanPrompt, "Google", model);
-                }
-                catch (e) {
-                    onFailure(e.message, prompt, "Google");
-                }
-            },
-            onerror: (error) => onFailure(JSON.stringify(error), prompt, "Google"),
-        });
-    }
-}
-
 // EXTERNAL MODULE: ./src/utils/cache.ts
 var cache = __webpack_require__(165);
 ;// ./src/api/pollinations.ts
@@ -5119,8 +5775,15 @@ var cache = __webpack_require__(165);
 
 
 
-const POLLINATIONS_CURRENT_DEFAULT_MODEL = "sana";
-const POLLINATIONS_LEGACY_MODEL_ALIASES = new Set(["flux", "turbo"]);
+
+const POLLINATIONS_CURRENT_DEFAULT_MODEL = "zimage";
+// Legacy Pollinations model names that were renamed to the current default.
+// These are deliberate backward-compat aliases for obsolete catalog entries,
+// not silent server-side fallbacks.
+const POLLINATIONS_LEGACY_MODEL_ALIASES = new Set(["sana", "turbo"]);
+const POLLINATIONS_GEN_ENDPOINT = "https://gen.pollinations.ai/v1/images/generations";
+const POLLINATIONS_LEGACY_BASE = "https://image.pollinations.ai/prompt/";
+const POLLINATIONS_REFERRER = "https://github.com/MasuRii/wtr-lab-novel-image-generator";
 function normalizePollinationsModel(model) {
     const trimmedModel = typeof model === "string" ? model.trim() : "";
     if (!trimmedModel ||
@@ -5129,76 +5792,295 @@ function normalizePollinationsModel(model) {
     }
     return trimmedModel;
 }
+/**
+ * Parses a GM_xmlhttpRequest responseHeaders string (newline-delimited
+ * "Name: value" pairs) into a lowercase-keyed lookup map.
+ * @param {string} responseHeaders - Raw headers string from GM_xmlhttpRequest
+ * @returns {Record<string, string>} Lowercase header name -> value
+ */
+function parseResponseHeaders(responseHeaders) {
+    const map = {};
+    if (typeof responseHeaders !== "string" || responseHeaders.length === 0) {
+        return map;
+    }
+    const lines = responseHeaders.split(/\r?\n/);
+    for (const line of lines) {
+        const separator = line.indexOf(":");
+        if (separator === -1) {
+            continue;
+        }
+        const name = line.slice(0, separator).trim().toLowerCase();
+        const value = line.slice(separator + 1).trim();
+        if (name.length > 0) {
+            map[name] = value;
+        }
+    }
+    return map;
+}
 async function readResponseText(response) {
     if (response?.response && typeof response.response.text === "function") {
         return await response.response.text();
     }
     return response?.responseText || "";
 }
+function base64ToDataUrl(b64, mimeType) {
+    return `data:${mimeType || "image/png"};base64,${b64}`;
+}
 /**
- * Generates an image using the Pollinations.ai API.
- * @param {string} prompt - The generation prompt.
- * @param {object} callbacks - An object containing onSuccess, onFailure, and onAuthFailure callbacks.
+ * Extracts image result strings (data URLs or remote URLs) from an
+ * OpenAI-compatible image generations response body.
+ * @param {object} data - Parsed JSON response
+ * @returns {string[]} Image URL/data-URL strings
  */
-async function pollinations_generate(prompt, { onSuccess, onFailure, onAuthFailure }) {
-    const config = await (0,storage/* getConfig */.zj)();
-    const { pollinationsModel: model, pollinationsToken, pollinationsWidth, pollinationsHeight, pollinationsSeed, pollinationsEnhance, pollinationsSafe, pollinationsNologo, pollinationsPrivate, enableNegPrompt, globalNegPrompt, } = config;
-    // Base positive prompt from queue (StyledPrompt or EnhancedPrompt).
-    // Pollinations now accepts negative prompts as the source-backed
-    // negative_prompt query parameter, so keep the path prompt positive-only.
-    const basePositive = typeof prompt === "string" ? prompt : "";
-    const negEnabled = Boolean(enableNegPrompt);
-    const negText = (globalNegPrompt || "").trim();
-    const cleanNegativePrompt = getApiReadyPrompt(negText, "pollinations_negative_prompt");
-    const hasValidNegative = negEnabled && cleanNegativePrompt.length > 0;
-    const cleanPrompt = getApiReadyPrompt(basePositive, "pollinations_api_prompt");
-    const finalModel = normalizePollinationsModel(model);
-    // Debug logging to track model configuration and prompt construction
-    (0,logger/* logDebug */.MD)("POLLINATIONS", "Model configuration", {
-        originalModel: model,
-        finalModel: finalModel,
+function extractGenImageUrls(data) {
+    if (!data || !Array.isArray(data.data)) {
+        return [];
+    }
+    return data.data
+        .map((item) => {
+        if (item &&
+            typeof item.b64_json === "string" &&
+            item.b64_json.length > 0) {
+            const outputFormat = typeof item.output_format === "string" &&
+                item.output_format.length > 0
+                ? `image/${item.output_format.replace(/^image\//, "")}`
+                : "image/png";
+            return base64ToDataUrl(item.b64_json, outputFormat);
+        }
+        if (item && typeof item.url === "string" && item.url.length > 0) {
+            return item.url;
+        }
+        return null;
+    })
+        .filter(Boolean);
+}
+/**
+ * Fetches a remote image URL via GM_xmlhttpRequest and converts the response
+ * blob to a self-contained data: URL using FileReader. This ensures history
+ * always stores actual image content rather than ephemeral remote URLs that
+ * may 404 or change. The request is tracked in the abort registry so cancel
+ * behavior is preserved.
+ *
+ * @param {string} remoteUrl - The remote https:// image URL to fetch.
+ * @param {number} myToken - The cancel token captured at generation start.
+ * @returns {Promise<string>} A persistent data: URL.
+ */
+function fetchRemoteImageAsDataUrl(remoteUrl, myToken) {
+    return new Promise((resolve, reject) => {
+        const xhr = GM_xmlhttpRequest({
+            method: "GET",
+            url: remoteUrl,
+            responseType: "blob",
+            onload: (response) => {
+                untrackRequest(xhr);
+                if (getCancelToken() !== myToken) {
+                    reject(new Error("cancelled"));
+                    return;
+                }
+                if (response.status >= 200 && response.status < 300) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        if (reader.error) {
+                            reject(new Error(`Failed to encode image: ${reader.error.message || "FileReader error"}`));
+                        }
+                        else {
+                            resolve(reader.result);
+                        }
+                    };
+                    reader.onerror = () => {
+                        reject(new Error("Failed to encode image with FileReader"));
+                    };
+                    reader.readAsDataURL(response.response);
+                }
+                else {
+                    reject(new Error(`Failed to fetch image (HTTP ${response.status})`));
+                }
+            },
+            onerror: (error) => {
+                untrackRequest(xhr);
+                if (getCancelToken() !== myToken) {
+                    reject(new Error("cancelled"));
+                    return;
+                }
+                reject(new Error(`Network error fetching image: ${JSON.stringify(error)}`));
+            },
+        });
+        trackRequest(xhr);
     });
-    (0,logger/* logDebug */.MD)("POLLINATIONS", "Prompt construction", {
-        path: "positive_path_prompt_with_negative_prompt_query",
-        basePositivePromptLength: basePositive.length,
-        hasNegativePrompt: hasValidNegative,
-        enableNegPrompt: negEnabled,
-        negativePromptLength: hasValidNegative ? cleanNegativePrompt.length : 0,
-        finalPromptLength: cleanPrompt.length,
-        finalPromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
-    });
+}
+/**
+ * Determines whether a gen.pollinations.ai JSON error relates to an
+ * invalid/unknown model so the cached model list can be refreshed.
+ * @param {object} errorObj - The error object from the response envelope
+ * @returns {boolean}
+ */
+function isGenModelError(errorObj) {
+    const code = (errorObj?.code || "").toLowerCase();
+    const message = (errorObj?.message || "").toLowerCase();
+    return (code.includes("model") ||
+        message.includes("model not found") ||
+        message.includes("unknown model") ||
+        message.includes("not a valid model"));
+}
+function buildLegacyUrl(cleanPrompt, finalModel, opts) {
     const params = new URLSearchParams();
-    if (pollinationsToken) {
-        params.append("token", pollinationsToken);
-    }
+    // Official 2026 Pollinations auth: identify the web app via referrer param.
+    // The referrer is not an authentication token; it only identifies the
+    // client on the free legacy endpoint.
+    params.append("referrer", POLLINATIONS_REFERRER);
     params.append("model", finalModel);
-    if (hasValidNegative) {
-        params.append("negative_prompt", cleanNegativePrompt);
+    if (opts.hasValidNegative) {
+        params.append("negative_prompt", opts.cleanNegativePrompt);
     }
-    if (pollinationsWidth && pollinationsWidth > 0) {
-        params.append("width", pollinationsWidth);
+    if (opts.width && opts.width > 0) {
+        params.append("width", opts.width);
     }
-    if (pollinationsHeight && pollinationsHeight > 0) {
-        params.append("height", pollinationsHeight);
+    if (opts.height && opts.height > 0) {
+        params.append("height", opts.height);
     }
-    if (pollinationsSeed) {
-        params.append("seed", pollinationsSeed);
+    if (opts.seed) {
+        params.append("seed", opts.seed);
     }
-    if (pollinationsEnhance) {
+    if (opts.enhance) {
         params.append("enhance", "true");
     }
-    if (pollinationsSafe) {
+    if (opts.safe) {
         params.append("safe", "true");
     }
-    if (pollinationsNologo) {
+    if (opts.nologo) {
         params.append("nologo", "true");
     }
-    if (pollinationsPrivate) {
-        params.append("nofeed", "true");
+    if (opts.private) {
+        params.append("private", "true");
     }
     const paramString = params.toString();
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}${paramString ? "?" + paramString : ""}`;
-    GM_xmlhttpRequest({
+    return `${POLLINATIONS_LEGACY_BASE}${encodeURIComponent(cleanPrompt)}${paramString ? "?" + paramString : ""}`;
+}
+/**
+ * Generates an image using the authenticated Pollinations gen API
+ * (POST https://gen.pollinations.ai/v1/images/generations). This endpoint
+ * enforces Bearer auth, honors the selected model, and accounts key usage.
+ * Failures are reported explicitly; there is no fallback to the legacy
+ * endpoint or to a different model.
+ */
+function generateViaGenEndpoint(finalModel, genPrompt, cleanPrompt, originalPrompt, width, height, token, { onSuccess, onFailure, onAuthFailure }, myToken) {
+    const url = POLLINATIONS_GEN_ENDPOINT;
+    const payload = {
+        model: finalModel,
+        prompt: genPrompt,
+        n: 1,
+        size: `${width}x${height}`,
+    };
+    (0,logger/* logInfo */.fH)("POLLINATIONS", "Generating via authenticated gen endpoint", {
+        endpoint: url,
+        model: finalModel,
+        size: payload.size,
+    });
+    const xhr = GM_xmlhttpRequest({
+        method: "POST",
+        url,
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+        data: JSON.stringify(payload),
+        onload: async (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
+            const text = await readResponseText(response);
+            if (response.status >= 200 && response.status < 300) {
+                try {
+                    const data = JSON.parse(text);
+                    const imageUrls = extractGenImageUrls(data);
+                    if (imageUrls.length > 0) {
+                        // Convert any remote URLs to persistent data: URLs so history
+                        // stores actual image content, not ephemeral endpoints that 404.
+                        // b64_json responses are already data: URLs; only remote url
+                        // responses need a secondary fetch + FileReader conversion.
+                        try {
+                            const dataUrls = await Promise.all(imageUrls.map(async (imageUrl) => {
+                                if (imageUrl.startsWith("data:")) {
+                                    return imageUrl;
+                                }
+                                return await fetchRemoteImageAsDataUrl(imageUrl, myToken);
+                            }));
+                            if (getCancelToken() !== myToken) {
+                                return;
+                            }
+                            onSuccess(dataUrls, cleanPrompt, "Pollinations", finalModel);
+                        }
+                        catch (fetchError) {
+                            if (getCancelToken() !== myToken) {
+                                return;
+                            }
+                            onFailure(`Failed to preserve generated image: ${fetchError.message}`, originalPrompt, "Pollinations", finalModel);
+                        }
+                    }
+                    else {
+                        onFailure(`Pollinations gen endpoint returned no usable image data: ${text}`, originalPrompt, "Pollinations", finalModel);
+                    }
+                }
+                catch (parseError) {
+                    onFailure(`Failed to parse Pollinations gen response: ${parseError.message}`, originalPrompt, "Pollinations", finalModel);
+                }
+                return;
+            }
+            // Error path: the gen endpoint returns a JSON error envelope shaped as
+            // { success: false, error: { message, code }, status }. Parse it so
+            // invalid models and auth failures are surfaced explicitly instead of
+            // being masked by the legacy endpoint's silent fallback.
+            let errorObj = null;
+            let errorMessage = `Error ${response.status}: ${text}`;
+            try {
+                const parsed = JSON.parse(text);
+                errorObj = parsed?.error || null;
+                if (errorObj?.message) {
+                    errorMessage = errorObj.message;
+                }
+            }
+            catch {
+                // Non-JSON error body; keep the raw text message.
+            }
+            if (response.status === 401 ||
+                response.status === 402 ||
+                response.status === 403) {
+                onAuthFailure(errorMessage, originalPrompt);
+                return;
+            }
+            if (isGenModelError(errorObj)) {
+                (0,cache/* clearCachedModels */.WN)("pollinations");
+                onFailure(`Model error: ${errorMessage}. Refreshing model list.`, originalPrompt, "Pollinations", finalModel);
+                return;
+            }
+            onFailure(errorMessage, originalPrompt, "Pollinations", finalModel);
+        },
+        onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
+            onFailure(JSON.stringify(error), originalPrompt, "Pollinations", finalModel);
+        },
+    });
+    trackRequest(xhr);
+}
+/**
+ * Generates an image using the legacy free Pollinations endpoint
+ * (GET https://image.pollinations.ai/prompt/...). This path is used only
+ * without an API key. The response is verified via the X-Model-Used header:
+ * if the server used a different model than requested (silent fallback), the
+ * generation fails explicitly instead of reporting success with the wrong
+ * model.
+ */
+function generateViaLegacyEndpoint(finalModel, cleanPrompt, originalPrompt, opts, { onSuccess, onFailure, onAuthFailure }, myToken) {
+    const url = buildLegacyUrl(cleanPrompt, finalModel, opts);
+    (0,logger/* logInfo */.fH)("POLLINATIONS", "Generating via legacy free endpoint", {
+        endpoint: "image.pollinations.ai",
+        model: finalModel,
+    });
+    const xhr = GM_xmlhttpRequest({
         method: "GET",
         url: url,
         responseType: "blob",
@@ -5206,42 +6088,154 @@ async function pollinations_generate(prompt, { onSuccess, onFailure, onAuthFailu
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
         },
         onload: async (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             if (response.status >= 200 && response.status < 300) {
-                const blobUrl = URL.createObjectURL(response.response);
-                // Pass the exact FinalPrompt string used for the API to the viewer/history
-                onSuccess([blobUrl], cleanPrompt, "Pollinations", finalModel, [url]);
+                // Verify the server actually used the requested model. The legacy
+                // endpoint silently falls back to a free default (e.g. "sana") for
+                // unauthenticated or unauthorized requests, returning HTTP 200 with
+                // the wrong model. Treat any mismatch as a hard failure rather than
+                // presenting the wrong image as the requested model.
+                const headers = parseResponseHeaders(response.responseHeaders);
+                const modelUsed = (headers["x-model-used"] || "").trim().toLowerCase();
+                if (modelUsed && modelUsed !== finalModel.toLowerCase()) {
+                    onFailure(`Pollinations used "${modelUsed}" instead of the requested model "${finalModel}". ` +
+                        `The selected model likely requires an API key (paid tier). Add a Pollinations API key in settings to use "${finalModel}".`, originalPrompt, "Pollinations", finalModel);
+                    return;
+                }
+                // Convert the blob to a persistent data: URL so history stores
+                // actual image content, not a session-only blob: URL or a
+                // regeneration endpoint URL that may 404 or yield a different image.
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (getCancelToken() !== myToken) {
+                        return;
+                    }
+                    if (reader.error) {
+                        onFailure(`Failed to encode generated image: ${reader.error.message || "FileReader error"}`, originalPrompt, "Pollinations", finalModel);
+                        return;
+                    }
+                    onSuccess([reader.result], cleanPrompt, "Pollinations", finalModel);
+                };
+                reader.onerror = () => {
+                    if (getCancelToken() !== myToken) {
+                        return;
+                    }
+                    onFailure("Failed to encode generated image", originalPrompt, "Pollinations", finalModel);
+                };
+                reader.readAsDataURL(response.response);
             }
             else {
                 const text = await readResponseText(response);
                 if (text.toLowerCase().includes("model not found")) {
-                    onFailure(`Model error: ${text}. Refreshing model list.`, prompt, "Pollinations", finalModel);
+                    onFailure(`Model error: ${text}. Refreshing model list.`, originalPrompt, "Pollinations", finalModel);
                     (0,cache/* clearCachedModels */.WN)("pollinations");
                     return;
                 }
                 // Check for authentication/payment requirements in any status code.
-                // Restricted Pollinations models may direct users to auth.pollinations.ai
-                // or enter.pollinations.ai depending on the current service path.
+                // Restricted Pollinations models may direct users to
+                // enter.pollinations.ai for authentication.
                 if (response.status === 402 ||
-                    (response.status === 403 && text.includes("auth.pollinations.ai")) ||
+                    (response.status === 403 &&
+                        text.includes("enter.pollinations.ai")) ||
                     text.includes("enter.pollinations.ai") ||
                     (text.toLowerCase().includes("authentication") &&
-                        text.toLowerCase().includes("auth.pollinations.ai"))) {
+                        text.toLowerCase().includes("enter.pollinations.ai"))) {
                     try {
                         const errorData = JSON.parse(text);
-                        onAuthFailure(errorData.message || errorData.error || text, prompt);
+                        onAuthFailure(errorData.message || errorData.error || text, originalPrompt);
                         return;
                     }
                     catch (e) {
                         // If JSON parsing fails, still trigger auth modal
-                        onAuthFailure(text, prompt);
+                        onAuthFailure(text, originalPrompt);
                         return;
                     }
                 }
-                onFailure(`Error ${response.status}: ${text}`, prompt, "Pollinations", finalModel);
+                onFailure(`Error ${response.status}: ${text}`, originalPrompt, "Pollinations", finalModel);
             }
         },
-        onerror: (error) => onFailure(JSON.stringify(error), prompt, "Pollinations", finalModel),
+        onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
+            onFailure(JSON.stringify(error), originalPrompt, "Pollinations", finalModel);
+        },
     });
+    trackRequest(xhr);
+}
+/**
+ * Generates an image using the Pollinations.ai API.
+ *
+ * With an API key: uses POST https://gen.pollinations.ai/v1/images/generations
+ * (OpenAI-compatible), which enforces Bearer auth, honors the selected model,
+ * and accounts key usage on the dashboard.
+ *
+ * Without an API key: uses the legacy free GET image.pollinations.ai/prompt
+ * endpoint, but verifies the X-Model-Used response header so a silent
+ * fallback to a different model is reported as a failure, never as success.
+ *
+ * @param {string} prompt - The generation prompt.
+ * @param {object} callbacks - An object containing onSuccess, onFailure, and onAuthFailure callbacks.
+ */
+async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) {
+    const config = await (0,storage/* getConfig */.zj)();
+    const { pollinationsModel: model, pollinationsToken, pollinationsWidth, pollinationsHeight, pollinationsSeed, pollinationsEnhance, pollinationsSafe, pollinationsNologo, pollinationsPrivate, enableNegPrompt, globalNegPrompt, } = config;
+    // Base positive prompt from queue (StyledPrompt or EnhancedPrompt).
+    const basePositive = typeof prompt === "string" ? prompt : "";
+    const negEnabled = Boolean(enableNegPrompt);
+    const negText = (globalNegPrompt || "").trim();
+    const cleanNegativePrompt = getApiReadyPrompt(negText, "pollinations_negative_prompt");
+    const hasValidNegative = negEnabled && cleanNegativePrompt.length > 0;
+    const cleanPrompt = getApiReadyPrompt(basePositive, "pollinations_api_prompt");
+    const finalModel = normalizePollinationsModel(model);
+    const hasToken = typeof pollinationsToken === "string" &&
+        pollinationsToken.trim().length > 0;
+    const myToken = getCancelToken();
+    (0,logger/* logDebug */.MD)("POLLINATIONS", "Model configuration", {
+        originalModel: model,
+        finalModel: finalModel,
+        authenticated: hasToken,
+        endpoint: hasToken ? "gen" : "legacy",
+    });
+    (0,logger/* logDebug */.MD)("POLLINATIONS", "Prompt construction", {
+        path: hasToken
+            ? "gen_inline_negative_prompt"
+            : "positive_path_prompt_with_negative_prompt_query",
+        basePositivePromptLength: basePositive.length,
+        hasNegativePrompt: hasValidNegative,
+        enableNegPrompt: negEnabled,
+        negativePromptLength: hasValidNegative ? cleanNegativePrompt.length : 0,
+        finalPromptLength: cleanPrompt.length,
+        finalPromptPreview: cleanPrompt.substring(0, 200) + (cleanPrompt.length > 200 ? "..." : ""),
+    });
+    const callbacks = { onSuccess, onFailure, onAuthFailure };
+    if (hasToken) {
+        // Authenticated path: the gen endpoint honors the model and accounts the
+        // key. The OpenAI-compatible image generations API has no dedicated
+        // negative_prompt field, so the negative prompt is inlined into the
+        // prompt text (mirroring the OpenAI-compatible provider behavior).
+        const genPrompt = hasValidNegative
+            ? getApiReadyPrompt(`${cleanPrompt}, negative prompt: ${cleanNegativePrompt}`, "pollinations_gen_prompt")
+            : cleanPrompt;
+        generateViaGenEndpoint(finalModel, genPrompt, cleanPrompt, prompt, pollinationsWidth, pollinationsHeight, pollinationsToken.trim(), callbacks, myToken);
+    }
+    else {
+        generateViaLegacyEndpoint(finalModel, cleanPrompt, prompt, {
+            hasValidNegative,
+            cleanNegativePrompt,
+            width: pollinationsWidth,
+            height: pollinationsHeight,
+            seed: pollinationsSeed,
+            enhance: pollinationsEnhance,
+            safe: pollinationsSafe,
+            nologo: pollinationsNologo,
+            private: pollinationsPrivate,
+        }, callbacks, myToken);
+    }
 }
 
 ;// ./src/api/aiHorde.ts
@@ -5249,7 +6243,8 @@ async function pollinations_generate(prompt, { onSuccess, onFailure, onAuthFailu
 
 
 
-const AI_HORDE_CLIENT_AGENT = "WTR-Lab-Novel-Image-Generator:6.1.1:https://github.com/MasuRii/wtr-lab-novel-image-generator";
+
+const AI_HORDE_CLIENT_AGENT = "WTR-Lab-Novel-Image-Generator:6.2.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
 const AI_HORDE_API_BASE = "https://aihorde.net/api/v2";
 function getAIHordeHeaders(aiHordeApiKey = "0000000000") {
     return {
@@ -5274,12 +6269,16 @@ function getAIHordeImageUrl(imageData) {
     }
     return `data:image/webp;base64,${value}`;
 }
-function fetchFinalStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, onFailure, updateStatus }) {
-    GM_xmlhttpRequest({
+function fetchFinalStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, onFailure, updateStatus }, myToken) {
+    const xhr = GM_xmlhttpRequest({
         method: "GET",
         url: `${AI_HORDE_API_BASE}/generate/status/${id}`,
         headers: getAIHordeHeaders(aiHordeApiKey),
         onload: (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             try {
                 const data = parseJsonResponse(response);
                 const finalElapsedTime = Date.now() - startTime;
@@ -5323,6 +6322,10 @@ function fetchFinalStatus(id, prompt, startTime, model, aiHordeApiKey, { onSucce
             }
         },
         onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             (0,logger/* logError */.vV)("AIHORDE", "Failed to retrieve results from AI Horde", {
                 generationId: id,
                 error: error,
@@ -5330,8 +6333,9 @@ function fetchFinalStatus(id, prompt, startTime, model, aiHordeApiKey, { onSucce
             onFailure("Failed to retrieve results from AI Horde.", prompt, "AIHorde");
         },
     });
+    trackRequest(xhr);
 }
-function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, onFailure, updateStatus }) {
+function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, onFailure, updateStatus }, myToken) {
     const currentTime = Date.now();
     const elapsedTime = currentTime - startTime;
     (0,logger/* logDebug */.MD)("AIHORDE", "Checking AI Horde generation status", {
@@ -5339,11 +6343,15 @@ function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, o
         elapsedTimeMs: elapsedTime,
         promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""),
     });
-    GM_xmlhttpRequest({
+    const xhr = GM_xmlhttpRequest({
         method: "GET",
         url: `${AI_HORDE_API_BASE}/generate/check/${id}`,
         headers: getAIHordeHeaders(aiHordeApiKey),
         onload: (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             try {
                 const data = parseJsonResponse(response);
                 (0,logger/* logDebug */.MD)("AIHORDE", "AI Horde check response received", {
@@ -5359,7 +6367,7 @@ function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, o
                         onSuccess,
                         onFailure,
                         updateStatus,
-                    });
+                    }, myToken);
                     return;
                 }
                 let statusText = "Waiting for worker...";
@@ -5402,11 +6410,12 @@ function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, o
                     elapsedTimeMs: elapsedTime,
                 });
                 updateStatus(statusText);
-                setTimeout(() => checkStatus(id, prompt, startTime, model, aiHordeApiKey, {
+                const timer = setTimeout(() => checkStatus(id, prompt, startTime, model, aiHordeApiKey, {
                     onSuccess,
                     onFailure,
                     updateStatus,
-                }), 5000);
+                }, myToken), 5000);
+                trackTimer(timer);
             }
             catch (e) {
                 (0,logger/* logError */.vV)("AIHORDE", "Error checking AI Horde status", {
@@ -5418,6 +6427,10 @@ function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, o
             }
         },
         onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             (0,logger/* logError */.vV)("AIHORDE", "Failed to get status from AI Horde", {
                 generationId: id,
                 error: error,
@@ -5425,9 +6438,11 @@ function checkStatus(id, prompt, startTime, model, aiHordeApiKey, { onSuccess, o
             onFailure("Failed to get status from AI Horde.", prompt, "AIHorde");
         },
     });
+    trackRequest(xhr);
 }
 async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) {
     const config = await (0,storage/* getConfig */.zj)();
+    const myToken = getCancelToken();
     const { aiHordeApiKey, aiHordeModel, aiHordeSampler, aiHordeCfgScale, aiHordeSteps, aiHordeWidth, aiHordeHeight, aiHordeSeed, aiHordePostProcessing, enableNegPrompt, globalNegPrompt, } = config;
     // Apply prompt cleaning as a safety measure (main app already sends clean prompts)
     // For AI Horde, "prompt" must remain strictly the positive prompt (Styled/Enhanced).
@@ -5473,12 +6488,16 @@ async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) 
             : null,
     });
     updateStatus("Requesting...");
-    GM_xmlhttpRequest({
+    const xhr = GM_xmlhttpRequest({
         method: "POST",
         url: `${AI_HORDE_API_BASE}/generate/async`,
         headers: getAIHordeHeaders(aiHordeApiKey),
         data: JSON.stringify(payload),
         onload: (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             try {
                 const data = JSON.parse(response.responseText);
                 (0,logger/* logDebug */.MD)("AIHORDE", "AI Horde API response received", {
@@ -5497,7 +6516,7 @@ async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) 
                         onSuccess,
                         onFailure,
                         updateStatus,
-                    });
+                    }, myToken);
                 }
                 else {
                     if (data.message && data.message.toLowerCase().includes("model")) {
@@ -5525,15 +6544,21 @@ async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) 
             }
         },
         onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             (0,logger/* logError */.vV)("AIHORDE", "Network error during AI Horde request", {
                 error: error,
             });
             onFailure(JSON.stringify(error), prompt, "AIHorde");
         },
     });
+    trackRequest(xhr);
 }
 
 ;// ./src/api/openAI.ts
+
 
 
 
@@ -5542,7 +6567,7 @@ async function aiHorde_generate(prompt, { onSuccess, onFailure, updateStatus }) 
  * @param {string} responseText - The response text to check
  * @returns {boolean} - True if content appears to be HTML
  */
-function isHtmlResponse(responseText) {
+function openAI_isHtmlResponse(responseText) {
     const trimmed = responseText.trim().toLowerCase();
     return (trimmed.startsWith("<!doctype") ||
         trimmed.startsWith("<html") ||
@@ -5558,13 +6583,13 @@ function isHtmlResponse(responseText) {
  * @param {string} endpointUrl - The endpoint URL for context in error messages
  * @returns {object|null} - Parsed JSON object or throws enhanced error
  */
-function safeJsonParse(responseText, endpointUrl) {
+function openAI_safeJsonParse(responseText, endpointUrl) {
     try {
         return JSON.parse(responseText);
     }
     catch (e) {
         // Check if this is an HTML response
-        if (isHtmlResponse(responseText)) {
+        if (openAI_isHtmlResponse(responseText)) {
             throw {
                 isHtmlResponse: true,
                 originalError: e,
@@ -5596,10 +6621,6 @@ function safeJsonParse(responseText, endpointUrl) {
         };
     }
 }
-function modelSupportsResponseFormat(model) {
-    const modelId = typeof model === "string" ? model.toLowerCase() : "";
-    return modelId === "dall-e-2" || modelId === "dall-e-3";
-}
 function getOptionalString(value) {
     return typeof value === "string" && value.trim().length > 0
         ? value.trim()
@@ -5612,9 +6633,6 @@ function buildOpenAIImagePayload(activeProfile, prompt) {
         n: Number.isInteger(activeProfile.n) ? activeProfile.n : 1,
         size: getOptionalString(activeProfile.size) || "1024x1024",
     };
-    if (modelSupportsResponseFormat(activeProfile.model)) {
-        payload.response_format = "b64_json";
-    }
     const optionalFields = [
         "quality",
         "output_format",
@@ -5657,6 +6675,7 @@ async function openAI_generate(prompt, providerProfileUrl, { onSuccess, onFailur
         : basePositive;
     // Apply prompt cleaning as a safety measure on the fully-formed FinalPrompt
     const cleanPrompt = getApiReadyPrompt(finalPrompt, "openai_api_final");
+    const myToken = getCancelToken();
     // Respect global logging toggle for debug-level diagnostics
     (0,logger/* logDebug */.MD)("OPENAI-COMPAT", "Prompt construction", {
         path: "non-horde inline negative",
@@ -5669,7 +6688,7 @@ async function openAI_generate(prompt, providerProfileUrl, { onSuccess, onFailur
     });
     const url = `${activeUrl}/images/generations`;
     const payload = buildOpenAIImagePayload(activeProfile, cleanPrompt);
-    GM_xmlhttpRequest({
+    const xhr = GM_xmlhttpRequest({
         method: "POST",
         url: url,
         headers: {
@@ -5678,8 +6697,12 @@ async function openAI_generate(prompt, providerProfileUrl, { onSuccess, onFailur
         },
         data: JSON.stringify(payload),
         onload: (response) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
             try {
-                const data = safeJsonParse(response.responseText, activeUrl);
+                const data = openAI_safeJsonParse(response.responseText, activeUrl);
                 // Check for authentication errors first
                 if (data?.Error &&
                     data.Error.toLowerCase().includes("invalid api key")) {
@@ -5771,20 +6794,88 @@ async function openAI_generate(prompt, providerProfileUrl, { onSuccess, onFailur
                 }
             }
         },
-        onerror: (error) => onFailure(JSON.stringify(error), prompt, "OpenAICompat", activeUrl),
+        onerror: (error) => {
+            untrackRequest(xhr);
+            if (getCancelToken() !== myToken) {
+                return;
+            }
+            onFailure(JSON.stringify(error), prompt, "OpenAICompat", activeUrl);
+        },
     });
+    trackRequest(xhr);
 }
 
-// EXTERNAL MODULE: ./src/components/statusWidget.ts
-var statusWidget = __webpack_require__(498);
+;// ./src/components/statusWidget.ts
+let widgetElement = null;
+/**
+ * Creates the status widget DOM element and appends it to the body.
+ * This should only be called once during initialization.
+ */
+function create() {
+    if (widgetElement) {
+        return;
+    }
+    widgetElement = document.createElement("div");
+    widgetElement.id = "nig-status-widget";
+    widgetElement.className = "nig-status-widget";
+    widgetElement.innerHTML = `<div class="nig-status-icon"></div><span class="nig-status-text"></span><button type="button" class="nig-status-cancel" aria-label="Stop generation" title="Stop generation" style="display:none;cursor:pointer;margin-left:var(--nig-space-sm);font-weight:bold;background:transparent;border:none;color:inherit;font-size:var(--nig-font-size-base);padding:0 var(--nig-space-xs);line-height:1;flex-shrink:0;">✕</button>`;
+    document.body.appendChild(widgetElement);
+}
+/**
+ * Updates the state and content of the status widget.
+ * @param {'hidden'|'loading'|'success'|'error'} state - The visual state of the widget.
+ * @param {string} text - The text to display.
+ * @param {function|null} [onClickHandler=null] - An optional click handler for the widget.
+ * @param {function|null} [onCancel=null] - An optional cancel callback shown as a ✕ button during loading.
+ */
+function statusWidget_update(state, text, onClickHandler = null, onCancel = null) {
+    if (!widgetElement) {
+        return;
+    }
+    widgetElement.classList.remove("loading", "success", "error");
+    widgetElement.onclick = onClickHandler;
+    const cancelBtn = widgetElement.querySelector(".nig-status-cancel");
+    if (cancelBtn) {
+        cancelBtn.style.display = "none";
+        cancelBtn.onclick = null;
+    }
+    if (state === "hidden") {
+        widgetElement.style.display = "none";
+        return;
+    }
+    widgetElement.style.display = "flex";
+    widgetElement.querySelector(".nig-status-text").textContent = text;
+    widgetElement.classList.add(state);
+    const icon = widgetElement.querySelector(".nig-status-icon");
+    icon.innerHTML = ""; // Clear previous icon
+    if (state === "success") {
+        icon.innerHTML = "✅";
+    }
+    else if (state === "error") {
+        icon.innerHTML = "❌";
+    }
+    // Show cancel button during loading when an onCancel handler is provided
+    if (state === "loading" && onCancel && cancelBtn) {
+        cancelBtn.style.display = "inline";
+        cancelBtn.onclick = (e) => {
+            e.stopPropagation();
+            onCancel();
+        };
+    }
+}
+
 // EXTERNAL MODULE: ./src/components/imageViewer.ts
 var imageViewer = __webpack_require__(237);
+// EXTERNAL MODULE: ./src/utils/uiUtils.ts
+var uiUtils = __webpack_require__(511);
 ;// ./src/components/errorModal.ts
+
 
 
 let modalElement = null;
 let retryCallback = (..._args) => { };
 let dismissCallback = () => { };
+let errorA11yCleanup = null;
 /**
  * Initializes the error modal with callbacks for retry and dismiss actions.
  * @param {object} callbacks - An object containing the retry and dismiss functions.
@@ -5798,7 +6889,7 @@ function errorModal_init({ onRetry, onDismiss }) {
 /**
  * Creates the error modal DOM element and appends it to the body.
  */
-function create() {
+function errorModal_create() {
     if (modalElement) {
         return;
     }
@@ -5807,9 +6898,9 @@ function create() {
     modalElement.className = "nig-modal-overlay";
     modalElement.style.display = "none";
     modalElement.innerHTML = `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Generation Failed</h2>
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-error-title">
+            <button type="button" class="nig-close-btn" aria-label="Close error dialog">&times;</button>
+            <h2 id="nig-error-title">Generation Failed</h2>
             <p>The image could not be generated. Please review the reason below and adjust your prompt if necessary.</p>
             <p><strong>Reason:</strong></p>
             <div id="nig-error-reason"></div>
@@ -5819,6 +6910,7 @@ function create() {
                 <label for="nig-retry-provider-select">Retry with Provider:</label>
                 <select id="nig-retry-provider-select"></select>
             </div>
+            <div id="nig-error-hint" class="nig-error-hint" style="display: none;"></div>
             <div id="nig-error-actions" class="nig-error-actions"></div>
         </div>`;
     document.body.appendChild(modalElement);
@@ -5833,6 +6925,11 @@ function hide() {
     if (modalElement) {
         modalElement.style.display = "none";
     }
+    // Clean up a11y (focus trap, scroll lock, restore focus)
+    if (errorA11yCleanup) {
+        errorA11yCleanup();
+        errorA11yCleanup = null;
+    }
     // Call the dismiss callback if provided
     if (typeof dismissCallback === "function") {
         dismissCallback();
@@ -5844,7 +6941,7 @@ function hide() {
  */
 async function show(errorDetails) {
     if (!modalElement) {
-        create();
+        errorModal_create();
     }
     const reasonContainer = document.getElementById("nig-error-reason");
     const promptTextarea = document.getElementById("nig-error-prompt");
@@ -5852,7 +6949,23 @@ async function show(errorDetails) {
     const providerSelect = document.getElementById("nig-retry-provider-select");
     providerSelect.innerHTML = "";
     const config = await (0,storage/* getConfig */.zj)();
-    const providers = ["Pollinations", "AIHorde", "Google"];
+    // Derive available providers dynamically from the config panel's provider
+    // dropdown instead of hardcoding, so the retry list always reflects the
+    // actual available providers (finding #19).
+    const providerSelectEl = document.getElementById("nig-provider");
+    const providers = [];
+    if (providerSelectEl) {
+        for (let i = 0; i < providerSelectEl.options.length; i++) {
+            const v = providerSelectEl.options[i].value;
+            if (v && v !== "OpenAICompat") {
+                providers.push(v);
+            }
+        }
+    }
+    // Fallback if DOM not available
+    if (providers.length === 0) {
+        providers.push("Pollinations", "AIHorde");
+    }
     providers.forEach((p) => {
         const option = document.createElement("option");
         option.value = p;
@@ -5928,7 +7041,7 @@ async function show(errorDetails) {
     // In case multiple signals exist, ensure uniqueness and readability
     const uniqueReasonParts = Array.from(new Set(reasonParts.filter(Boolean)));
     reasonContainer.innerHTML = uniqueReasonParts
-        .map((part) => `<p>${part}</p>`)
+        .map((part) => `<p>${(0,uiUtils/* escapeHtml */.ZD)(part)}</p>`)
         .join("");
     // Reset prompt text
     promptTextarea.value =
@@ -5950,7 +7063,7 @@ async function show(errorDetails) {
     retryBtn.onclick = () => {
         const editedPrompt = promptTextarea.value.trim();
         if (!editedPrompt) {
-            alert("Prompt cannot be empty.");
+            (0,uiUtils/* showToast */.P0)("Prompt cannot be empty.", "error");
             return;
         }
         const selectedProviderValue = providerSelect.value;
@@ -5984,9 +7097,19 @@ async function show(errorDetails) {
         }
         else {
             // For non-retryable errors, only show retry if user modifies prompt or changes provider
+            // Show a hint explaining why Retry is hidden (finding #18)
+            const hintEl = document.getElementById("nig-error-hint");
+            if (hintEl) {
+                hintEl.textContent =
+                    "Retry is hidden because this error may not be resolved by simply retrying. Edit your prompt above or select a different provider to reveal the Retry button.";
+                hintEl.style.display = "block";
+            }
             const showRetryButton = () => {
                 if (!actionsContainer.contains(retryBtn)) {
                     actionsContainer.appendChild(retryBtn);
+                    if (hintEl) {
+                        hintEl.style.display = "none";
+                    }
                 }
             };
             promptTextarea.oninput = showRetryButton;
@@ -5994,68 +7117,21 @@ async function show(errorDetails) {
         }
     }
     modalElement.style.display = "flex";
-}
-
-;// ./src/components/googleApiPrompt.ts
-
-let promptElement = null;
-/**
- * Shows a modal prompting the user for their Google API key.
- */
-function googleApiPrompt_show() {
-    if (document.getElementById("nig-google-api-prompt")) {
-        return;
+    // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+    if (errorA11yCleanup) {
+        errorA11yCleanup();
     }
-    promptElement = document.createElement("div");
-    promptElement.id = "nig-google-api-prompt";
-    promptElement.className = "nig-modal-overlay";
-    promptElement.innerHTML = `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Google API Key Required</h2>
-            <p>Please provide your Google AI Gemini API key. You can get one from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a>.</p>
-            <div class="nig-form-group">
-                <label for="nig-prompt-api-key">Gemini API Key</label>
-                <div class="nig-password-wrapper">
-                    <input type="password" id="nig-prompt-api-key">
-                    <button
-                        type="button"
-                        class="nig-password-toggle"
-                        data-target="nig-prompt-api-key"
-                        aria-label="Show Gemini API key"
-                        aria-pressed="false"
-                    >
-                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
-                    </button>
-                </div>
-            </div>
-            <button id="nig-prompt-save-btn" class="nig-save-btn">Save Key</button>
-        </div>`;
-    document.body.appendChild(promptElement);
-    const close = () => promptElement.remove();
-    promptElement
-        .querySelector(".nig-close-btn")
-        .addEventListener("click", close);
-    promptElement
-        .querySelector("#nig-prompt-save-btn")
-        .addEventListener("click", async () => {
-        const key = promptElement
-            .querySelector("#nig-prompt-api-key")
-            .value.trim();
-        if (key) {
-            await (0,storage/* setConfigValue */.yJ)("googleApiKey", key);
-            alert("API Key saved. You can now generate an image.");
-            close();
-        }
-        else {
-            alert("API Key cannot be empty.");
-        }
+    errorA11yCleanup = (0,uiUtils/* setupModalA11y */.nI)(modalElement, {
+        labelledBy: "nig-error-title",
+        closeOnEscape: true,
+        onClose: () => hide(),
     });
 }
 
 ;// ./src/components/pollinationsAuthPrompt.ts
 
-let pollinationsAuthPrompt_promptElement = null;
+
+let promptElement = null;
 /**
  * Shows a modal for Pollinations.ai authentication.
  * @param {string} errorMessage - The error message from the API.
@@ -6066,16 +7142,16 @@ function pollinationsAuthPrompt_show(errorMessage, failedPrompt, onRetry) {
     if (document.getElementById("nig-pollinations-auth-prompt")) {
         return;
     }
-    pollinationsAuthPrompt_promptElement = document.createElement("div");
-    pollinationsAuthPrompt_promptElement.id = "nig-pollinations-auth-prompt";
-    pollinationsAuthPrompt_promptElement.className = "nig-modal-overlay";
-    pollinationsAuthPrompt_promptElement.innerHTML = `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Authentication Required</h2>
+    promptElement = document.createElement("div");
+    promptElement.id = "nig-pollinations-auth-prompt";
+    promptElement.className = "nig-modal-overlay";
+    promptElement.innerHTML = `
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-auth-title">
+            <button type="button" class="nig-close-btn" aria-label="Close authentication dialog">&times;</button>
+            <h2 id="nig-auth-title">Authentication Required</h2>
             <p>The Pollinations.ai model you selected requires authentication. You can get free access by registering.</p>
-            <p><strong>Error Message:</strong> <em>${errorMessage}</em></p>
-            <p>Please visit <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> to continue. You can either:</p>
+            <p><strong>Error Message:</strong> <em>${(0,uiUtils/* escapeHtml */.ZD)(errorMessage)}</em></p>
+            <p>Please visit <a href="https://enter.pollinations.ai" target="_blank" class="nig-api-prompt-link">enter.pollinations.ai</a> to continue. You can either:</p>
             <ul>
                 <li><strong>Register the Referrer:</strong> The easiest method. Just register the domain <code>wtr-lab.com</code>. This links your usage to your account without needing a token.</li>
                 <li><strong>Use a Token:</strong> Get an API token and enter it below.</li>
@@ -6086,25 +7162,36 @@ function pollinationsAuthPrompt_show(errorMessage, failedPrompt, onRetry) {
             </div>
             <button id="nig-prompt-save-token-btn" class="nig-save-btn">Save Token & Retry</button>
         </div>`;
-    document.body.appendChild(pollinationsAuthPrompt_promptElement);
-    const close = () => pollinationsAuthPrompt_promptElement.remove();
-    pollinationsAuthPrompt_promptElement
+    document.body.appendChild(promptElement);
+    const close = () => {
+        if (a11yCleanup) {
+            a11yCleanup();
+            a11yCleanup = null;
+        }
+        promptElement.remove();
+    };
+    let a11yCleanup = (0,uiUtils/* setupModalA11y */.nI)(promptElement, {
+        labelledBy: "nig-auth-title",
+        closeOnEscape: true,
+        onClose: close,
+    });
+    promptElement
         .querySelector(".nig-close-btn")
         .addEventListener("click", close);
-    pollinationsAuthPrompt_promptElement
+    promptElement
         .querySelector("#nig-prompt-save-token-btn")
         .addEventListener("click", async () => {
-        const token = pollinationsAuthPrompt_promptElement
+        const token = promptElement
             .querySelector("#nig-prompt-pollinations-token")
             .value.trim();
         if (token) {
             await (0,storage/* setConfigValue */.yJ)("pollinationsToken", token);
-            pollinationsAuthPrompt_promptElement.remove();
-            alert("Token saved. Retrying generation...");
+            promptElement.remove();
+            (0,uiUtils/* showToast */.P0)("Token saved. Retrying generation...", "success");
             onRetry(failedPrompt, "Pollinations");
         }
         else {
-            alert("Token cannot be empty.");
+            (0,uiUtils/* showToast */.P0)("Token cannot be empty.", "error");
         }
     });
 }
@@ -6113,11 +7200,22 @@ function pollinationsAuthPrompt_show(errorMessage, failedPrompt, onRetry) {
 var file = __webpack_require__(409);
 // EXTERNAL MODULE: ./src/config/defaults.ts
 var defaults = __webpack_require__(916);
+// EXTERNAL MODULE: ./src/api/models.ts
+var models = __webpack_require__(770);
 ;// ./src/components/enhancementPanel.ts
 // --- IMPORTS ---
 
 
 
+
+
+/**
+ * Returns true when the enhancement model UI is in manual text-input mode.
+ */
+function isEnhancementManualMode() {
+    const manualContainer = document.getElementById("nig-enhancement-model-container-manual");
+    return Boolean(manualContainer && manualContainer.style.display !== "none");
+}
 // --- PUBLIC FUNCTIONS ---
 /**
  * Toggles the enhancement settings UI based on whether enhancement is enabled
@@ -6127,9 +7225,23 @@ function toggleEnhancementSettings(enabled) {
     if (enhancementSettings) {
         if (enabled) {
             enhancementSettings.classList.remove("disabled");
+            // Re-enable inputs in tab order (finding #20)
+            enhancementSettings
+                .querySelectorAll("input, select, textarea, button")
+                .forEach((el) => {
+                el.removeAttribute("tabindex");
+                el.setAttribute("aria-disabled", "false");
+            });
         }
         else {
             enhancementSettings.classList.add("disabled");
+            // Remove inputs from tab order (finding #20: disabled inputs were still focusable)
+            enhancementSettings
+                .querySelectorAll("input, select, textarea, button")
+                .forEach((el) => {
+                el.setAttribute("tabindex", "-1");
+                el.setAttribute("aria-disabled", "true");
+            });
         }
     }
 }
@@ -6138,7 +7250,9 @@ function toggleEnhancementSettings(enabled) {
  */
 function updateEnhancementUI(provider, config) {
     const enhancementEnabled = config.enhancementEnabled;
-    const hasApiKey = config.enhancementApiKey && config.enhancementApiKey.trim().length > 0;
+    const hasEndpoint = config.enhancementBaseUrl && config.enhancementBaseUrl.trim().length > 0;
+    const hasModel = config.enhancementModel && config.enhancementModel.trim().length > 0;
+    const isConfigured = hasEndpoint && hasModel;
     const shouldUseProviderEnh = shouldUseProviderEnhancement(provider, config);
     const providerPriorityInfo = document.getElementById("nig-provider-priority-info");
     const statusIndicator = document.getElementById("nig-status-indicator");
@@ -6156,13 +7270,13 @@ function updateEnhancementUI(provider, config) {
     }
     else {
         providerPriorityInfo.style.display = "none";
-        if (enhancementEnabled && hasApiKey) {
+        if (enhancementEnabled && isConfigured) {
             statusIndicator.className = "nig-status-indicator external-active";
             statusText.textContent = "External AI Enhancement Active";
         }
         else if (enhancementEnabled) {
             statusIndicator.className = "nig-status-indicator disabled";
-            statusText.textContent = "Enhancement Enabled (No API Key)";
+            statusText.textContent = "Enhancement Enabled (No Endpoint)";
         }
         else {
             statusIndicator.className = "nig-status-indicator disabled";
@@ -6248,7 +7362,7 @@ async function saveUserPresetsToStorage(userPresetsMap) {
     }
     catch (e) {
         console.error("[NIG] Failed to save enhancementUserPresets", e);
-        alert("Failed to save enhancement preset. See console for details.");
+        (0,uiUtils/* showToast */.P0)("Failed to save enhancement preset. See console for details.", "error");
     }
 }
 /**
@@ -6420,21 +7534,6 @@ async function handleEnhancementTemplateSelection(config) {
     }
 }
 /**
- * Tests the enhancement functionality with a sample prompt
- */
-async function testEnhancement(prompt, config) {
-    try {
-        const result = await enhancePromptWithGemini(prompt, config);
-        return {
-            original: prompt,
-            enhanced: result,
-        };
-    }
-    catch (error) {
-        throw new Error(`Enhancement failed: ${error.message}`);
-    }
-}
-/**
  * Populates enhancement settings in the form
  */
 async function populateEnhancementSettings(config) {
@@ -6442,8 +7541,30 @@ async function populateEnhancementSettings(config) {
     await handleEnhancementTemplateSelection(config);
     toggleEnhancementSettings(config.enhancementEnabled);
     updateEnhancementUI(config.selectedProvider, config);
-    if (config.enhancementApiKey.trim().length > 0) {
-        document.getElementById("nig-enhancement-preview").style.display = "block";
+    // Enhancement model: select (dynamic fetch) vs manual text-input mode
+    const selectContainer = document.getElementById("nig-enhancement-model-container-select");
+    const manualContainer = document.getElementById("nig-enhancement-model-container-manual");
+    const modelManual = document.getElementById("nig-enhancement-model-manual");
+    // Always seed the manual input with the saved model so switching modes is lossless
+    if (modelManual) {
+        modelManual.value = config.enhancementModel || "";
+    }
+    if (config.enhancementModelManualInput) {
+        if (selectContainer) {
+            selectContainer.style.display = "none";
+        }
+        if (manualContainer) {
+            manualContainer.style.display = "block";
+        }
+    }
+    else {
+        if (selectContainer) {
+            selectContainer.style.display = "block";
+        }
+        if (manualContainer) {
+            manualContainer.style.display = "none";
+        }
+        await models/* loadEnhancementModels */.jG(config.enhancementModel, config.enhancementBaseUrl, config.enhancementApiKey);
     }
 }
 /**
@@ -6451,8 +7572,14 @@ async function populateEnhancementSettings(config) {
  */
 async function saveEnhancementConfig() {
     await storage/* setConfigValue */.yJ("enhancementEnabled", document.getElementById("nig-enhancement-enabled").checked);
-    await storage/* setConfigValue */.yJ("enhancementApiKey", document.getElementById("nig-gemini-api-key").value.trim());
-    await storage/* setConfigValue */.yJ("enhancementModel", document.getElementById("nig-enhancement-model").value);
+    await storage/* setConfigValue */.yJ("enhancementApiKey", document.getElementById("nig-enhancement-api-key").value.trim());
+    await storage/* setConfigValue */.yJ("enhancementBaseUrl", document.getElementById("nig-enhancement-base-url").value.trim());
+    const isManualMode = isEnhancementManualMode();
+    const enhancementModelValue = isManualMode
+        ? document.getElementById("nig-enhancement-model-manual").value.trim()
+        : document.getElementById("nig-enhancement-model").value.trim();
+    await storage/* setConfigValue */.yJ("enhancementModel", enhancementModelValue);
+    await storage/* setConfigValue */.yJ("enhancementModelManualInput", isManualMode);
     await storage/* setConfigValue */.yJ("enhancementTemplate", document.getElementById("nig-enhancement-template").value.trim());
     await storage/* setConfigValue */.yJ("enhancementTemplateSelected", document.getElementById("nig-enhancement-template-select").value);
     await storage/* setConfigValue */.yJ("enhancementOverrideProvider", false); // Reset override on save
@@ -6468,8 +7595,9 @@ function setupEnhancementEventListeners(panelElement) {
     const templateSavePresetBtn = panelElement.querySelector("#nig-template-save-preset");
     const templateDeletePresetBtn = panelElement.querySelector("#nig-template-delete-preset");
     const templateExampleBtn = panelElement.querySelector("#nig-template-example");
-    const testEnhancementBtn = panelElement.querySelector("#nig-test-enhancement");
-    const geminiApiKeyInput = panelElement.querySelector("#nig-gemini-api-key");
+    const enhancementFetchBtn = panelElement.querySelector("#nig-enhancement-fetch-models");
+    const enhancementSwitchToManual = panelElement.querySelector("#nig-enhancement-switch-to-manual");
+    const enhancementSwitchToSelect = panelElement.querySelector("#nig-enhancement-switch-to-select");
     // Enhancement Template Selection Handler
     templateSelect.addEventListener("change", async (e) => {
         const selectedValue = e.target.value;
@@ -6521,16 +7649,16 @@ function setupEnhancementEventListeners(panelElement) {
                 const templateSelectEl = panelElement.querySelector("#nig-enhancement-template-select");
                 const rawText = (templateTextarea.value || "").trim();
                 if (!rawText) {
-                    alert("Cannot save an empty enhancement preset.");
+                    (0,uiUtils/* showToast */.P0)("Cannot save an empty enhancement preset.", "error");
                     return;
                 }
-                const name = prompt("Enter a name for this enhancement preset:", "");
+                const name = await (0,uiUtils/* showPrompt */.q9)("Enter a name for this enhancement preset:", "", "Save Enhancement Preset");
                 if (!name) {
                     return;
                 }
                 const trimmedName = name.trim();
                 if (!trimmedName) {
-                    alert("Preset name cannot be empty.");
+                    (0,uiUtils/* showToast */.P0)("Preset name cannot be empty.", "error");
                     return;
                 }
                 const config = await storage/* getConfig */.zj();
@@ -6564,11 +7692,11 @@ function setupEnhancementEventListeners(panelElement) {
                 templateTextarea.disabled = true;
                 await storage/* setConfigValue */.yJ("enhancementTemplate", rawText);
                 await storage/* setConfigValue */.yJ("enhancementTemplateSelected", `user:${id}`);
-                alert(`Enhancement preset "${trimmedName}" saved under User Presets.`);
+                (0,uiUtils/* showToast */.P0)(`Enhancement preset "${trimmedName}" saved under User Presets.`, "success");
             }
             catch (e) {
                 console.error("[NIG] Failed to save enhancement preset", e);
-                alert("Failed to save enhancement preset. Please check the console for details.");
+                (0,uiUtils/* showToast */.P0)("Failed to save enhancement preset. Please check the console for details.", "error");
             }
         });
     }
@@ -6580,18 +7708,18 @@ function setupEnhancementEventListeners(panelElement) {
                 const templateTextarea = panelElement.querySelector("#nig-enhancement-template");
                 const selected = templateSelectEl ? templateSelectEl.value : "";
                 if (!selected || !selected.startsWith("user:")) {
-                    alert('Please select a User Preset from the "User Presets" group to delete.');
+                    (0,uiUtils/* showToast */.P0)('Please select a User Preset from the "User Presets" group to delete.', "error");
                     return;
                 }
                 const id = selected.replace(/^user:/, "");
                 const config = await storage/* getConfig */.zj();
                 const existing = getNormalizedUserPresets(config);
                 if (!existing[id]) {
-                    alert("The selected user preset no longer exists or is invalid.");
+                    (0,uiUtils/* showToast */.P0)("The selected user preset no longer exists or is invalid.", "error");
                     return;
                 }
                 const confirmMessage = `Delete user preset "${existing[id].name || id}"? This action cannot be undone.`;
-                if (!confirm(confirmMessage)) {
+                if (!(await (0,uiUtils/* showConfirm */.GQ)(confirmMessage, "Delete User Preset"))) {
                     return;
                 }
                 // Remove preset and persist
@@ -6619,11 +7747,11 @@ function setupEnhancementEventListeners(panelElement) {
                         await storage/* setConfigValue */.yJ("enhancementTemplateSelected", fallbackKey);
                     }
                 }
-                alert("User preset deleted.");
+                (0,uiUtils/* showToast */.P0)("User preset deleted.", "success");
             }
             catch (e) {
                 console.error("[NIG] Failed to delete enhancement user preset", e);
-                alert("Failed to delete user preset. Please check the console for details.");
+                (0,uiUtils/* showToast */.P0)("Failed to delete user preset. Please check the console for details.", "error");
             }
         });
     }
@@ -6697,18 +7825,53 @@ function setupEnhancementEventListeners(panelElement) {
         const config = await storage/* getConfig */.zj();
         updateEnhancementUI(provider, config);
     });
-    // API key input handling
-    geminiApiKeyInput.addEventListener("input", async (e) => {
-        const hasApiKey = e.target.value.trim().length > 0;
-        if (hasApiKey) {
-            panelElement.querySelector("#nig-enhancement-preview").style.display =
-                "block";
-        }
-        else {
-            panelElement.querySelector("#nig-enhancement-preview").style.display =
-                "none";
-        }
-    });
+    // Enhancement model fetch (dynamic discovery) and select/manual mode toggling
+    if (enhancementFetchBtn) {
+        enhancementFetchBtn.addEventListener("click", () => {
+            const baseUrl = document
+                .getElementById("nig-enhancement-base-url")
+                .value.trim();
+            const apiKey = document
+                .getElementById("nig-enhancement-api-key")
+                .value.trim();
+            models/* fetchEnhancementModels */.xE(baseUrl, apiKey);
+        });
+    }
+    if (enhancementSwitchToManual) {
+        enhancementSwitchToManual.addEventListener("click", (e) => {
+            e.preventDefault();
+            const selectContainer = document.getElementById("nig-enhancement-model-container-select");
+            const manualContainer = document.getElementById("nig-enhancement-model-container-manual");
+            const select = document.getElementById("nig-enhancement-model");
+            const manual = document.getElementById("nig-enhancement-model-manual");
+            // Preserve the current selection when switching to manual input
+            if (select && manual && !manual.value.trim()) {
+                const currentVal = select.value.trim();
+                if (currentVal) {
+                    manual.value = currentVal;
+                }
+            }
+            if (selectContainer) {
+                selectContainer.style.display = "none";
+            }
+            if (manualContainer) {
+                manualContainer.style.display = "block";
+            }
+        });
+    }
+    if (enhancementSwitchToSelect) {
+        enhancementSwitchToSelect.addEventListener("click", (e) => {
+            e.preventDefault();
+            const selectContainer = document.getElementById("nig-enhancement-model-container-select");
+            const manualContainer = document.getElementById("nig-enhancement-model-container-manual");
+            if (selectContainer) {
+                selectContainer.style.display = "block";
+            }
+            if (manualContainer) {
+                manualContainer.style.display = "none";
+            }
+        });
+    }
     // Track manual edits to enhancement template:
     // Always persist latest raw text for resilience.
     const templateTextareaForInput = panelElement.querySelector("#nig-enhancement-template");
@@ -6724,78 +7887,8 @@ function setupEnhancementEventListeners(panelElement) {
             }
         });
     }
-    // Test enhancement button
-    testEnhancementBtn.addEventListener("click", async () => {
-        const config = await storage/* getConfig */.zj();
-        const maxTestLength = 4000;
-        const defaultPrompt = "As dusk settles over the glass-domed city of Aurelia, bioluminescent vines unfurl along the skybridges, " +
-            "casting soft teal and amethyst reflections across the rain-slick streets below. A lone archivist in a " +
-            "weathered indigo cloak pauses at the edge of the highest promenade, holographic pages circling her like " +
-            "gentle fireflies, each fragment revealing glimpses of forgotten constellations and outlawed legends. " +
-            "Far beneath, maglev trams weave through layers of suspended gardens, mirrored water channels, and rising " +
-            "plumes of golden steam as hidden market stalls ignite with warm lantern light. In the distance, an ancient " +
-            "stone observatory fused with gleaming chrome spires pierces the cloudline, its rotating rings aligning " +
-            "slowly with an eclipse of twin moons. The air shimmers with drifting petals, neon signage in lost languages, " +
-            "and faint auroras bending around colossal statues half-consumed by ivy and circuitry.";
-        const originalPromptEl = document.getElementById("nig-original-prompt");
-        let testPrompt = originalPromptEl
-            ? (originalPromptEl.value || originalPromptEl.textContent || "").trim()
-            : "";
-        // If no user-provided prompt in the editable field, fallback to default narrative prompt
-        if (!testPrompt) {
-            testPrompt = defaultPrompt;
-            if (originalPromptEl) {
-                // Populate the editable area so the user can see/modify what was used
-                if ("value" in originalPromptEl) {
-                    originalPromptEl.value = defaultPrompt;
-                }
-                else {
-                    originalPromptEl.textContent = defaultPrompt;
-                }
-            }
-        }
-        // Enforce a reasonable length limit for preview requests
-        if (testPrompt.length > maxTestLength) {
-            alert("Test prompt is too long. Please use 4000 characters or fewer for preview.");
-            return;
-        }
-        testEnhancementBtn.disabled = true;
-        const originalContent = testEnhancementBtn.innerHTML;
-        testEnhancementBtn.innerHTML =
-            '<span class="material-symbols-outlined">hourglass_empty</span>Testing...';
-        try {
-            const result = await testEnhancement(testPrompt, config);
-            const originalEl = document.getElementById("nig-original-prompt");
-            const enhancedEl = document.getElementById("nig-enhanced-prompt");
-            // Reflect the exact original prompt used for enhancement in the editable field
-            if (originalEl) {
-                if ("value" in originalEl) {
-                    originalEl.value = result.original || "";
-                }
-                else {
-                    originalEl.textContent = result.original || "";
-                }
-            }
-            if (enhancedEl) {
-                enhancedEl.textContent = result.enhanced || "";
-            }
-        }
-        catch (error) {
-            console.error("[NIG] Enhancement test failed", error);
-            const message = error && error.message
-                ? error.message
-                : "Unknown error occurred while requesting enhancement.";
-            alert(`Enhancement test failed: ${message}`);
-        }
-        finally {
-            testEnhancementBtn.disabled = false;
-            testEnhancementBtn.innerHTML = originalContent;
-        }
-    });
 }
 
-// EXTERNAL MODULE: ./src/api/models.ts + 1 modules
-var models = __webpack_require__(20);
 ;// ./src/config/styles.ts
 const PROMPT_CATEGORIES = [
     {
@@ -7525,6 +8618,7 @@ const PROMPT_CATEGORIES = [
 
 
 
+
 // --- INTERNAL HELPERS ---
 /**
  * Normalize imported configuration for compatibility between legacy and current schemas.
@@ -7625,17 +8719,30 @@ function normalizeImportedConfig(importedConfigRaw = {}) {
         const ensureNumber = (value, fallback) => typeof value === "number" && !isNaN(value) && value >= 0
             ? value
             : fallback;
-        const ensureArray = (value, fallback) => Array.isArray(value) ? value : fallback;
         const ensureLogLevel = (value, fallback) => {
             const allowed = ["debug", "info", "warn", "error"];
             return allowed.includes(value) ? value : fallback;
         };
+        // --- Migrate legacy enhancement config to OpenAI-compatible ---
+        // Remove dead keys that no longer exist in DEFAULTS.
+        delete normalized.enhancementProvider;
+        delete normalized.enhancementModelsFallback;
+        // Clear legacy provider-prefixed model names — they won't work with OpenAI-compatible endpoints.
+        const legacyModel = normalized.enhancementModel;
+        if (typeof legacyModel === "string" &&
+            legacyModel.startsWith("models/")) {
+            normalized.enhancementModel = defaults/* DEFAULTS */.z.enhancementModel;
+        }
+        // Ensure enhancementBaseUrl field exists for OpenAI-compatible enhancement.
+        if (typeof normalized.enhancementBaseUrl !== "string") {
+            normalized.enhancementBaseUrl = defaults/* DEFAULTS */.z.enhancementBaseUrl;
+        }
         // enhancementMaxRetriesPerModel
         normalized.enhancementMaxRetriesPerModel = ensureNumber(importedConfig.enhancementMaxRetriesPerModel, defaults/* DEFAULTS */.z.enhancementMaxRetriesPerModel);
         // enhancementRetryDelay
         normalized.enhancementRetryDelay = ensureNumber(importedConfig.enhancementRetryDelay, defaults/* DEFAULTS */.z.enhancementRetryDelay);
-        // enhancementModelsFallback
-        normalized.enhancementModelsFallback = ensureArray(importedConfig.enhancementModelsFallback, defaults/* DEFAULTS */.z.enhancementModelsFallback);
+        // enhancementModelsFallback normalization removed — legacy fallback list
+        // is stripped above during migration. OpenAI-compatible enhancement uses a single model.
         // enhancementLogLevel
         normalized.enhancementLogLevel = ensureLogLevel(importedConfig.enhancementLogLevel, defaults/* DEFAULTS */.z.enhancementLogLevel);
         // enhancementAlwaysFallback
@@ -7703,11 +8810,6 @@ function normalizeImportedConfig(importedConfigRaw = {}) {
         else if (["flux", "turbo"].includes(normalized.pollinationsModel.trim())) {
             normalized.pollinationsModel = defaults/* DEFAULTS */.z.pollinationsModel;
         }
-        // Google retired the preview Gemini image model name; map exports/imports to
-        // the current stable model without removing Google provider support.
-        if (normalized.model === "gemini-3-pro-image-preview") {
-            normalized.model = "gemini-3-pro-image";
-        }
         // historyDays: default only when missing/invalid
         if (!("historyDays" in importedConfig)) {
             normalized.historyDays = defaults/* DEFAULTS */.z.historyDays ?? 30;
@@ -7731,9 +8833,6 @@ function normalizeImportedConfig(importedConfigRaw = {}) {
         }
         if (isNonEmptyString(importedConfig.enhancementApiKey)) {
             normalized.enhancementApiKey = importedConfig.enhancementApiKey;
-        }
-        if (isNonEmptyString(importedConfig.googleApiKey)) {
-            normalized.googleApiKey = importedConfig.googleApiKey;
         }
         // OpenAI-compatible profiles: ensure structure and preserve apiKey-like fields
         if (importedConfig.openAICompatProfiles &&
@@ -7771,13 +8870,21 @@ function normalizeImportedConfig(importedConfigRaw = {}) {
             normalized.openAICompatModelManualInput =
                 defaults/* DEFAULTS */.z.openAICompatModelManualInput;
         }
+        // Preserve enhancementModelManualInput boolean (dropdown vs manual model input)
+        if (typeof importedConfig.enhancementModelManualInput === "boolean") {
+            normalized.enhancementModelManualInput =
+                importedConfig.enhancementModelManualInput;
+        }
+        else if (typeof normalized.enhancementModelManualInput !== "boolean") {
+            normalized.enhancementModelManualInput =
+                defaults/* DEFAULTS */.z.enhancementModelManualInput;
+        }
         // Ensure we do not overwrite valid sensitive values with empty defaults
         // If normalized has empty string but imported had non-empty, restore imported
         const sensitiveKeys = [
             "aiHordeApiKey",
             "pollinationsToken",
             "enhancementApiKey",
-            "googleApiKey",
         ];
         for (const key of sensitiveKeys) {
             if (isNonEmptyString(importedConfig[key]) &&
@@ -7875,10 +8982,12 @@ async function populateConfigForm() {
     // Enhancement settings
     document.getElementById("nig-enhancement-enabled").checked =
         config.enhancementEnabled;
-    document.getElementById("nig-gemini-api-key").value =
-        config.enhancementApiKey;
-    document.getElementById("nig-enhancement-model").value =
-        config.enhancementModel;
+    document.getElementById("nig-enhancement-base-url").value =
+        config.enhancementBaseUrl || "";
+    document.getElementById("nig-enhancement-api-key").value =
+        config.enhancementApiKey || "";
+    document.getElementById("nig-enhancement-model-manual").value =
+        config.enhancementModel || "";
     // Enhancement template selection will be handled by enhancementPanel.js
     // Negative prompt settings
     document.getElementById("nig-enable-neg-prompt").checked =
@@ -7897,7 +9006,7 @@ async function populateConfigForm() {
  */
 async function populateProviderForms(config) {
     // Import and call the populateProviderForms from models.js
-    const { populateProviderForms: populateProviderFormsModels } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 20));
+    const { populateProviderForms: populateProviderFormsModels } = await Promise.resolve(/* import() */).then(__webpack_require__.bind(__webpack_require__, 770));
     await populateProviderFormsModels(config);
 }
 /**
@@ -7911,8 +9020,14 @@ async function saveConfig() {
     await storage/* setConfigValue */.yJ("customStyleText", document.getElementById("nig-custom-style-text").value.trim());
     // Enhancement configuration (will be handled by enhancementPanel.js)
     await storage/* setConfigValue */.yJ("enhancementEnabled", document.getElementById("nig-enhancement-enabled").checked);
-    await storage/* setConfigValue */.yJ("enhancementApiKey", document.getElementById("nig-gemini-api-key").value.trim());
-    await storage/* setConfigValue */.yJ("enhancementModel", document.getElementById("nig-enhancement-model").value);
+    await storage/* setConfigValue */.yJ("enhancementBaseUrl", document.getElementById("nig-enhancement-base-url").value.trim());
+    await storage/* setConfigValue */.yJ("enhancementApiKey", document.getElementById("nig-enhancement-api-key").value.trim());
+    const enhancementManualContainer = document.getElementById("nig-enhancement-model-container-manual");
+    const enhancementIsManualMode = Boolean(enhancementManualContainer &&
+        enhancementManualContainer.style.display !== "none");
+    await storage/* setConfigValue */.yJ("enhancementModel", enhancementIsManualMode
+        ? document.getElementById("nig-enhancement-model-manual").value.trim()
+        : document.getElementById("nig-enhancement-model").value.trim());
     await storage/* setConfigValue */.yJ("enhancementTemplate", document.getElementById("nig-enhancement-template").value.trim());
     await storage/* setConfigValue */.yJ("enhancementTemplateSelected", document.getElementById("nig-enhancement-template-select").value);
     // Negative prompt configuration
@@ -7921,7 +9036,7 @@ async function saveConfig() {
     // Provider selection
     await storage/* setConfigValue */.yJ("selectedProvider", document.getElementById("nig-provider").value);
     // Provider-specific configurations will be saved by their respective modules
-    // (models.js for Pollinations, AI Horde, Google, and OpenAI compatible)
+    // (models.js for Pollinations, AI Horde, and OpenAI compatible)
     // Alert will be handled by the main saveConfig function in configPanel.js
 }
 /**
@@ -7951,7 +9066,7 @@ async function handleImportFile(event) {
             Array.isArray(importedConfig)) {
             throw new Error("Invalid configuration format: root must be an object.");
         }
-        if (confirm("This will overwrite all current settings. Continue?")) {
+        if (await (0,uiUtils/* showConfirm */.GQ)("This will overwrite all current settings. Continue?", "Import Configuration")) {
             const normalizedConfig = normalizeImportedConfig(importedConfig);
             try {
                 // Persist all normalized keys to storage
@@ -7968,7 +9083,7 @@ async function handleImportFile(event) {
                         error: uiError?.message || uiError,
                     });
                 }
-                // 2) Provider-specific sections (Pollinations, AI Horde, Google, OpenAICompat)
+                // 2) Provider-specific sections (Pollinations, AI Horde, OpenAICompat)
                 try {
                     await (0,models.populateProviderForms)(updatedConfig);
                 }
@@ -7977,7 +9092,7 @@ async function handleImportFile(event) {
                         error: uiError?.message || uiError,
                     });
                 }
-                // 3) Enhancement panel (Gemini / enhancement settings)
+                // 3) Enhancement panel (enhancement settings)
                 try {
                     if (typeof populateEnhancementSettings === "function") {
                         await populateEnhancementSettings(updatedConfig);
@@ -8000,16 +9115,16 @@ async function handleImportFile(event) {
                         error: uiError?.message || uiError,
                     });
                 }
-                alert("Configuration imported successfully! All visible settings have been updated.");
+                (0,uiUtils/* showToast */.P0)("Configuration imported successfully! All visible settings have been updated.", "success");
             }
             catch (persistError) {
                 // If persisting or UI sync fails in a critical way, surface a clear error
                 logger/* logError */.vV("CONFIG_IMPORT", "Failed during configuration import application", {
                     error: persistError?.message || persistError,
                 });
-                alert("Configuration import failed while applying settings. " +
+                (0,uiUtils/* showToast */.P0)("Configuration import failed while applying settings. " +
                     "Your previous configuration is still in effect. " +
-                    `Details: ${persistError?.message || persistError}`);
+                    `Details: ${persistError?.message || persistError}`, "error");
             }
         }
     }
@@ -8021,7 +9136,7 @@ async function handleImportFile(event) {
         logger/* logError */.vV("CONFIG_IMPORT", "Failed to import configuration", {
             error: error?.message || error,
         });
-        alert(`Failed to import configuration: ${error?.message || error}`);
+        (0,uiUtils/* showToast */.P0)(`Failed to import configuration: ${error?.message || error}`, "error");
     }
     finally {
         // Always clear file input to allow re-import attempts
@@ -8032,8 +9147,11 @@ async function handleImportFile(event) {
 ;// ./src/components/historyManager.ts
 // --- IMPORTS ---
 
-// import { filterExpiredLinks } from "../utils/linkValidator"; // Not currently used
+
 // --- PUBLIC FUNCTIONS ---
+// Track whether the history data has changed since last render to avoid
+// full re-render on every tab visit (finding #23).
+let lastRenderHash = "";
 /**
  * Populates the history tab with the user's generation history
  */
@@ -8041,6 +9159,13 @@ async function populateHistoryTab() {
     const historyList = document.getElementById("nig-history-list");
     // Use the new getFilteredHistory function to respect the configured days setting
     const history = await storage/* getFilteredHistory */.A5();
+    // Compute a simple hash to detect whether data has changed since last render.
+    // This avoids full re-render on every tab visit when data hasn't changed.
+    const currentHash = `${history.length}:${history.length > 0 ? history[0]?.date : ""}`;
+    if (currentHash === lastRenderHash && historyList.children.length > 0) {
+        return; // Data unchanged, skip re-render
+    }
+    lastRenderHash = currentHash;
     historyList.innerHTML = "";
     if (history.length === 0) {
         historyList.innerHTML = "<li>No history yet.</li>";
@@ -8054,13 +9179,14 @@ async function populateHistoryTab() {
             : item && typeof item === "object" && typeof item.prompt === "string"
                 ? item.prompt
                 : "";
-        const providerInfo = item && item.provider ? `<strong>${item.provider}</strong>` : "";
-        const modelInfo = item && item.model ? `(${item.model})` : "";
+        const providerInfo = item && item.provider ? `<strong>${(0,uiUtils/* escapeHtml */.ZD)(item.provider)}</strong>` : "";
+        const modelInfo = item && item.model ? `(${(0,uiUtils/* escapeHtml */.ZD)(item.model)})` : "";
         const metaText = new Date(item.date).toLocaleString();
         const metaHtml = `<div class="nig-history-meta"><small>${metaText} - ${providerInfo} ${modelInfo}</small></div>`;
         // Prompt display: up to 2 lines, full available width, ellipsis beyond 2 lines.
+        // Use escapeHtml for XSS safety (finding #28).
         const promptHtml = safePrompt
-            ? `<div class="nig-history-prompt" title="${safePrompt.replace(/"/g, '"')}">${safePrompt}</div>`
+            ? `<div class="nig-history-prompt" title="${(0,uiUtils/* escapeHtml */.ZD)(safePrompt)}">${(0,uiUtils/* escapeHtml */.ZD)(safePrompt)}</div>`
             : '<div class="nig-history-prompt nig-history-prompt-empty">No prompt available</div>';
         li.innerHTML = `
             ${metaHtml}
@@ -8091,7 +9217,7 @@ async function cleanHistory() {
     const days = parseInt(daysInput);
     // Validate the input
     if (isNaN(days) || days < 1 || days > 365) {
-        alert("Please enter a valid number of days (1-365).");
+        (0,uiUtils/* showToast */.P0)("Please enter a valid number of days (1-365).", "error");
         return;
     }
     // Show loading state
@@ -8126,12 +9252,12 @@ async function cleanHistory() {
             }
             message += `\n\nTotal removed: ${result.totalRemoved} items`;
             message += `\nRemaining entries: ${result.finalHistoryCount}`;
-            alert(message);
+            (0,uiUtils/* showToast */.P0)(message, "success", 8000);
             await populateHistoryTab();
         }
         catch (error) {
             console.error("Failed to clean history:", error);
-            alert("Failed to clean history. Please try again.");
+            (0,uiUtils/* showToast */.P0)("Failed to clean history. Please try again.", "error");
         }
         finally {
             // Restore button state - restore the complete original structure
@@ -8243,26 +9369,77 @@ function initializePasswordVisibilityToggles(panelElement) {
 }
 // --- PUBLIC FUNCTIONS ---
 /**
- * Sets up all the tab functionality event listeners
+ * Sets up all the tab functionality event listeners with ARIA keyboard navigation.
+ * Implements the WAI-ARIA Tabs pattern: ArrowLeft/ArrowRight to move between
+ * tabs, Home/End for first/last, and activation on click or Enter/Space.
  */
 function setupTabEventListeners(panelElement) {
     // Initialize password visibility toggles once panel DOM is ready
     initializePasswordVisibilityToggles(panelElement);
-    panelElement.querySelectorAll(".nig-tab").forEach((tab) => {
+    const tabs = Array.from(panelElement.querySelectorAll(".nig-tab"));
+    function activateTab(tab) {
+        panelElement
+            .querySelectorAll(".nig-tab, .nig-tab-content")
+            .forEach((el) => {
+            el.classList.remove("active");
+            if (el.classList.contains("nig-tab")) {
+                el.setAttribute("aria-selected", "false");
+                el.setAttribute("tabindex", "-1");
+            }
+        });
+        tab.classList.add("active");
+        tab.setAttribute("aria-selected", "true");
+        tab.setAttribute("tabindex", "0");
+        tab.focus();
+        panelElement
+            .querySelector(`#${tab.getAttribute("aria-controls")}`)
+            .classList.add("active");
+    }
+    tabs.forEach((tab) => {
         tab.addEventListener("click", async () => {
-            panelElement
-                .querySelectorAll(".nig-tab, .nig-tab-content")
-                .forEach((el) => el.classList.remove("active"));
-            tab.classList.add("active");
-            panelElement
-                .querySelector(`#nig-${tab.dataset.tab}-tab`)
-                .classList.add("active");
+            activateTab(tab);
             if (tab.dataset.tab === "history") {
                 await populateHistoryTab();
                 panelElement.querySelector("#nig-save-btn").style.display = "none";
             }
             else {
                 panelElement.querySelector("#nig-save-btn").style.display = "block";
+            }
+        });
+        // Keyboard navigation per WAI-ARIA Tabs pattern
+        tab.addEventListener("keydown", async (e) => {
+            const currentIndex = tabs.indexOf(tab);
+            let newIndex = null;
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                e.preventDefault();
+                newIndex = (currentIndex + 1) % tabs.length;
+            }
+            else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                e.preventDefault();
+                newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+            }
+            else if (e.key === "Home") {
+                e.preventDefault();
+                newIndex = 0;
+            }
+            else if (e.key === "End") {
+                e.preventDefault();
+                newIndex = tabs.length - 1;
+            }
+            else if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                newIndex = currentIndex;
+            }
+            if (newIndex !== null) {
+                const targetTab = tabs[newIndex];
+                activateTab(targetTab);
+                if (targetTab.dataset.tab === "history") {
+                    await populateHistoryTab();
+                    panelElement.querySelector("#nig-save-btn").style.display = "none";
+                }
+                else {
+                    panelElement.querySelector("#nig-save-btn").style.display = "block";
+                }
             }
         });
     });
@@ -8276,32 +9453,6 @@ function setupProviderEventListeners(panelElement) {
         .querySelector("#nig-provider")
         .addEventListener("change", (_e) => {
         updateVisibleSettings();
-    });
-    // Google fetch models
-    panelElement
-        .querySelector("#nig-google-fetch-models")
-        .addEventListener("click", async () => {
-        const apiKey = document.getElementById("nig-google-api-key").value.trim();
-        if (!apiKey) {
-            alert("Please enter a Gemini API Key first.");
-            return;
-        }
-        const btn = document.getElementById("nig-google-fetch-models");
-        const originalText = btn.textContent;
-        btn.textContent = "Fetching...";
-        btn.disabled = true;
-        try {
-            const fetchedModels = await models/* fetchGoogleModels */.cG(apiKey);
-            populateGoogleModelsSelect(fetchedModels);
-            alert(`Successfully fetched ${fetchedModels.length} models.`);
-        }
-        catch (error) {
-            alert(`Failed to fetch models: ${error.message}`);
-        }
-        finally {
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
     });
 }
 /**
@@ -8377,7 +9528,7 @@ function setupLoggingEventListeners(panelElement) {
         await storage/* setConfigValue */.yJ("loggingEnabled", newState);
         await logger/* updateLoggingStatus */.RJ();
         await logger/* loadEnhancementLogHistory */.xx();
-        alert(`Debug Console & Enhancement Logs are now ${newState ? "ENABLED" : "DISABLED"}.`);
+        (0,uiUtils/* showToast */.P0)(`Debug Console & Enhancement Logs are now ${newState ? "ENABLED" : "DISABLED"}.`, "info");
     });
     // View enhancement logs
     panelElement
@@ -8385,16 +9536,16 @@ function setupLoggingEventListeners(panelElement) {
         .addEventListener("click", async () => {
         const logs = await logger/* getEnhancementLogHistory */.$f();
         if (logs.length === 0) {
-            alert("No enhancement logs found. Enhancement logging is disabled or no enhancement operations have been performed yet.");
+            (0,uiUtils/* showToast */.P0)("No enhancement logs found. Enhancement logging is disabled or no enhancement operations have been performed yet.", "info");
             return;
         }
         // Create logs modal
         const logModal = document.createElement("div");
         logModal.className = "nig-modal-overlay";
         logModal.innerHTML = `
-            <div class="nig-modal-content">
-                <span class="nig-close-btn">&times;</span>
-                <h2>Enhancement Operation Logs</h2>
+            <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-logs-title">
+                <button type="button" class="nig-close-btn" aria-label="Close logs dialog">&times;</button>
+                <h2 id="nig-logs-title">Enhancement Operation Logs</h2>
                 <p>Detailed logs of prompt enhancement operations with timestamps and performance data.</p>
                 <div style="max-height: 400px; overflow-y: auto; background: var(--nig-color-bg-tertiary); border-radius: var(--nig-radius-md); padding: var(--nig-space-lg); margin: var(--nig-space-lg) 0;">
                     <div id="nig-enhancement-logs-display"></div>
@@ -8422,12 +9573,12 @@ function setupLoggingEventListeners(panelElement) {
             `;
             logEntry.innerHTML = `
                 <div style="display: flex; align-items: center; gap: var(--nig-space-sm); margin-bottom: var(--nig-space-xs);">
-                    <span style="color: ${color}; font-weight: 600;">[${log.level?.toUpperCase() || "INFO"}]</span>
-                    <span style="color: var(--nig-color-text-muted); font-size: var(--nig-font-size-xs);">${time}</span>
-                    <span style="color: var(--nig-color-accent-primary); font-weight: 500;">[${log.category || "LOG"}]</span>
+                    <span style="color: ${color}; font-weight: 600;">[${(0,uiUtils/* escapeHtml */.ZD)(log.level?.toUpperCase() || "INFO")}]</span>
+                    <span style="color: var(--nig-color-text-muted); font-size: var(--nig-font-size-xs);">${(0,uiUtils/* escapeHtml */.ZD)(time)}</span>
+                    <span style="color: var(--nig-color-accent-primary); font-weight: 500;">[${(0,uiUtils/* escapeHtml */.ZD)(log.category || "LOG")}]</span>
                 </div>
-                <div style="color: var(--nig-color-text-primary); margin-bottom: var(--nig-space-xs);">${log.message || "No message"}</div>
-                ${log.data ? `<pre style="color: var(--nig-color-text-secondary); font-size: var(--nig-font-size-xs); background: var(--nig-color-bg-primary); padding: var(--nig-space-sm); border-radius: var(--nig-radius-sm); margin: 0; overflow-x: auto;">${JSON.stringify(log.data, null, 2)}</pre>` : ""}
+                <div style="color: var(--nig-color-text-primary); margin-bottom: var(--nig-space-xs);">${(0,uiUtils/* escapeHtml */.ZD)(log.message || "No message")}</div>
+                ${log.data ? `<pre style="color: var(--nig-color-text-secondary); font-size: var(--nig-font-size-xs); background: var(--nig-color-bg-primary); padding: var(--nig-space-sm); border-radius: var(--nig-radius-sm); margin: 0; overflow-x: auto;">${(0,uiUtils/* escapeHtml */.ZD)(JSON.stringify(log.data, null, 2))}</pre>` : ""}
             `;
             logsDisplay.appendChild(logEntry);
         });
@@ -8441,12 +9592,13 @@ function setupLoggingEventListeners(panelElement) {
         .addEventListener("click", async () => {
         const logs = await logger/* getEnhancementLogHistory */.$f();
         if (logs.length === 0) {
-            alert("No enhancement logs to clear.");
+            (0,uiUtils/* showToast */.P0)("No enhancement logs to clear.", "info");
             return;
         }
-        if (confirm(`Are you sure you want to clear all ${logs.length} enhancement logs? This action cannot be undone.`)) {
+        const shouldClear = await (0,uiUtils/* showConfirm */.GQ)(`Are you sure you want to clear all ${logs.length} enhancement logs? This action cannot be undone.`, "Clear Enhancement Logs");
+        if (shouldClear) {
             logger/* clearEnhancementLogs */.X();
-            alert("All enhancement logs have been cleared.");
+            (0,uiUtils/* showToast */.P0)("All enhancement logs have been cleared.", "success");
         }
     });
 }
@@ -8498,23 +9650,51 @@ function setupProviderEnhancementListener(panelElement) {
     });
 }
 
+;// ./src/version.ts
+// src/version.ts
+// Runtime version information for the userscript UI.
+// Auto-synced by scripts/update-versions.js — do not edit manually.
+const VERSION_INFO = {
+    SEMANTIC: "6.2.0",
+    DISPLAY: "v6.2.0",
+    BUILD_ENV: "production",
+    BUILD_DATE: "2026-07-01",
+    GREASYFORK: "6.2.0",
+    NPM: "6.2.0",
+    BADGE: "6.2.0",
+    CHANGELOG: "6.2.0",
+};
+const VERSION = VERSION_INFO.SEMANTIC;
+if (typeof window !== "undefined") {
+    window.WTR_VERSION = VERSION;
+    window.WTR_VERSION_INFO = VERSION_INFO;
+}
+
 ;// ./src/components/configPanelTemplate.ts
 // --- PUBLIC FUNCTIONS ---
+
 /**
  * Gets the complete HTML template for the configuration panel
  */
 function getConfigPanelHTML() {
     return `
-        <div class="nig-modal-content">
-            <span class="nig-close-btn">&times;</span>
-            <h2>Image Generator Configuration</h2>
-            <div class="nig-tabs">
-                <div class="nig-tab active" data-tab="config">Configuration</div>
-                <div class="nig-tab" data-tab="styling">Prompt Styling</div>
-                <div class="nig-tab" data-tab="history">History</div>
-                <div class="nig-tab" data-tab="utilities">Utilities</div>
+        <div class="nig-modal-content" role="dialog" aria-modal="true" aria-labelledby="nig-config-title">
+            <button type="button" class="nig-close-btn" aria-label="Close configuration dialog">&times;</button>
+            <h2 id="nig-config-title">
+                Image Generator Configuration
+                <span
+                    class="nig-version-badge"
+                    title="Build ${VERSION_INFO.BUILD_DATE} (${VERSION_INFO.BUILD_ENV})"
+                    aria-label="Version ${VERSION_INFO.DISPLAY}, built ${VERSION_INFO.BUILD_DATE} (${VERSION_INFO.BUILD_ENV})"
+                >${VERSION_INFO.DISPLAY}</span>
+            </h2>
+            <div class="nig-tabs" role="tablist" aria-label="Configuration sections">
+                <button type="button" class="nig-tab active" data-tab="config" role="tab" id="nig-tab-config" aria-selected="true" aria-controls="nig-config-tab" tabindex="0">Configuration</button>
+                <button type="button" class="nig-tab" data-tab="styling" role="tab" id="nig-tab-styling" aria-selected="false" aria-controls="nig-styling-tab" tabindex="-1">Prompt Styling</button>
+                <button type="button" class="nig-tab" data-tab="history" role="tab" id="nig-tab-history" aria-selected="false" aria-controls="nig-history-tab" tabindex="-1">History</button>
+                <button type="button" class="nig-tab" data-tab="utilities" role="tab" id="nig-tab-utilities" aria-selected="false" aria-controls="nig-utilities-tab" tabindex="-1">Utilities</button>
             </div>
-            <div id="nig-config-tab" class="nig-tab-content active">
+            <div id="nig-config-tab" class="nig-tab-content active" role="tabpanel" aria-labelledby="nig-tab-config" tabindex="0">
                 <div class="nig-config-grid">
                     <div class="nig-config-section">
                         <div class="nig-form-group">
@@ -8523,7 +9703,6 @@ function getConfigPanelHTML() {
                                 <option value="Pollinations">Pollinations.ai (Free, Simple)</option>
                                 <option value="AIHorde">AI Horde (Free, Advanced)</option>
                                 <option value="OpenAICompat">OpenAI Compatible (Custom)</option>
-                                <option value="Google">Google Imagen (Requires Billed Account)</option>
                             </select>
                         </div>
                     </div>
@@ -8578,7 +9757,7 @@ function getConfigPanelHTML() {
                                         <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
                                     </button>
                                 </div>
-                                <small class="nig-hint">Get a token from <a href="https://auth.pollinations.ai" target="_blank" class="nig-api-prompt-link">auth.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
+                                <small class="nig-hint">Get a token from <a href="https://enter.pollinations.ai" target="_blank" class="nig-api-prompt-link">enter.pollinations.ai</a> for higher rate limits and access to restricted models.</small>
                             </div>
                         </div>
 
@@ -8661,66 +9840,6 @@ function getConfigPanelHTML() {
                             </div>
                         </div>
 
-                        <div id="nig-provider-Google" class="nig-provider-settings">
-                            <div class="nig-provider-header">
-                                <h3><img src="https://upload.wikimedia.org/wikipedia/commons/1/1d/Google_Gemini_icon_2025.svg" alt="Google Imagen" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> Google Imagen Settings</h3>
-                                <p>High-quality generation powered by Google's advanced AI</p>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-google-api-key">Gemini API Key</label>
-                                <div class="nig-password-wrapper">
-                                    <input type="password" id="nig-google-api-key">
-                                    <button
-                                        type="button"
-                                        class="nig-password-toggle"
-                                        data-target="nig-google-api-key"
-                                        aria-label="Show Gemini API key"
-                                        aria-pressed="false"
-                                    >
-                                        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-model">Imagen Model</label>
-                                <div class="nig-form-group-inline">
-                                    <select id="nig-model" style="width: 100%;">
-                                        <option value="">Enter API Key and fetch...</option>
-                                    </select>
-                                    <button id="nig-google-fetch-models" class="nig-fetch-models-btn">Fetch</button>
-                                </div>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-num-images">Number of Images (1-4)</label>
-                                <input type="number" id="nig-num-images" min="1" max="4" step="1">
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-image-size">Image Size</label>
-                                <select id="nig-image-size">
-                                    <option value="1024">1K</option>
-                                    <option value="2048">2K</option>
-                                </select>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-aspect-ratio">Aspect Ratio</label>
-                                <select id="nig-aspect-ratio">
-                                    <option value="1:1">1:1</option>
-                                    <option value="3:4">3:4</option>
-                                    <option value="4:3">4:3</option>
-                                    <option value="9:16">9:16</option>
-                                    <option value="16:9">16:9</option>
-                                </select>
-                            </div>
-                            <div class="nig-form-group">
-                                <label for="nig-person-gen">Person Generation</label>
-                                <select id="nig-person-gen">
-                                    <option value="dont_allow">Don't Allow</option>
-                                    <option value="allow_adult">Allow Adults</option>
-                                    <option value="allow_all">Allow All</option>
-                                </select>
-                            </div>
-                        </div>
-
                         <div id="nig-provider-OpenAICompat" class="nig-provider-settings">
                             <div class="nig-provider-header">
                                 <h3><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/openai.svg" alt="OpenAI" style="height: 20px; width: 20px; vertical-align: middle; margin-right: 8px;"> OpenAI Compatible Settings</h3>
@@ -8765,7 +9884,7 @@ function getConfigPanelHTML() {
                                     <small class=" nig-hint">If fetching fails or your model isn't listed, <a href="#" id="nig-openai-compat-switch-to-manual" class="nig-api-prompt-link">switch to manual input</a>.</small>
                                 </div>
                                 <div id="nig-openai-model-container-manual" style="display: none;">
-                                    <input type="text" id="nig-openai-compat-model-manual" placeholder="e.g., dall-e-3">
+                                    <input type="text" id="nig-openai-compat-model-manual" placeholder="e.g., gpt-image-1">
                                     <small class=" nig-hint">Manually enter the model name. <a href="#" id="nig-openai-compat-switch-to-select" class="nig-api-prompt-link">Switch back to fetched list</a>.</small>
                                 </div>
                             </div>
@@ -8774,7 +9893,7 @@ function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-styling-tab" class="nig-tab-content">
+            <div id="nig-styling-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-styling" tabindex="0">
                 <div class="nig-styling-container">
                     <div class="nig-styling-intro">
                         <p>Select a style to automatically add it to the beginning of every prompt. This helps maintain a consistent look across all providers.</p>
@@ -8825,32 +9944,43 @@ function getConfigPanelHTML() {
 
                                 <div class="nig-enhancement-settings disabled" id="nig-enhancement-settings">
                                     <div class="nig-form-group">
-                                        <label for="nig-gemini-api-key">Gemini API Key</label>
+                                        <label for="nig-enhancement-base-url">Enhancement Endpoint URL</label>
+                                        <input type="text" id="nig-enhancement-base-url" placeholder="e.g., https://api.openai.com/v1 or http://127.0.0.1:11434/v1">
+                                        <small class="nig-hint">Any OpenAI-compatible /chat/completions endpoint. Works with cloud (OpenAI, OpenRouter) and local (Ollama, LM Studio, vLLM) providers.</small>
+                                    </div>
+
+                                    <div class="nig-form-group">
+                                        <label for="nig-enhancement-api-key">Enhancement API Key (Optional)</label>
                                         <div class="nig-password-wrapper">
-                                            <input type="password" id="nig-gemini-api-key" placeholder="Enter your Google Gemini API key">
+                                            <input type="password" id="nig-enhancement-api-key" placeholder="Leave empty for local no-auth servers">
                                             <button
                                                 type="button"
                                                 class="nig-password-toggle"
-                                                data-target="nig-gemini-api-key"
-                                                aria-label="Show Gemini API key for enhancement"
+                                                data-target="nig-enhancement-api-key"
+                                                aria-label="Show enhancement API key"
                                                 aria-pressed="false"
                                             >
                                                 <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
                                             </button>
                                         </div>
-                                        <small class="nig-hint">Get a free API key from <a href="https://aistudio.google.com/api-keys" target="_blank" class="nig-api-prompt-link">Google AI Studio</a></small>
+                                        <small class="nig-hint">Bearer token for cloud providers. Omit for local servers without authentication.</small>
                                     </div>
 
                                     <div class="nig-form-group">
                                         <label for="nig-enhancement-model">Enhancement Model</label>
-                                        <select id="nig-enhancement-model">
-                                            <option value="models/gemini-2.5-pro">Gemini 2.5 Pro (High Quality)</option>
-                                            <option value="models/gemini-flash-latest">Gemini Flash Latest (Fast)</option>
-                                            <option value="models/gemini-flash-lite-latest">Gemini Flash Lite (Ultra Fast)</option>
-                                            <option value="models/gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
-                                            <option value="models/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite (Efficient)</option>
-                                        </select>
-                                        <small class="nig-hint">Choose model based on your needs: quality vs speed</small>
+                                        <div id="nig-enhancement-model-container-select">
+                                            <div class="nig-form-group-inline">
+                                                <select id="nig-enhancement-model" style="width: 100%;">
+                                                    <option value="">Enter endpoint URL and fetch...</option>
+                                                </select>
+                                                <button id="nig-enhancement-fetch-models" class="nig-fetch-models-btn">Fetch</button>
+                                            </div>
+                                            <small class="nig-hint">Model name accepted by the /chat/completions endpoint. If fetching fails or your model isn't listed, <a href="#" id="nig-enhancement-switch-to-manual" class="nig-api-prompt-link">switch to manual input</a>.</small>
+                                        </div>
+                                        <div id="nig-enhancement-model-container-manual" style="display: none;">
+                                            <input type="text" id="nig-enhancement-model-manual" placeholder="e.g., gpt-4o-mini, llama3.1, qwen2.5-instruct">
+                                            <small class="nig-hint">Manually enter the model name accepted by the /chat/completions endpoint. <a href="#" id="nig-enhancement-switch-to-select" class="nig-api-prompt-link">Switch back to fetched list</a>.</small>
+                                        </div>
                                     </div>
 
                                     <div class="nig-form-group">
@@ -8890,25 +10020,6 @@ function getConfigPanelHTML() {
                                         </div>
                                     </div>
 
-                                    <div class="nig-enhancement-preview" id="nig-enhancement-preview" style="display: none;">
-                                        <div class="nig-preview-container">
-                                            <div class="nig-preview-section">
-                                                <h5>Original Prompt</h5>
-                                                <textarea id="nig-original-prompt" class="nig-prompt-display" rows="4" placeholder="A rich narrative-style prompt will appear here for testing. You can edit or replace it with your own text before running Test Enhancement."></textarea>
-                                            </div>
-                                            <div class="nig-preview-arrow">
-                                                <span class="material-symbols-outlined">arrow_forward</span>
-                                            </div>
-                                            <div class="nig-preview-section">
-                                                <h5>Enhanced Prompt</h5>
-                                                <div class="nig-prompt-display" id="nig-enhanced-prompt"></div>
-                                            </div>
-                                        </div>
-                                        <button class="nig-test-enhancement-btn" id="nig-test-enhancement">
-                                            <span class="material-symbols-outlined">auto_awesome</span>
-                                            Test Enhancement
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -8942,7 +10053,7 @@ function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-history-tab" class="nig-tab-content">
+            <div id="nig-history-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-history" tabindex="0">
                 <div class="nig-history-container">
                     <div class="nig-history-cleanup">
                         <div class="nig-cleanup-info">
@@ -8963,7 +10074,7 @@ function getConfigPanelHTML() {
                 </div>
             </div>
 
-            <div id="nig-utilities-tab" class="nig-tab-content">
+            <div id="nig-utilities-tab" class="nig-tab-content" role="tabpanel" aria-labelledby="nig-tab-utilities" tabindex="0">
                 <div class="nig-utilities-grid">
                     <div class="nig-utility-card">
                         <h4>Import/Export Settings</h4>
@@ -9051,9 +10162,11 @@ function createPanelElement() {
 
 
 
+
 // --- MODULE STATE ---
 let panelElement = null;
 let initializeCallbacks = {};
+let panelA11yCleanup = null;
 // --- EXPORTED FUNCTIONS ---
 /**
  * Creates the config panel DOM element and attaches all its internal event listeners.
@@ -9069,7 +10182,13 @@ function configPanel_create() {
     // Basic panel functionality
     panelElement
         .querySelector(".nig-close-btn")
-        .addEventListener("click", () => (panelElement.style.display = "none"));
+        .addEventListener("click", () => {
+        if (panelA11yCleanup) {
+            panelA11yCleanup();
+            panelA11yCleanup = null;
+        }
+        panelElement.style.display = "none";
+    });
     panelElement
         .querySelector("#nig-save-btn")
         .addEventListener("click", configPanel_saveConfig);
@@ -9105,12 +10224,26 @@ async function configPanel_show() {
     const config = await storage/* getConfig */.zj();
     // Populate basic configuration
     await populateConfigForm();
-    await populateGoogleModels();
     // Populate provider-specific forms
     await (0,models.populateProviderForms)(config);
     // Populate enhancement settings
     await populateEnhancementSettings(config);
     panelElement.style.display = "flex";
+    // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+    if (panelA11yCleanup) {
+        panelA11yCleanup();
+    }
+    panelA11yCleanup = (0,uiUtils/* setupModalA11y */.nI)(panelElement, {
+        labelledBy: "nig-config-title",
+        closeOnEscape: true,
+        onClose: () => {
+            panelElement.style.display = "none";
+            if (panelA11yCleanup) {
+                panelA11yCleanup();
+                panelA11yCleanup = null;
+            }
+        },
+    });
 }
 /**
  * Initializes the config panel with callbacks from the main application.
@@ -9132,37 +10265,7 @@ async function configPanel_saveConfig() {
     if (initializeCallbacks.onConfigSaved) {
         initializeCallbacks.onConfigSaved();
     }
-    alert("Configuration saved!");
-}
-/**
- * Populates the Google Imagen model dropdown from config/cache
- */
-async function populateGoogleModels() {
-    const select = document.getElementById("nig-model");
-    if (!select) {
-        return;
-    }
-    const cachedModels = await (0,models/* loadCachedGoogleModels */.YE)();
-    if (cachedModels && cachedModels.length > 0) {
-        populateGoogleModelsSelect(cachedModels);
-    }
-}
-/**
- * Populates the Google Models select element
- * @param {Array} models - List of models
- */
-function populateGoogleModelsSelect(models) {
-    const select = document.getElementById("nig-model");
-    if (!select) {
-        return;
-    }
-    select.innerHTML = "";
-    models.forEach((model) => {
-        const option = document.createElement("option");
-        option.value = model.id;
-        option.textContent = model.name;
-        select.appendChild(option);
-    });
+    (0,uiUtils/* showToast */.P0)("Configuration saved!", "success");
 }
 
 ;// ./src/index.ts
@@ -9174,7 +10277,6 @@ function populateGoogleModelsSelect(models) {
 
 
 // Import API modules
-
 
 
 
@@ -9209,7 +10311,16 @@ function populateGoogleModelsSelect(models) {
             hasPersistentUrls: Boolean(persistentUrls),
         });
         completedQueue.push({ imageUrls: displayUrls, prompt, provider, model });
-        const historyUrls = persistentUrls || displayUrls;
+        // Defensive guard: only honor persistentUrls when every entry is a data:
+        // URL (actual image content). This prevents non-image API endpoints from
+        // overriding valid display URLs in history — the root cause of the
+        // Pollinations history 404 bug where the POST endpoint URL was stored
+        // instead of the generated image.
+        const safePersistentUrls = persistentUrls &&
+            persistentUrls.every((u) => typeof u === "string" && u.startsWith("data:"))
+            ? persistentUrls
+            : null;
+        const historyUrls = safePersistentUrls || displayUrls;
         historyUrls.forEach((url) => storage/* addToHistory */.Pc({
             date: new Date().toISOString(),
             prompt,
@@ -9248,7 +10359,7 @@ function populateGoogleModelsSelect(models) {
         });
         showNextError();
         // Don't auto-continue queue - wait for user action
-        statusWidget/* update */.y("error", "Generation Failed.");
+        statusWidget_update("error", "Generation Failed.");
         isGenerating = false;
         // Update status but don't auto-process queue
         updateSystemStatus();
@@ -9332,6 +10443,19 @@ function populateGoogleModelsSelect(models) {
             processQueue();
         }
     }
+    function cancelGeneration() {
+        logger/* logInfo */.fH("GENERATION", "User cancelled generation", {
+            generationQueueLength: generationQueue.length,
+            isGenerating,
+            enhancementInFlightCount,
+        });
+        generationQueue.length = 0;
+        abortAll();
+        isGenerating = false;
+        enhancementInFlightCount = 0;
+        currentGenerationStatusText = "";
+        updateSystemStatus();
+    }
     function updateSystemStatus() {
         logger/* logDebug */.MD("SYSTEM", "Updating system status", {
             completedQueueLength: completedQueue.length,
@@ -9343,7 +10467,7 @@ function populateGoogleModelsSelect(models) {
             const text = completedQueue.length === 1
                 ? "1 Image Ready!"
                 : `${completedQueue.length} Images Ready!`;
-            statusWidget/* update */.y("success", `${text} Click to view.`, () => {
+            statusWidget_update("success", `${text} Click to view.`, () => {
                 const result = completedQueue.shift();
                 if (result) {
                     // Ensure viewer sees the exact main prompt string sent to provider:
@@ -9358,10 +10482,10 @@ function populateGoogleModelsSelect(models) {
             // Only show queue indicator if there are items actually waiting (generationQueue.length > 0)
             // This prevents showing "Queue: 1" when only the current item is being processed
             const queueText = generationQueue.length > 0 ? ` (Queue: ${generationQueue.length})` : "";
-            statusWidget/* update */.y("loading", `${currentGenerationStatusText}${queueText}`);
+            statusWidget_update("loading", `${currentGenerationStatusText}${queueText}`, null, cancelGeneration);
         }
         else {
-            statusWidget/* update */.y("hidden", "");
+            statusWidget_update("hidden", "");
         }
     }
     async function processQueue() {
@@ -9400,7 +10524,7 @@ function populateGoogleModelsSelect(models) {
                 pollinationsAuthPrompt_show(msg, p, retryGeneration);
                 isGenerating = false;
                 // Don't auto-resume - wait for user action
-                statusWidget/* update */.y("error", "Authentication needed.");
+                statusWidget_update("error", "Authentication needed.");
                 updateSystemStatus();
                 logger/* logInfo */.fH("AUTH", "Queue paused due to authentication requirement", {
                     generationQueueLength: generationQueue.length,
@@ -9439,16 +10563,13 @@ function populateGoogleModelsSelect(models) {
                 break;
             }
             case "Pollinations":
-            case "Google":
             case "OpenAICompat": {
                 // Provider modules now own provider-specific negative prompt handling:
                 // - Pollinations sends negative_prompt as a query parameter.
-                // - Google/OpenAI-compatible retain inline negative prompting.
+                // - OpenAI-compatible retains inline negative prompting.
                 const useCase = provider === "Pollinations"
                     ? "pollinations_negative_prompt_query"
-                    : provider === "Google"
-                        ? "google_inline_negative"
-                        : "openai_compat_inline_negative";
+                    : "openai_compat_inline_negative";
                 logger/* logInfo */.fH("QUEUE", "Using non-AI Horde prompt construction path", {
                     provider,
                     basePositivePromptLength: apiPrompt.length,
@@ -9460,26 +10581,16 @@ function populateGoogleModelsSelect(models) {
                             (apiPrompt.length > 200 ? "..." : ""),
                         path: useCase,
                     });
-                    pollinations_generate(apiPrompt, callbacks);
+                    generate(apiPrompt, callbacks);
                 }
                 else {
-                    if (provider === "Google") {
-                        logger/* logDebug */.MD("QUEUE", "Dispatching to Google provider", {
-                            prompt: apiPrompt.substring(0, 200) +
-                                (apiPrompt.length > 200 ? "..." : ""),
-                            path: useCase,
-                        });
-                        generate(apiPrompt, callbacks);
-                    }
-                    else if (provider === "OpenAICompat") {
-                        logger/* logDebug */.MD("QUEUE", "Dispatching to OpenAICompat provider", {
-                            prompt: apiPrompt.substring(0, 200) +
-                                (apiPrompt.length > 200 ? "..." : ""),
-                            providerProfileUrl: request.providerProfileUrl,
-                            path: useCase,
-                        });
-                        openAI_generate(apiPrompt, request.providerProfileUrl, callbacks);
-                    }
+                    logger/* logDebug */.MD("QUEUE", "Dispatching to OpenAICompat provider", {
+                        prompt: apiPrompt.substring(0, 200) +
+                            (apiPrompt.length > 200 ? "..." : ""),
+                        providerProfileUrl: request.providerProfileUrl,
+                        path: useCase,
+                    });
+                    openAI_generate(apiPrompt, request.providerProfileUrl, callbacks);
                 }
                 break;
             }
@@ -9503,11 +10614,6 @@ function populateGoogleModelsSelect(models) {
                 (currentSelection.length > 100 ? "..." : ""),
         });
         const config = await storage/* getConfig */.zj();
-        if (config.selectedProvider === "Google" && !config.googleApiKey) {
-            logger/* logWarn */.JE("GENERATION", "Google provider selected but no API key provided");
-            googleApiPrompt_show();
-            return;
-        }
         let finalPrompt = currentSelection;
         let prefix = "";
         // StyledPrompt = StylePrefix + SelectedText
@@ -9527,36 +10633,45 @@ function populateGoogleModelsSelect(models) {
         // If AI Enhancement is enabled and used, it operates on StyledPrompt and becomes EnhancedPrompt.
         if (config.enhancementEnabled) {
             const shouldUseProviderEnh = shouldUseProviderEnhancement(config.selectedProvider, config);
-            const hasApiKey = (config.enhancementApiKey || "").trim().length > 0;
+            const hasEndpoint = (config.enhancementBaseUrl || "").trim().length > 0;
+            const hasModel = (config.enhancementModel || "").trim().length > 0;
             const shouldUseExternalEnhancement = (!shouldUseProviderEnh || config.enhancementOverrideProvider) &&
-                hasApiKey;
+                hasEndpoint &&
+                hasModel;
             if (shouldUseExternalEnhancement) {
                 enhancementInFlightCount++;
+                const tokenBeforeEnhancement = getCancelToken();
                 const startQueueText = enhancementInFlightCount > 1
                     ? ` (Queue: ${enhancementInFlightCount})`
                     : "";
-                statusWidget/* update */.y("loading", `Enhancing prompt...${startQueueText}`);
+                statusWidget_update("loading", `Enhancing prompt...${startQueueText}`);
                 try {
                     // Clean prompt for enhancement API call
                     // IMPORTANT: Enhancement must ONLY see the positive prompt (style + user text), never global negatives
                     const cleanPromptForEnhancement = getApiReadyPrompt(finalPrompt, "enhancement_positive_only");
-                    finalPrompt = await enhancePromptWithGemini(cleanPromptForEnhancement, config);
+                    finalPrompt = await enhancePrompt(cleanPromptForEnhancement, config);
                     enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+                    if (getCancelToken() !== tokenBeforeEnhancement) {
+                        return;
+                    }
                     const successQueueText = enhancementInFlightCount > 0
                         ? ` (Queue: ${enhancementInFlightCount})`
                         : "";
-                    statusWidget/* update */.y("success", `Prompt enhanced!${successQueueText}`);
+                    statusWidget_update("success", `Prompt enhanced!${successQueueText}`);
                     setTimeout(() => updateSystemStatus(), 2000);
                 }
                 catch (error) {
                     enhancementInFlightCount = Math.max(0, enhancementInFlightCount - 1);
+                    if (getCancelToken() !== tokenBeforeEnhancement) {
+                        return;
+                    }
                     const errorQueueText = enhancementInFlightCount > 0
                         ? ` (Queue: ${enhancementInFlightCount})`
                         : "";
                     // External enhancement failure is expected to gracefully fall back.
                     // Log as non-critical ENHANCEMENT info so it respects the logging toggle.
                     logger/* logInfo */.fH("ENHANCEMENT", "External AI enhancement failed, falling back to original", { error: error.message });
-                    statusWidget/* update */.y("error", `Enhancement failed, using original prompt${errorQueueText}`);
+                    statusWidget_update("error", `Enhancement failed, using original prompt${errorQueueText}`);
                     setTimeout(() => updateSystemStatus(), 3000);
                 }
             }
@@ -9631,12 +10746,13 @@ function populateGoogleModelsSelect(models) {
         generateBtn = document.createElement("button");
         generateBtn.className = "nig-button";
         generateBtn.innerHTML = "🎨 Generate Image";
+        generateBtn.setAttribute("aria-label", "Generate image from selected text");
         generateBtn.addEventListener("click", onGenerateClick);
         document.body.appendChild(generateBtn);
         // Create and initialize all components
-        statusWidget/* create */.v();
-        imageViewer/* create */.v();
         create();
+        imageViewer/* create */.v();
+        errorModal_create();
         configPanel_create();
         errorModal_init({
             onRetry: retryGeneration,

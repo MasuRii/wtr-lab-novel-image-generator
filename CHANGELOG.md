@@ -6,7 +6,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-No unreleased changes.
+## [6.2.0] - 2026-07-01
+
+### 🗑️ Removed
+- **Google Imagen / Gemini Image Provider**: Completely removed the Google image generation provider.
+  - Deleted `src/api/google.ts`, `src/api/gemini.ts`, `src/components/googleApiPrompt.ts`, and `src/config/models.ts`.
+  - Removed the Google option from the provider dropdown, all Google settings UI (API key, model fetch, image size, aspect ratio, person generation), and the Google dispatch path from the generation queue in `src/index.ts`.
+  - Removed `googleApiKey`, `model`, `numberOfImages`, `imageSize`, `aspectRatio`, and `personGeneration` from the default configuration.
+  - Removed Google model fetching, curation, merging, and the legacy `gemini-3-pro-image-preview` alias migration from `src/api/models.ts`.
+  - Removed `populateGoogleModels` / `populateGoogleModelsSelect` from `src/components/configPanel.ts` and the Google fetch-models listener from `src/components/configPanelEvents.ts`.
+- **Legacy Gemini-Based Prompt Enhancement**: Replaced entirely by the new OpenAI-compatible enhancement system (see Added). The old `enhancementProvider` and `enhancementModelsFallback` config fields and the enhancement preview/test block were removed.
+- **`GreasyForkREADME.md`**: Deleted the forbidden camelCase filename; replaced by `GREASYFORK_README.md` (underscore-separated) per workspace standard.
+- **Unused Prompt Utilities**: Removed `preserveDisplayFormatting`, `getDisplayReadyPrompt`, and `processPrompt` from `src/utils/promptUtils.ts`.
+- **OpenAI `response_format`**: Removed the `modelSupportsResponseFormat` helper and `response_format: "b64_json"` for DALL-E models; GPT image models already omit the unsupported field.
+
+### ✨ Added
+- **OpenAI-Compatible Prompt Enhancement** (`src/api/enhancement.ts`): A new enhancement module that calls `POST {baseUrl}/chat/completions` with a `messages` array (system + user roles), supporting any OpenAI-compatible provider — cloud (OpenAI, OpenRouter) or local (Ollama, LM Studio, vLLM). Includes `Retry-After` header parsing and HTML-response detection.
+- **Config Schema Migration** (`src/config/migration.ts`): Introduces `configSchemaVersion` and an automatic v1→v2 migration that upgrades empty/stale enhancement settings to OpenCode Zen defaults (`https://opencode.ai/zen/v1`, `big-pickle`) while preserving custom user values. Runs transparently on config load via `src/utils/storage.ts`.
+- **Abort / Cancel Registry** (`src/utils/abortRegistry.ts`): Tracks active `GM_xmlhttpRequest` handles and `setTimeout` timers with a cancel-token mechanism. `abortAll()` cancels all in-flight generation, enhancement, and polling requests; async callbacks detect cancellation via token comparison and skip silently.
+- **Accessible UI Utilities** (`src/utils/uiUtils.ts`): Provides `showToast()`, `showConfirm()`, and `showPrompt()` as non-blocking, keyboard-accessible replacements for native `alert()`/`confirm()`/`prompt()`. Also exports `escapeHtml()` for XSS-safe dynamic content and `setupModalA11y()` for focus trapping, Escape-to-close, scroll lock, and focus restoration.
+- **Cancel Generation**: A ✕ cancel button in the status widget and a `cancelGeneration()` function in `src/index.ts` that clears the generation queue and aborts all active requests.
+- **Pollinations POST Generation Endpoint**: Added support for the `gen.pollinations.ai/v1/images/generations` endpoint with base64/data-URL response handling, `x-model-used` header verification, and remote-image-to-data-URL conversion for persistent history.
+- **Versioned Model Cache**: Cache entries in `src/utils/cache.ts` now include `timestamp`, `endpoint`, and `schemaVersion` metadata. Entries auto-expire after 24 hours and invalidate when the fetch endpoint changes; legacy bare-array entries are treated as cache misses.
+- **Dynamic AI Horde Model Grouping**: Top/popular model grouping is now derived from live API worker-count metadata instead of a hardcoded curated list (`src/api/models.ts`).
+- **Runtime Version Module** (`src/version.ts`): Exports `VERSION_INFO` for in-UI display; a version badge now appears in the config panel header.
+- **Toast Notification Styles**: Added CSS for the new toast notification system.
+
+### 🔄 Changed
+- **Prompt Enhancement Migration**: Replaced the previous Gemini-based prompt enhancement system with the configurable OpenAI-compatible endpoint (see Added). New config fields: `enhancementBaseUrl`, `enhancementApiKey` (optional Bearer token), `enhancementModel`, `enhancementModelManualInput`. Enhancement is now enabled by default with OpenCode Zen as the default endpoint (free models work without an API key). Legacy provider-prefixed model names (e.g., `models/...`) are automatically cleared during config import normalization. Pollinations provider-level enhancement priority logic is preserved in provider-agnostic form.
+- **Pollinations Default Model**: Changed from `sana` to `zimage`; legacy aliases updated to map `sana` and `turbo` to the current default.
+- **Pollinations Models Endpoint**: Switched from `image.pollinations.ai/models` to `gen.pollinations.ai/image/models` with response parsing that filters non-image models via the `category` field.
+- **Pollinations Auth URL**: Updated from `auth.pollinations.ai` to `enter.pollinations.ai`.
+- **Native Dialogs Replaced**: All `alert()`, `confirm()`, and `prompt()` calls across every component are replaced with the accessible `showToast()`, `showConfirm()`, and `showPrompt()` utilities.
+- **Accessibility Overhaul**:
+  - All modals (config panel, error modal, image viewer, auth prompt) now use `role="dialog"`, `aria-modal`, focus trapping, Escape-to-close, scroll lock, and focus restoration.
+  - Configuration tabs implement the WAI-ARIA Tabs pattern with ArrowLeft/ArrowRight, Home/End, and Enter/Space keyboard navigation.
+  - Close buttons are now semantic `<button>` elements with `aria-label`s, 36px touch targets, and `:focus-visible` outlines (previously non-interactive `<span>`s).
+  - Image viewer prompt toggle is keyboard-accessible with `aria-expanded`; action buttons have `aria-label`s; `aspect-ratio` set to reduce layout shift.
+  - Disabled enhancement inputs are removed from the tab order via `tabindex="-1"`.
+- **XSS Hardening**: `escapeHtml()` is now applied to all dynamic content in the error modal, history manager, and Pollinations auth prompt.
+- **Error Modal**: The retry provider list is now derived dynamically from the config panel dropdown instead of being hardcoded; a hint is shown when the Retry button is hidden for non-retryable errors.
+- **History Manager**: Skips full re-render when history data has not changed since the last visit (hash-based comparison).
+- **CSS Improvements**:
+  - Removed `@import` Google Fonts in favor of a system font stack to prevent leaking font requests into the host page.
+  - Darkened the success accent color (`#10b981` → `#047857`) for WCAG AA contrast with white text.
+  - Scoped `prefers-reduced-motion` to userscript elements only (previously a global `*` selector that killed all host-page animations).
+  - Scoped `input[type=file]` styling to the userscript modal container.
+  - Replaced all `transition: all` declarations with specific properties for rendering performance.
+- **AI Horde & OpenAI Providers**: Integrated the abort registry for cancellable requests; AI Horde propagates the cancel token through the entire async → check → status polling chain.
+
+### 🐞 Fixed
+- **Pollinations History 404 Bug**: The POST generation endpoint URL was being stored in history instead of actual image content, causing broken/expired links. Generated images are now converted to persistent `data:` URLs, and only `data:` URLs are honored as persistent history entries.
+- **Pollinations Silent Model Fallback**: The legacy endpoint could silently return a different model (e.g., `sana`) for unauthenticated requests while reporting HTTP 200. The provider now verifies the `x-model-used` response header and fails hard on any mismatch, prompting the user to add an API key for paid-tier models.
+- **Stale Model Cache**: Legacy bare-array cache entries (no metadata) could serve outdated model lists. The versioned cache schema now treats unversioned/expired/endpoint-mismatched entries as cache misses and re-fetches.
 
 ## [6.1.1] - 2026-06-08
 
@@ -14,7 +66,7 @@ No unreleased changes.
 - Updated provider API compatibility to match 2026-06-08 source-backed research:
   - Pollinations defaults legacy `flux`/`turbo` selections to current public `sana`, sends `negative_prompt` as a query parameter, and uses `nofeed=true` for privacy.
   - AI Horde now polls `/generate/check/{id}` before fetching final `/generate/status/{id}` results and includes a descriptive `Client-Agent` header.
-  - Google Gemini image requests normalize `gemini-3-pro-image-preview` to `gemini-3-pro-image`, use the `v1` `:generateContent` endpoint, and send image sizing through `generationConfig.responseFormat.image`.
+  - The legacy image provider normalized model name previews, used the `v1` `:generateContent` endpoint, and sent image sizing through `generationConfig.responseFormat.image`.
   - OpenAI-compatible GPT image models omit unsupported `response_format`, while DALL-E models retain `response_format: "b64_json"`.
 - Recorded provider compatibility notes in this changelog so the repository does not depend on a local documentation-folder artifact.
 
@@ -22,9 +74,9 @@ No unreleased changes.
 
 ### ✨ Added
 - **Expanded Google Provider Model Support**:
-  - **Nano Banana (Gemini) Models**:
-    - `Nano Banana 2 (Gemini 2.5 Flash)` - Optimized for speed.
-    - `Nano Banana 3 Pro (Gemini 3 Pro)` - High-fidelity generation.
+  - **Nano Banana Models**:
+    - `Nano Banana 2` - Optimized for speed.
+    - `Nano Banana 3 Pro` - High-fidelity generation.
   - **Standard Imagen Models**:
     - `Imagen 4 Standard` & `Imagen 4 Ultra`
     - `Imagen 4 Fast`
@@ -34,7 +86,7 @@ No unreleased changes.
 ### 🏆 Improved
 - **Intelligent Google API Routing**:
   - The Google provider in [`src/api/google.ts`](src/api/google.ts:1) now dynamically switches between two different API protocols based on the selected model:
-    - **Gemini Models**: Use the modern `:generateContent` endpoint with the correct nested JSON payload.
+    - **Nano Banana Models**: Use the modern `:generateContent` endpoint with the correct nested JSON payload.
     - **Imagen & Legacy Models**: Use the `:predict` endpoint with model-specific parameter handling (e.g., converting resolution to `"1K"`/`"2K"` strings for Imagen 4 or sending integers for legacy models).
 - **Centralized Model Configuration**:
   - All Google model definitions, including user-friendly names, are now centralized in [`src/config/models.ts`](src/config/models.ts:1).
@@ -63,8 +115,8 @@ No unreleased changes.
   - Enhancement-related operational messages (per-attempt failures, quota/retry details, and model retry exhaustion) are logged with the `ENHANCEMENT` category at toggle-controlled levels, preventing console spam when logging is disabled.
 - Enhancement failure noise reduced:
   - Non-terminal messages such as:
-    - `Enhancement failed for model gemini-2.5-pro (attempt N/M)`
-    - `Exhausted retries for model gemini-2.5-pro, switching to next model`
+    - `Enhancement failed for model <model-name> (attempt N/M)`
+    - `Exhausted retries for model <model-name>, switching to next model`
     - `External AI enhancement failed, falling back to original`
   - are now emitted as informational `ENHANCEMENT` logs that follow the console logging toggle, while critical terminal failures remain visible.
 - Stylelint compliance issues resolved:
@@ -101,7 +153,7 @@ No unreleased changes.
 - Provider-specific prompt handling aligned with 5.7.0 behavior
 - User-created enhancement presets with Tampermonkey persistence
 - API key show/hide toggles for all provider credential fields
-- Style-respecting Gemini enhancement with merged template system
+- Style-respecting prompt enhancement with merged template system
 
 ### 🛠️ Changed
 - Build process: `npm run build` now updates all targets simultaneously
@@ -115,7 +167,7 @@ No unreleased changes.
 - Resolved 82 ESLint violations and 75 Stylelint errors
 - CSS cascade conflict affecting checkbox styling
 - Configuration import flow persistence and UI synchronization
-- Gemini enhancement logging with proper `logWarn` import
+- Prompt enhancement logging with proper `logWarn` import
 - History prompt tooltips with quote escaping
 - Empty/invalid prompt handling with fallback states
 - Negative prompt safety across all providers
