@@ -6,7 +6,6 @@
 - `dist/`: Generated userscript and metadata artifacts produced by the build; install artifacts belong here only.
 - `package.json`: Project metadata and npm validation commands.
 - `README.md`: Product scope, installation guidance, and user-facing behavior notes.
-- `GreasyForkREADME.md`: Greasy Fork-facing project description.
 
 ## Development Commands
 - `npm install`: Install local dependencies for development.

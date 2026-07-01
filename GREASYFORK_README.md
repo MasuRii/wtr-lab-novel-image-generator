@@ -1,9 +1,7 @@
-<div align="center">
-
 # WTR LAB Novel Image Generator
 
-[![Version](https://img.shields.io/badge/version-6.2.0-blue.svg?style=for-the-badge)](CHANGELOG.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/version-6.2.0-blue.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178c6?logo=typescript&logoColor=white&style=for-the-badge)](https://www.typescriptlang.org/)
 [![Built with Webpack](https://img.shields.io/badge/Built%20with-Webpack-8DD6F9?logo=webpack&logoColor=white&style=for-the-badge)](https://webpack.js.org/)
 [![Greasy Fork](https://img.shields.io/badge/Install-Greasy%20Fork-green.svg?style=for-the-badge)](https://greasyfork.org/en/scripts/553073-wtr-lab-novel-image-generator)
@@ -15,8 +13,6 @@
 A modern userscript that turns your novel reading into a visual experience. Select text on `wtr-lab.com` and generate AI-powered images via multiple providers with a clean UI, prompt enhancement, history, and powerful configuration options.
 
 [![Demo GIF](https://pixvid.org/images/2025/11/01/kAPg7.gif)](https://pixvid.org/image/kAPg7)
-
-</div>
 
 ## Features
 
@@ -44,32 +40,32 @@ A modern userscript that turns your novel reading into a visual experience. Sele
 4. Once complete, open the image viewer to see, download, or manage your creations.
 5. To customize settings, open the Tampermonkey menu and click **"Image Generator Settings"**.
 
-<details>
-<summary><b>⚙️ In-Depth Configuration Details</b></summary>
-
 ### Prompt Styling
+
 Choose from comprehensive art style categories to guide the AI:
+
 - **Anime Styles**: 10+ sub-styles for various anime aesthetics.
 - **Fantasy Styles**: Magical and mythical art approaches.
 - **Realism Styles**: Photorealistic and realistic rendering.
 - **Custom Templates**: Create and save your own personalized enhancement styles.
 
 ### Provider Settings
+
 - **API Configuration**: Set up keys and endpoints for each provider.
 - **Model Selection**: Choose specific models for each service.
 - **Generation Parameters**: Fine-tune quality, speed, and style settings.
 - **Fallback Logic**: Configure automatic provider switching on failure.
 
 ### AI Enhancement
+
 - **Enhancement API**: Set up your OpenAI-compatible endpoint (cloud or local) for prompt enhancement.
 - **Enhancement Templates**: Create and save custom enhancement styles.
 
 ### History & Maintenance
+
 - **Generation History**: View all generated images with their metadata.
 - **Export/Import**: Backup and restore your settings and history.
 - **Cleanup Tools**: Manage local storage and remove old entries.
-
-</details>
 
 ### Provider Comparison
 
@@ -79,42 +75,6 @@ Choose from comprehensive art style categories to guide the AI:
 | **AI Horde** | Starts async jobs, polls `/generate/check/{id}` until done, then fetches `/generate/status/{id}` once; negative prompts use AI Horde's `###` separator. | Community-powered free generation |
 | **OpenAI Comp.** | Posts to `/images/generations` and omits `response_format` entirely (unsupported by GPT image models). | Custom or premium OpenAI-compatible APIs |
 
-## Building from Source
-
-**Requirements:** Node.js 20+, npm 10+
-
-```bash
-git clone https://github.com/MasuRii/wtr-lab-novel-image-generator.git
-cd wtr-lab-novel-image-generator
-npm ci
-npm run validate
-```
-
-### Validation Commands
-
-```bash
-npm run typecheck   # Type-check TypeScript without emitting
-npm run lint        # Run ESLint against src/**/*.ts
-npm run build       # Generate userscript artifacts under dist/
-npm run validate    # Standard local gate: typecheck, lint, then build
-npm run dev         # Start development server with hot-reloading
-npm run test:api:red # Run the API compatibility harness without real keys
-```
-
-ESLint is the required source-quality gate for this workspace. Prettier/style commands may exist for local cleanup, but they are not required for workspace standard validation.
-
-### Architecture Overview
-
-```
-src/
-├── api/          # AI provider integrations (AI Horde, OpenAI-compatible enhancement, etc.)
-├── components/   # UI components (Config Panel, Image Viewer, Status Widget)
-├── config/       # Default settings, models, and shared styles
-├── core/         # Core application logic, event handling, and bootstrapping
-├── styles/       # Global and component-specific CSS
-└── utils/        # Helper functions (logging, storage, prompt processing)
-```
-
 ## Support
 
 - [GitHub Issues](https://github.com/MasuRii/wtr-lab-novel-image-generator/issues)
@@ -122,5 +82,4 @@ src/
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
-
+MIT. See [LICENSE](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/LICENSE).
