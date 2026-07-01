@@ -17,7 +17,10 @@
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   transform: translateY(0);
 }
 
@@ -92,20 +95,31 @@
   z-index: 10;
   font-size: var(--nig-font-size-2xl);
   font-weight: 300;
+  line-height: 1;
   cursor: pointer;
   color: var(--nig-color-text-muted);
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
   border-radius: var(--nig-radius-md);
-  transition: all var(--nig-transition-fast);
+  transition:
+    color var(--nig-transition-fast),
+    background var(--nig-transition-fast);
 }
 
-.nig-close-btn:hover {
+.nig-close-btn:hover,
+.nig-close-btn:focus-visible {
   color: var(--nig-color-text-primary);
   background: var(--nig-color-bg-tertiary);
+}
+
+.nig-close-btn:focus-visible {
+  outline: 2px solid var(--nig-color-accent-primary);
+  outline-offset: 2px;
 }
 
 .nig-modal-content h2 {
@@ -115,6 +129,20 @@
   font-size: var(--nig-font-size-2xl);
   font-weight: 600;
   letter-spacing: -0.025em;
+}
+
+.nig-version-badge {
+  display: inline-block;
+  font-size: var(--nig-font-size-xs);
+  font-weight: 500;
+  color: var(--nig-color-text-muted);
+  background: var(--nig-color-bg-tertiary);
+  padding: 2px var(--nig-space-sm);
+  border-radius: var(--nig-radius-sm);
+  margin-left: var(--nig-space-sm);
+  vertical-align: middle;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 /* === Form Elements === */
@@ -156,7 +184,10 @@
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  transition: all var(--nig-transition-fast);
+  transition:
+    border-color var(--nig-transition-fast),
+    box-shadow var(--nig-transition-fast),
+    background var(--nig-transition-fast);
   outline: none;
 }
 
@@ -182,12 +213,8 @@
   transform: scale(1.1);
 }
 
-.nig-form-group input:focus {
-  border-color: var(--nig-color-accent-primary);
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
-  background: var(--nig-color-bg-elevated);
-}
-
+.nig-form-group input:focus,
+.nig-form-group select:focus,
 .nig-form-group textarea:focus {
   border-color: var(--nig-color-accent-primary);
   box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
@@ -258,7 +285,10 @@
   cursor: pointer;
   font-size: var(--nig-font-size-base);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   display: inline-flex;
   align-items: center;
@@ -282,7 +312,9 @@
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-fetch-models-btn:hover {
@@ -300,7 +332,9 @@
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-delete-btn:hover {
@@ -317,7 +351,9 @@
   cursor: pointer;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -338,7 +374,10 @@
   cursor: pointer;
   font-size: var(--nig-font-size-base);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
 }
 
@@ -356,39 +395,13 @@
   padding: var(--nig-space-sm) var(--nig-space-md);
   font-size: var(--nig-font-size-sm);
   cursor: pointer;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
   align-self: flex-start;
 }
 
 .nig-override-btn:hover {
-  background: var(--nig-color-hover-primary);
-  transform: translateY(-1px);
-}
-
-.nig-test-enhancement-btn {
-  background: var(--nig-color-accent-primary);
-  color: white;
-  border: none;
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-sm) var(--nig-space-lg);
-  font-size: var(--nig-font-size-sm);
-  cursor: pointer;
-  transition: all var(--nig-transition-normal);
-  display: flex;
-  align-items: center;
-  gap: var(--nig-space-sm);
-  width: 100%;
-  justify-content: center;
-}
-
-.nig-test-enhancement-btn:disabled {
-  background: var(--nig-color-bg-tertiary);
-  color: var(--nig-color-text-muted);
-  cursor: not-allowed;
-  transform: none;
-}
-
-.nig-test-enhancement-btn:hover:not(:disabled) {
   background: var(--nig-color-hover-primary);
   transform: translateY(-1px);
 }
@@ -401,7 +414,10 @@
   padding: var(--nig-space-xs) var(--nig-space-sm);
   font-size: var(--nig-font-size-xs);
   cursor: pointer;
-  transition: all var(--nig-transition-fast);
+  transition:
+    background var(--nig-transition-fast),
+    color var(--nig-transition-fast),
+    border-color var(--nig-transition-fast);
 }
 
 .nig-template-btn:hover {
@@ -418,79 +434,162 @@
   text-align: center;
 }
 
-/* === Enhancement Preview Layout === */
-.nig-preview-container {
-  display: flex;
-  align-items: stretch;
-  gap: var(--nig-space-md);
-  margin-top: var(--nig-space-sm);
-}
-
-.nig-preview-section {
-  flex: 1 1 0;
+/* === Toast Notifications (alert replacement) === */
+.nig-toast-container {
+  position: fixed;
+  bottom: var(--nig-space-xl);
+  right: var(--nig-space-xl);
+  z-index: 100100;
   display: flex;
   flex-direction: column;
-  gap: var(--nig-space-xs);
+  gap: var(--nig-space-sm);
+  pointer-events: none;
+  max-width: 380px;
 }
 
-.nig-preview-section h5 {
-  margin: 0 0 var(--nig-space-xs) 0;
-  font-size: var(--nig-font-size-sm);
-  font-weight: 600;
-  color: var(--nig-color-text-secondary);
-}
-
-/* Ensure both original and enhanced prompt areas share consistent sizing */
-#nig-original-prompt,
-#nig-enhanced-prompt,
-.nig-prompt-display {
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--nig-color-bg-tertiary);
-  border: 1px solid var(--nig-color-border);
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-md);
-  font-family: var(--nig-font-family-mono, "Fira Code", monospace);
-  font-size: var(--nig-font-size-sm);
+.nig-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--nig-space-sm);
+  background: var(--nig-color-bg-secondary);
   color: var(--nig-color-text-primary);
-  min-height: 120px;
-  max-height: 260px;
-  line-height: 1.5;
-  overflow-y: auto;
+  padding: var(--nig-space-md) var(--nig-space-lg);
+  border-radius: var(--nig-radius-lg);
+  box-shadow: var(--nig-shadow-xl);
+  border: 1px solid var(--nig-color-border);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: var(--nig-font-size-sm);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateX(20px);
+  transition:
+    opacity var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
-/* Editable textarea (original) */
-#nig-original-prompt {
-  resize: vertical;
+.nig-toast.nig-toast-visible {
+  opacity: 1;
+  transform: translateX(0);
 }
 
-/* Read-only enhanced prompt display */
-#nig-enhanced-prompt {
-  resize: none;
-}
-
-/* Center the arrow between the two sections */
-.nig-preview-arrow {
+.nig-toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 var(--nig-space-xs);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nig-toast-success .nig-toast-icon {
+  color: var(--nig-color-accent-success);
+}
+
+.nig-toast-error .nig-toast-icon {
+  color: var(--nig-color-accent-error);
+}
+
+.nig-toast-info .nig-toast-icon {
+  color: var(--nig-color-accent-primary);
+}
+
+.nig-toast-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.nig-toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
   color: var(--nig-color-text-muted);
+  font-size: var(--nig-font-size-lg);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--nig-radius-sm);
+  line-height: 1;
 }
 
-.nig-preview-arrow .material-symbols-outlined {
-  font-size: 28px;
+.nig-toast-close:hover,
+.nig-toast-close:focus-visible {
+  color: var(--nig-color-text-primary);
+  background: var(--nig-color-bg-tertiary);
+  outline: none;
 }
 
-/* Responsive layout: stack vertically on small screens */
-@media (width <= 600px) {
-  .nig-preview-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .nig-preview-arrow {
-    padding: var(--nig-space-xs) 0;
-    transform: rotate(90deg);
-  }
+.nig-toast-close:focus-visible {
+  outline: 2px solid var(--nig-color-accent-primary);
+  outline-offset: 1px;
 }
+
+/* === Confirm/Prompt Dialog Actions === */
+.nig-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--nig-space-md);
+  margin-top: var(--nig-space-lg);
+}
+
+.nig-confirm-message {
+  color: var(--nig-color-text-secondary);
+  line-height: 1.6;
+  margin: var(--nig-space-md) 0;
+}
+
+.nig-prompt-label {
+  display: block;
+  margin-bottom: var(--nig-space-sm);
+  font-weight: 500;
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+}
+
+.nig-prompt-input {
+  width: 100%;
+  padding: var(--nig-space-sm) var(--nig-space-md);
+  border-radius: var(--nig-radius-md);
+  border: 1px solid var(--nig-color-border);
+  background: var(--nig-color-bg-tertiary);
+  color: var(--nig-color-text-primary);
+  font-size: var(--nig-font-size-sm);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  outline: none;
+  transition:
+    border-color var(--nig-transition-fast),
+    box-shadow var(--nig-transition-fast);
+}
+
+.nig-prompt-input:focus {
+  border-color: var(--nig-color-accent-primary);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
+}
+
+/* === Error Modal Hint === */
+.nig-error-hint {
+  margin-top: var(--nig-space-md);
+  padding: var(--nig-space-md) var(--nig-space-lg);
+  background: var(--nig-color-bg-primary);
+  border: 1px solid var(--nig-color-accent-warning);
+  border-radius: var(--nig-radius-md);
+  color: var(--nig-color-accent-warning);
+  font-size: var(--nig-font-size-sm);
+  line-height: 1.5;
+}
+

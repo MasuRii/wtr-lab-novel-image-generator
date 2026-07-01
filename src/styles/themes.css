@@ -110,16 +110,6 @@
   }
 
   /* Mobile Enhancement Styles */
-  .nig-preview-container {
-    grid-template-columns: 1fr;
-    gap: var(--nig-space-md);
-  }
-
-  .nig-preview-arrow {
-    transform: rotate(90deg);
-    justify-self: center;
-  }
-
   .nig-enhancement-status {
     margin-left: 0;
     margin-top: var(--nig-space-sm);

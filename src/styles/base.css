@@ -1,6 +1,9 @@
-/* === Base Typography and Font Loading === */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap");
+/* === Base Typography ===
+ * System fonts are used to avoid leaking @import Google Fonts into the
+ * host page. Inter and Fira Code are listed as optional preferred fonts;
+ * if the user has them installed locally they will be used, otherwise the
+ * system font stack applies.
+ */
 
 /* === CSS Custom Properties (Design Tokens) === */
 :root {
@@ -15,17 +18,17 @@
   --nig-color-border: #55555a;
   --nig-color-border-light: #6a6a6e;
 
-  /* Accent Colors */
+  /* Accent Colors - success darkened from #10b981 to #047857 for WCAG AA contrast with white text (was ~2.5:1, now ~5.5:1) */
   --nig-color-accent-primary: #6366f1;
   --nig-color-accent-secondary: #8b5cf6;
-  --nig-color-accent-success: #10b981;
+  --nig-color-accent-success: #047857;
   --nig-color-accent-warning: #f59e0b;
   --nig-color-accent-error: #ef4444;
 
   /* Interactive States */
   --nig-color-hover-primary: #5855eb;
   --nig-color-hover-secondary: #7c3aed;
-  --nig-color-hover-success: #059669;
+  --nig-color-hover-success: #065f46;
   --nig-color-hover-error: #dc2626;
 
   /* Spacing Scale */
@@ -102,11 +105,22 @@
   }
 }
 
-/* === Reduced Motion Support === */
+/* === Reduced Motion Support (scoped to userscript elements only) ===
+ * The original global *,*::before,*::after selector leaked into the host
+ * page and killed ALL site animations for reduced-motion users. Now scoped
+ * to userscript containers only.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .nig-modal-overlay,
+  .nig-modal-overlay *,
+  .nig-modal-overlay *::before,
+  .nig-modal-overlay *::after,
+  .nig-status-widget,
+  .nig-status-widget *,
+  .nig-button,
+  .nig-button *,
+  .nig-toast-container,
+  .nig-toast-container * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -123,23 +137,25 @@
   font-size: 18px;
 }
 
-/* === File Input Styling === */
-input[type="file"] {
+/* === File Input Styling (scoped to userscript container) === */
+.nig-modal-content input[type="file"] {
   border: 2px dashed var(--nig-color-border);
   background: var(--nig-color-bg-primary);
   padding: var(--nig-space-xl);
   border-radius: var(--nig-radius-lg);
   color: var(--nig-color-text-secondary);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    background var(--nig-transition-normal);
   cursor: pointer;
 }
 
-input[type="file"]:hover {
+.nig-modal-content input[type="file"]:hover {
   border-color: var(--nig-color-accent-primary);
   background: var(--nig-color-bg-elevated);
 }
 
-input[type="file"]:focus {
+.nig-modal-content input[type="file"]:focus {
   outline: none;
   border-color: var(--nig-color-accent-primary);
   box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);

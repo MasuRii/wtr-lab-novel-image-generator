@@ -11,7 +11,10 @@
   border: 1px solid var(--nig-color-border);
   border-radius: var(--nig-radius-lg);
   padding: var(--nig-space-xl);
-  transition: all var(--nig-transition-normal);
+  transition:
+    border-color var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal),
+    transform var(--nig-transition-normal);
 }
 
 .nig-utility-card:hover {
@@ -99,7 +102,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--nig-space-sm);
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    color var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   font-family:
     Inter,
@@ -109,7 +114,7 @@
 }
 
 .nig-btn-primary:hover {
-  background: var(--nig-color-hover-error);
+  background: var(--nig-color-hover-primary);
   transform: translateY(-1px);
   box-shadow: var(--nig-shadow-md);
 }
@@ -132,7 +137,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--nig-space-xs);
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal);
   box-shadow: var(--nig-shadow-sm);
   font-family:
     Inter,
@@ -186,6 +194,7 @@
   display: none;
   align-items: center;
   gap: var(--nig-space-md);
+  max-width: calc(100vw - 2 * var(--nig-space-xl));
   font-family:
     Inter,
     -apple-system,
@@ -193,9 +202,13 @@
     sans-serif;
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
-  transition: all var(--nig-transition-normal);
+  transition:
+    background var(--nig-transition-normal),
+    transform var(--nig-transition-normal),
+    box-shadow var(--nig-transition-normal),
+    border-color var(--nig-transition-normal);
   border: 1px solid var(--nig-color-border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(6px);
 }
 
 .nig-status-icon {
@@ -297,15 +310,37 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #4af028;
-  opacity: 0.8;
+  background: var(--nig-color-text-muted);
+  opacity: 0.6;
+  transition:
+    background var(--nig-transition-fast),
+    opacity var(--nig-transition-fast);
+}
+
+/* State-specific indicator colors (JS sets these classes on the indicator) */
+.nig-status-indicator.provider-active {
+  background: var(--nig-color-accent-warning);
+  opacity: 1;
+}
+
+.nig-status-indicator.external-active {
+  background: var(--nig-color-accent-primary);
+  opacity: 1;
+}
+
+.nig-status-indicator.disabled {
+  background: var(--nig-color-text-muted);
+  opacity: 0.4;
 }
 
 /* === Enhancement Settings States === */
 .nig-enhancement-settings {
-  transition: all var(--nig-transition-normal);
+  transition: opacity var(--nig-transition-normal);
 }
 
+/* Disabled state: pointer-events + opacity for visual feedback.
+ * JS also sets tabindex=-1 and aria-disabled on inputs to remove them
+ * from the keyboard tab order (finding #20). */
 .nig-enhancement-settings.disabled {
   opacity: 0.5;
   pointer-events: none;
