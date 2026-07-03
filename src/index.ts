@@ -599,7 +599,7 @@ import * as abortRegistry from "./utils/abortRegistry";
         return;
       }
       const firstRect = rects[0];
-      generateBtn.style.display = "block";
+      generateBtn.style.display = "inline-flex";
       const buttonHeight = generateBtn.offsetHeight || 30;
       let topPosition = window.scrollY + firstRect.top - buttonHeight - 5;
       if (topPosition < window.scrollY) {
@@ -644,7 +644,8 @@ import * as abortRegistry from "./utils/abortRegistry";
     document.head.appendChild(materialSymbolsLink);
     generateBtn = document.createElement("button");
     generateBtn.className = "nig-button";
-    generateBtn.innerHTML = "🎨 Generate Image";
+    generateBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg><span>Generate Image</span>';
     generateBtn.setAttribute("aria-label", "Generate image from selected text");
     generateBtn.addEventListener("click", onGenerateClick);
     document.body.appendChild(generateBtn);
@@ -654,6 +655,71 @@ import * as abortRegistry from "./utils/abortRegistry";
     imageViewer.create();
     errorModal.create();
     configPanel.create();
+
+    // Inject an "AI Image" launcher directly into the site's bottom reader
+    // navigation bar (the Read / Display / Speech / Settings / More tab
+    // strip) instead of a standalone floating widget. This keeps the entry
+    // point inside the host UI where it belongs. The site is a SPA that
+    // re-renders the nav on route changes, so a MutationObserver re-injects
+    // the tab whenever the nav reappears without it.
+    function injectSettingsTab() {
+      const nav = document.querySelector("nav.bottom-reader-nav");
+      if (!nav || nav.querySelector(".nig-reader-tab")) {
+        return;
+      }
+
+      // Locate the tab strip via the "More" tab so the launcher inserts
+      // beside the site's own Settings tab. Falls back to the first
+      // button's parent (the tab strip) if labels differ.
+      const buttons = nav.querySelectorAll("button");
+      let moreTab = null;
+      for (const btn of buttons) {
+        if (/^more$/i.test(btn.textContent.trim())) {
+          moreTab = btn;
+          break;
+        }
+      }
+      const tabBar = (moreTab ?? nav.querySelector("button"))?.parentElement;
+      if (!tabBar) {
+        return;
+      }
+
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className =
+        "nig-reader-tab relative flex-1 flex flex-col items-center justify-center pt-1.5 pb-2 gap-0.5 transition-colors border-l border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/30";
+      tab.title = "Image Generator Settings";
+      tab.setAttribute("aria-label", "Open Image Generator settings");
+      tab.innerHTML =
+        '<span class="absolute top-0 inset-x-0 h-0.5 transition-colors bg-transparent"></span>' +
+        '<span class="[&>svg]:w-4 [&>svg]:h-4">' +
+        '<svg class="icon inline-flex shrink-0 size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>' +
+        "</span>" +
+        '<span class="text-[10px] font-medium leading-none">AI Image</span>';
+      tab.addEventListener("click", () => configPanel.show());
+
+      // Insert before the "More" tab so the launcher sits beside Settings.
+      if (moreTab) {
+        tabBar.insertBefore(tab, moreTab);
+      } else {
+        tabBar.appendChild(tab);
+      }
+    }
+
+    let tabInjectScheduled = false;
+    const tabObserver = new MutationObserver(() => {
+      if (tabInjectScheduled) {
+        return;
+      }
+      tabInjectScheduled = true;
+      requestAnimationFrame(() => {
+        tabInjectScheduled = false;
+        injectSettingsTab();
+      });
+    });
+    tabObserver.observe(document.body, { childList: true, subtree: true });
+    injectSettingsTab();
+
     errorModal.init({
       onRetry: retryGeneration,
       onDismiss: handleErrorModalDismiss,

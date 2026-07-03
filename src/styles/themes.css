@@ -29,7 +29,7 @@
   .nig-button:hover {
     /* Prevent hover movement on mobile - maintain centering */
     transform: translateX(-50%);
-    background: var(--nig-color-hover-primary);
+    background-color: rgb(99 102 241 / 10%);
   }
 
   .nig-tabs {
@@ -155,7 +155,7 @@
 /* Desktop (1024px and up) */
 @media (width >= 1024px) {
   .nig-modal-content {
-    max-width: 1000px;
+    max-width: 760px;
   }
 
   .nig-utilities-grid {
@@ -204,7 +204,7 @@
 /* Large Desktop (1280px and up) */
 @media (width >= 1280px) {
   .nig-modal-content {
-    max-width: 1200px;
+    max-width: 820px;
   }
 
   .nig-utilities-grid {

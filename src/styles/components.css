@@ -1,38 +1,60 @@
 /* === Base Components === */
+/* Generate Image button — styled after the site's native floating action button
+ * (card surface + accent border/text, soft shadow, hover tint) so it blends
+ * with the host UI. Hidden by default; shown as inline-flex near the current
+ * text selection. */
 .nig-button {
   position: absolute;
   z-index: 99998;
-  background: var(--nig-color-accent-primary);
-  color: white;
-  border: none;
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-sm) var(--nig-space-md);
-  font-size: var(--nig-font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: var(--nig-shadow-md);
   display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #ffffff;
+  color: var(--nig-color-accent-primary);
+  border: 1px solid var(--nig-color-accent-primary);
+  border-radius: 0.375rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
+  cursor: pointer;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 600;
+  line-height: 1;
   font-family:
     Inter,
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
   transition:
-    background var(--nig-transition-normal),
-    transform var(--nig-transition-normal),
-    box-shadow var(--nig-transition-normal);
-  transform: translateY(0);
+    box-shadow var(--nig-transition-normal),
+    background-color var(--nig-transition-normal);
 }
 
 .nig-button:hover {
-  background: var(--nig-color-hover-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--nig-shadow-lg);
+  background-color: rgb(99 102 241 / 10%);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 15%),
+    0 4px 6px -4px rgb(0 0 0 / 15%);
 }
 
 .nig-button:active {
-  transform: translateY(0);
-  box-shadow: var(--nig-shadow-sm);
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 10%);
+}
+
+.nig-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Dark site theme: switch the card surface to match the site's dark card. */
+html.dark .nig-button,
+body.dark .nig-button {
+  background-color: #1f2129;
 }
 
 /* === Modal Components === */
@@ -236,6 +258,15 @@
 
 .nig-form-group-inline label {
   margin-bottom: var(--nig-space-sm);
+}
+
+/* A direct group label (e.g. "Dimensions (Width × Height)") is itself a grid
+ * item. Span it across all columns so it sits above its paired inputs instead
+ * of taking a column beside them — fixes the misalignment visible on
+ * tablet/desktop (1fr 1fr / auto-fit) where the label ended up next to the
+ * first input. Nested labels inside the input cells are unaffected. */
+.nig-form-group-inline > label {
+  grid-column: 1 / -1;
 }
 
 /* Password / API key visibility wrapper */
@@ -451,12 +482,14 @@
   display: flex;
   align-items: center;
   gap: var(--nig-space-sm);
-  background: var(--nig-color-bg-secondary);
-  color: var(--nig-color-text-primary);
-  padding: var(--nig-space-md) var(--nig-space-lg);
-  border-radius: var(--nig-radius-lg);
-  box-shadow: var(--nig-shadow-xl);
-  border: 1px solid var(--nig-color-border);
+  padding: 0.625rem 1rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
   font-family:
     Inter,
     -apple-system,
@@ -468,7 +501,16 @@
   transform: translateX(20px);
   transition:
     opacity var(--nig-transition-normal),
-    transform var(--nig-transition-normal);
+    transform var(--nig-transition-normal),
+    background-color var(--nig-transition-normal);
+}
+
+/* Dark site theme: adapt the toast card surface, text, and border. */
+html.dark .nig-toast,
+body.dark .nig-toast {
+  background-color: #1f2129;
+  color: #e2e8f0;
+  border-color: rgb(255 255 255 / 10%);
 }
 
 .nig-toast.nig-toast-visible {
@@ -487,12 +529,24 @@
   font-weight: 700;
 }
 
+.nig-toast.nig-toast-success {
+  border-color: #10b981;
+}
+
 .nig-toast-success .nig-toast-icon {
-  color: var(--nig-color-accent-success);
+  color: #10b981;
+}
+
+.nig-toast.nig-toast-error {
+  border-color: var(--nig-color-accent-error);
 }
 
 .nig-toast-error .nig-toast-icon {
   color: var(--nig-color-accent-error);
+}
+
+.nig-toast.nig-toast-info {
+  border-color: var(--nig-color-accent-primary);
 }
 
 .nig-toast-info .nig-toast-icon {
