@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator
 // @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, OpenAI). Features AI prompt enhancement via OpenAI-compatible endpoints, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.2.0
+// @version 6.3.0
 // @author MasuRii
 // @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
@@ -219,40 +219,62 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Typography ===
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_noSourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
 ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
+/* Generate Image button — styled after the site's native floating action button
+ * (card surface + accent border/text, soft shadow, hover tint) so it blends
+ * with the host UI. Hidden by default; shown as inline-flex near the current
+ * text selection. */
 .nig-button {
   position: absolute;
   z-index: 99998;
-  background: var(--nig-color-accent-primary);
-  color: white;
-  border: none;
-  border-radius: var(--nig-radius-md);
-  padding: var(--nig-space-sm) var(--nig-space-md);
-  font-size: var(--nig-font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: var(--nig-shadow-md);
   display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #ffffff;
+  color: var(--nig-color-accent-primary);
+  border: 1px solid var(--nig-color-accent-primary);
+  border-radius: 0.375rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
+  cursor: pointer;
+  font-size: var(--nig-font-size-sm);
+  font-weight: 600;
+  line-height: 1;
   font-family:
     Inter,
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
   transition:
-    background var(--nig-transition-normal),
-    transform var(--nig-transition-normal),
-    box-shadow var(--nig-transition-normal);
-  transform: translateY(0);
+    box-shadow var(--nig-transition-normal),
+    background-color var(--nig-transition-normal);
 }
 
 .nig-button:hover {
-  background: var(--nig-color-hover-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--nig-shadow-lg);
+  background-color: rgb(99 102 241 / 10%);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 15%),
+    0 4px 6px -4px rgb(0 0 0 / 15%);
 }
 
 .nig-button:active {
-  transform: translateY(0);
-  box-shadow: var(--nig-shadow-sm);
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 10%);
+}
+
+.nig-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Dark site theme: switch the card surface to match the site's dark card. */
+html.dark .nig-button,
+body.dark .nig-button {
+  background-color: #1f2129;
 }
 
 /* === Modal Components === */
@@ -456,6 +478,15 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
 
 .nig-form-group-inline label {
   margin-bottom: var(--nig-space-sm);
+}
+
+/* A direct group label (e.g. "Dimensions (Width × Height)") is itself a grid
+ * item. Span it across all columns so it sits above its paired inputs instead
+ * of taking a column beside them — fixes the misalignment visible on
+ * tablet/desktop (1fr 1fr / auto-fit) where the label ended up next to the
+ * first input. Nested labels inside the input cells are unaffected. */
+.nig-form-group-inline > label {
+  grid-column: 1 / -1;
 }
 
 /* Password / API key visibility wrapper */
@@ -671,12 +702,14 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   display: flex;
   align-items: center;
   gap: var(--nig-space-sm);
-  background: var(--nig-color-bg-secondary);
-  color: var(--nig-color-text-primary);
-  padding: var(--nig-space-md) var(--nig-space-lg);
-  border-radius: var(--nig-radius-lg);
-  box-shadow: var(--nig-shadow-xl);
-  border: 1px solid var(--nig-color-border);
+  padding: 0.625rem 1rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
   font-family:
     Inter,
     -apple-system,
@@ -688,7 +721,16 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   transform: translateX(20px);
   transition:
     opacity var(--nig-transition-normal),
-    transform var(--nig-transition-normal);
+    transform var(--nig-transition-normal),
+    background-color var(--nig-transition-normal);
+}
+
+/* Dark site theme: adapt the toast card surface, text, and border. */
+html.dark .nig-toast,
+body.dark .nig-toast {
+  background-color: #1f2129;
+  color: #e2e8f0;
+  border-color: rgb(255 255 255 / 10%);
 }
 
 .nig-toast.nig-toast-visible {
@@ -707,12 +749,24 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Base Components === */
   font-weight: 700;
 }
 
+.nig-toast.nig-toast-success {
+  border-color: #10b981;
+}
+
 .nig-toast-success .nig-toast-icon {
-  color: var(--nig-color-accent-success);
+  color: #10b981;
+}
+
+.nig-toast.nig-toast-error {
+  border-color: var(--nig-color-accent-error);
 }
 
 .nig-toast-error .nig-toast-icon {
   color: var(--nig-color-accent-error);
+}
+
+.nig-toast.nig-toast-info {
+  border-color: var(--nig-color-accent-primary);
 }
 
 .nig-toast-info .nig-toast-icon {
@@ -1462,7 +1516,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
   .nig-button:hover {
     /* Prevent hover movement on mobile - maintain centering */
     transform: translateX(-50%);
-    background: var(--nig-color-hover-primary);
+    background-color: rgb(99 102 241 / 10%);
   }
 
   .nig-tabs {
@@ -1588,7 +1642,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
 /* Desktop (1024px and up) */
 @media (width >= 1024px) {
   .nig-modal-content {
-    max-width: 1000px;
+    max-width: 760px;
   }
 
   .nig-utilities-grid {
@@ -1637,7 +1691,7 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Responsive Design === */
 /* Large Desktop (1280px and up) */
 @media (width >= 1280px) {
   .nig-modal-content {
-    max-width: 1200px;
+    max-width: 820px;
   }
 
   .nig-utilities-grid {
@@ -1907,15 +1961,18 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   bottom: var(--nig-space-xl);
   left: var(--nig-space-xl);
   z-index: 1020;
-  background: var(--nig-color-bg-secondary);
-  color: var(--nig-color-text-primary);
-  padding: var(--nig-space-md) var(--nig-space-lg);
-  border-radius: var(--nig-radius-lg);
-  box-shadow: var(--nig-shadow-xl);
   display: none;
   align-items: center;
   gap: var(--nig-space-md);
   max-width: calc(100vw - 2 * var(--nig-space-xl));
+  padding: 0.625rem 1rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 10%),
+    0 2px 4px -2px rgb(0 0 0 / 10%);
   font-family:
     Inter,
     -apple-system,
@@ -1924,12 +1981,18 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
   font-size: var(--nig-font-size-sm);
   font-weight: 500;
   transition:
-    background var(--nig-transition-normal),
-    transform var(--nig-transition-normal),
+    background-color var(--nig-transition-normal),
     box-shadow var(--nig-transition-normal),
     border-color var(--nig-transition-normal);
-  border: 1px solid var(--nig-color-border);
-  backdrop-filter: blur(6px);
+}
+
+/* Dark site theme: adapt the card surface, text, and border to match the
+ * site's dark card (same approach as the Generate button). */
+html.dark .nig-status-widget,
+body.dark .nig-status-widget {
+  background-color: #1f2129;
+  color: #e2e8f0;
+  border-color: rgb(255 255 255 / 10%);
 }
 
 .nig-status-icon {
@@ -1949,20 +2012,18 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
 }
 
 .nig-status-widget.success {
-  background: var(--nig-color-accent-success);
-  color: white;
+  border-color: #10b981;
   cursor: pointer;
-  border-color: var(--nig-color-accent-success);
 }
 
 .nig-status-widget.success:hover {
-  background: var(--nig-color-hover-success);
-  transform: translateY(-2px);
-  box-shadow: var(--nig-shadow-lg);
+  background-color: rgb(16 185 129 / 10%);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 15%),
+    0 4px 6px -4px rgb(0 0 0 / 15%);
 }
 
 .nig-status-widget.error {
-  background: var(--nig-color-accent-error);
   border-color: var(--nig-color-accent-error);
 }
 
@@ -2085,6 +2146,23 @@ ___CSS_LOADER_EXPORT___.push([module.id, `/* === Modern Utilities Tab === */
 /* Image Viewer - Higher z-index than config panel */
 #nig-image-viewer.nig-modal-overlay {
   z-index: 99999;
+}
+
+/* Image Viewer — widen the modal on tablet/desktop so generated images can
+ * expand to the available viewport size instead of being constrained to the
+ * narrower config-panel width. Mobile (<768px) keeps its full-width layout. */
+@media (width >= 768px) {
+  #nig-image-viewer .nig-modal-content {
+    max-width: min(95vw, 1280px);
+  }
+}
+
+/* Make generated images expand to the largest size that fits: each grid cell
+ * is at least 600px (capped to 100% on narrow screens). auto-fit collapses
+ * empty tracks, so a single image fills the whole modal width and multiple
+ * images form large columns rather than tiny thumbnails. */
+#nig-image-viewer .nig-image-gallery {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 600px), 1fr));
 }
 
 /* Navigation Tabs - Higher than status widget, lower than modals */
@@ -6244,7 +6322,7 @@ async function generate(prompt, { onSuccess, onFailure, onAuthFailure }) {
 
 
 
-const AI_HORDE_CLIENT_AGENT = "WTR-Lab-Novel-Image-Generator:6.2.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
+const AI_HORDE_CLIENT_AGENT = "WTR-Lab-Novel-Image-Generator:6.3.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
 const AI_HORDE_API_BASE = "https://aihorde.net/api/v2";
 function getAIHordeHeaders(aiHordeApiKey = "0000000000") {
     return {
@@ -9655,14 +9733,14 @@ function setupProviderEnhancementListener(panelElement) {
 // Runtime version information for the userscript UI.
 // Auto-synced by scripts/update-versions.js — do not edit manually.
 const VERSION_INFO = {
-    SEMANTIC: "6.2.0",
-    DISPLAY: "v6.2.0",
+    SEMANTIC: "6.3.0",
+    DISPLAY: "v6.3.0",
     BUILD_ENV: "production",
-    BUILD_DATE: "2026-07-01",
-    GREASYFORK: "6.2.0",
-    NPM: "6.2.0",
-    BADGE: "6.2.0",
-    CHANGELOG: "6.2.0",
+    BUILD_DATE: "2026-07-03",
+    GREASYFORK: "6.3.0",
+    NPM: "6.3.0",
+    BADGE: "6.3.0",
+    CHANGELOG: "6.3.0",
 };
 const VERSION = VERSION_INFO.SEMANTIC;
 if (typeof window !== "undefined") {
@@ -10163,6 +10241,7 @@ function createPanelElement() {
 
 
 
+
 // --- MODULE STATE ---
 let panelElement = null;
 let initializeCallbacks = {};
@@ -10220,15 +10299,29 @@ async function configPanel_show() {
         .classList.add("active");
     panelElement.querySelector("#nig-config-tab").classList.add("active");
     panelElement.querySelector("#nig-save-btn").style.display = "block";
-    // Populate all form sections
-    const config = await storage/* getConfig */.zj();
-    // Populate basic configuration
-    await populateConfigForm();
-    // Populate provider-specific forms
-    await (0,models.populateProviderForms)(config);
-    // Populate enhancement settings
-    await populateEnhancementSettings(config);
+    // Reveal the modal immediately so it stays visible even if form population
+    // below throws (e.g. a provider model fetch failure). Previously the panel
+    // was only displayed after all async population completed, so any thrown
+    // error left the modal permanently hidden.
     panelElement.style.display = "flex";
+    // Populate all form sections. Wrapped so a failure in any section does not
+    // hide the modal — the user still gets a visible (possibly partially
+    // populated) panel instead of a silently broken open action.
+    try {
+        const config = await storage/* getConfig */.zj();
+        // Populate basic configuration
+        await populateConfigForm();
+        // Populate provider-specific forms
+        await (0,models.populateProviderForms)(config);
+        // Populate enhancement settings
+        await populateEnhancementSettings(config);
+    }
+    catch (error) {
+        logger/* logError */.vV("CONFIG_PANEL", "Failed to populate configuration panel", {
+            error: error.message,
+        });
+        (0,uiUtils/* showToast */.P0)("Some settings could not be loaded. Check the console for details.", "error");
+    }
     // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
     if (panelA11yCleanup) {
         panelA11yCleanup();
@@ -10708,7 +10801,7 @@ async function configPanel_saveConfig() {
                 return;
             }
             const firstRect = rects[0];
-            generateBtn.style.display = "block";
+            generateBtn.style.display = "inline-flex";
             const buttonHeight = generateBtn.offsetHeight || 30;
             let topPosition = window.scrollY + firstRect.top - buttonHeight - 5;
             if (topPosition < window.scrollY) {
@@ -10745,7 +10838,8 @@ async function configPanel_saveConfig() {
         document.head.appendChild(materialSymbolsLink);
         generateBtn = document.createElement("button");
         generateBtn.className = "nig-button";
-        generateBtn.innerHTML = "🎨 Generate Image";
+        generateBtn.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg><span>Generate Image</span>';
         generateBtn.setAttribute("aria-label", "Generate image from selected text");
         generateBtn.addEventListener("click", onGenerateClick);
         document.body.appendChild(generateBtn);
@@ -10754,6 +10848,66 @@ async function configPanel_saveConfig() {
         imageViewer/* create */.v();
         errorModal_create();
         configPanel_create();
+        // Inject an "AI Image" launcher directly into the site's bottom reader
+        // navigation bar (the Read / Display / Speech / Settings / More tab
+        // strip) instead of a standalone floating widget. This keeps the entry
+        // point inside the host UI where it belongs. The site is a SPA that
+        // re-renders the nav on route changes, so a MutationObserver re-injects
+        // the tab whenever the nav reappears without it.
+        function injectSettingsTab() {
+            const nav = document.querySelector("nav.bottom-reader-nav");
+            if (!nav || nav.querySelector(".nig-reader-tab")) {
+                return;
+            }
+            // Locate the tab strip via the "More" tab so the launcher inserts
+            // beside the site's own Settings tab. Falls back to the first
+            // button's parent (the tab strip) if labels differ.
+            const buttons = nav.querySelectorAll("button");
+            let moreTab = null;
+            for (const btn of buttons) {
+                if (/^more$/i.test(btn.textContent.trim())) {
+                    moreTab = btn;
+                    break;
+                }
+            }
+            const tabBar = (moreTab ?? nav.querySelector("button"))?.parentElement;
+            if (!tabBar) {
+                return;
+            }
+            const tab = document.createElement("button");
+            tab.type = "button";
+            tab.className =
+                "nig-reader-tab relative flex-1 flex flex-col items-center justify-center pt-1.5 pb-2 gap-0.5 transition-colors border-l border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted/30";
+            tab.title = "Image Generator Settings";
+            tab.setAttribute("aria-label", "Open Image Generator settings");
+            tab.innerHTML =
+                '<span class="absolute top-0 inset-x-0 h-0.5 transition-colors bg-transparent"></span>' +
+                    '<span class="[&>svg]:w-4 [&>svg]:h-4">' +
+                    '<svg class="icon inline-flex shrink-0 size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>' +
+                    "</span>" +
+                    '<span class="text-[10px] font-medium leading-none">AI Image</span>';
+            tab.addEventListener("click", () => configPanel_show());
+            // Insert before the "More" tab so the launcher sits beside Settings.
+            if (moreTab) {
+                tabBar.insertBefore(tab, moreTab);
+            }
+            else {
+                tabBar.appendChild(tab);
+            }
+        }
+        let tabInjectScheduled = false;
+        const tabObserver = new MutationObserver(() => {
+            if (tabInjectScheduled) {
+                return;
+            }
+            tabInjectScheduled = true;
+            requestAnimationFrame(() => {
+                tabInjectScheduled = false;
+                injectSettingsTab();
+            });
+        });
+        tabObserver.observe(document.body, { childList: true, subtree: true });
+        injectSettingsTab();
         errorModal_init({
             onRetry: retryGeneration,
             onDismiss: handleErrorModalDismiss,

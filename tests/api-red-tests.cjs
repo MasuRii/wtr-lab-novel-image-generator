@@ -726,7 +726,7 @@ test("AI Horde polls /generate/check before fetching final /generate/status resu
   const asyncRequest = REQUESTS[asyncIndex];
   assert.equal(
     asyncRequest.headers?.["Client-Agent"],
-    "WTR-Lab-Novel-Image-Generator:6.2.0:https://github.com/MasuRii/wtr-lab-novel-image-generator",
+    "WTR-Lab-Novel-Image-Generator:6.3.0:https://github.com/MasuRii/wtr-lab-novel-image-generator",
     "AI Horde requests should include a descriptive Client-Agent header",
   );
 });
@@ -1836,7 +1836,7 @@ test("Version badge is rendered inside the modal h2 header and reflects the dyna
     "utf8",
   );
   assert.ok(
-    !templateSource.includes("v6.2.0"),
+    !templateSource.includes("v6.3.0"),
     "Config panel template must not hardcode the version literal; it should be sourced from VERSION_INFO",
   );
 });

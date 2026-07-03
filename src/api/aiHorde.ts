@@ -5,7 +5,7 @@ import { logInfo, logDebug, logError } from "../utils/logger";
 import * as abortRegistry from "../utils/abortRegistry";
 
 const AI_HORDE_CLIENT_AGENT =
-  "WTR-Lab-Novel-Image-Generator:6.2.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
+  "WTR-Lab-Novel-Image-Generator:6.3.0:https://github.com/MasuRii/wtr-lab-novel-image-generator";
 const AI_HORDE_API_BASE = "https://aihorde.net/api/v2";
 
 function getAIHordeHeaders(aiHordeApiKey = "0000000000") {

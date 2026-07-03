@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [6.3.0] - 2026-07-03
+
+### ✨ Added
+- **Reader Navigation "AI Image" Tab**: Injects an "AI Image" launcher directly into the site's bottom reader navigation bar (the Read / Display / Speech / Settings / More tab strip) so settings live inside the host UI instead of a standalone floating widget. A `MutationObserver` re-injects the tab whenever the SPA re-renders the nav on route changes, and it inserts beside the "More" tab (falling back to the end of the tab strip).
+- **SVG Palette Icon for the Generate Button**: The floating selection button now renders an inline SVG palette icon plus a "Generate Image" label instead of the "🎨" emoji, with `inline-flex` alignment so the icon and text stay vertically centered.
+- **Dark-Theme-Aware Surfaces**: The generate button, status widget, and toast notifications now adapt to the site's dark theme (`html.dark` / `body.dark`) with matching card surfaces, text, and borders instead of forcing a light-only card.
+- **Toast Severity Borders**: Success, error, and info toasts now carry colored left borders for at-a-glance severity recognition.
+
+### 🔄 Changed
+- **Native-Style Generate Button**: Restyled the floating generate button after the site's native card surface (white card, accent-colored border/text, soft shadow, hover tint) so it blends with the host UI rather than using a solid accent fill.
+- **Wider Image Viewer on Desktop**: The image viewer modal now expands up to `min(95vw, 1280px)` on tablet/desktop (≥768px), and the gallery grid uses `repeat(auto-fit, minmax(min(100%, 600px), 1fr))` so a single image fills the modal width and multiple images form large columns instead of tiny thumbnails. Mobile keeps its full-width layout.
+- **Narrower Config / Utilities Layout**: Reduced the config panel and utilities grid `max-width` (1000px→760px, 1200px→820px) for a more focused, readable form layout.
+- **Inline Form Label Alignment**: Direct group labels inside `.nig-form-group-inline` now span all grid columns so they sit above their paired inputs instead of beside them, fixing misalignment on tablet/desktop.
+- **Client-Agent Version Bump**: The AI Horde `Client-Agent` header now reports `6.3.0`.
+
+### 🐞 Fixed
+- **Config Panel Hidden on Population Failure**: The configuration modal was only displayed *after* all async form population completed, so any thrown error (e.g. a provider model-fetch failure) left the modal permanently hidden. The panel is now revealed immediately and form population is wrapped in a try/catch that logs the error and shows a toast, so the user always gets a visible (possibly partially populated) panel.
+
 ## [6.2.0] - 2026-07-01
 
 ### 🗑️ Removed

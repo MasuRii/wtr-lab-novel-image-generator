@@ -14,14 +14,14 @@ interface RuntimeVersionInfo {
 }
 
 export const VERSION_INFO: RuntimeVersionInfo = {
-  SEMANTIC: "6.2.0",
-  DISPLAY: "v6.2.0",
+  SEMANTIC: "6.3.0",
+  DISPLAY: "v6.3.0",
   BUILD_ENV: "production",
-  BUILD_DATE: "2026-07-01",
-  GREASYFORK: "6.2.0",
-  NPM: "6.2.0",
-  BADGE: "6.2.0",
-  CHANGELOG: "6.2.0",
+  BUILD_DATE: "2026-07-03",
+  GREASYFORK: "6.3.0",
+  NPM: "6.3.0",
+  BADGE: "6.3.0",
+  CHANGELOG: "6.3.0",
 };
 
 export const VERSION = VERSION_INFO.SEMANTIC;

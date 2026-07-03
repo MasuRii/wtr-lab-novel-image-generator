@@ -1,6 +1,6 @@
 # WTR LAB Novel Image Generator
 
-[![Version](https://img.shields.io/badge/version-6.2.0-blue.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-6.3.0-blue.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178c6?logo=typescript&logoColor=white&style=for-the-badge)](https://www.typescriptlang.org/)
 [![Built with Webpack](https://img.shields.io/badge/Built%20with-Webpack-8DD6F9?logo=webpack&logoColor=white&style=for-the-badge)](https://webpack.js.org/)
@@ -19,7 +19,9 @@ A modern userscript that turns your novel reading into a visual experience. Sele
 - **Multi-Provider Support** — generate images using Pollinations, AI Horde, and any OpenAI-compatible API.
 - **AI Prompt Enhancement** — uses any OpenAI-compatible API to automatically improve your selected text for better image results, with a smart queue and custom templates.
 - **Rich Configuration** — an extensive settings panel to manage API keys, models, prompt styles, and more, with import/export functionality.
+- **Native UI Integration** — an "AI Image" launcher is injected directly into the site's bottom reader navigation bar (alongside Read / Display / Speech / Settings / More) and re-injected automatically on SPA route changes, so settings are always one tap away.
 - **Unified Image Viewer** — a clean, mobile-friendly viewer to inspect, download, and manage your image generation history.
+- **Dark-Theme-Aware Styling** — the generate button, status widget, and toasts adapt to the site's light/dark theme and mirror the host card surfaces instead of clashing with them.
 - **Modular Architecture** — a professional, webpack-based structure ensures stability, maintainability, and makes it easy to add new features.
 - **Mobile-First Design** — the entire interface is optimized for a seamless experience on both desktop and mobile devices.
 
@@ -35,10 +37,10 @@ A modern userscript that turns your novel reading into a visual experience. Sele
 ## Usage
 
 1. While reading a chapter, **highlight any descriptive text** with your mouse or finger.
-2. The **"🎨 Generate Image"** button will appear. Click it.
+2. The **"Generate Image"** button (a palette icon) will appear near your selection. Click it.
 3. Watch the status widget for progress updates, including prompt enhancement and image generation.
 4. Once complete, open the image viewer to see, download, or manage your creations.
-5. To customize settings, open the Tampermonkey menu and click **"Image Generator Settings"**.
+5. To customize settings, either tap the **"AI Image"** tab in the site's bottom reader navigation bar, or open the Tampermonkey menu and click **"Image Generator Settings"**.
 
 ### Prompt Styling
 
