@@ -44,12 +44,11 @@ export function create() {
 			<div id="nig-image-gallery" class="nig-image-gallery"></div>
 		</div>`;
   document.body.appendChild(imageViewer);
-  let viewerA11yCleanup = null;
   imageViewer.querySelector(".nig-close-btn").addEventListener("click", () => {
     imageViewer.style.display = "none";
-    if (viewerA11yCleanup) {
-      viewerA11yCleanup();
-      viewerA11yCleanup = null;
+    if (imageViewer._nigA11yCleanup) {
+      imageViewer._nigA11yCleanup();
+      imageViewer._nigA11yCleanup = null;
     }
   });
   const promptContainer = imageViewer.querySelector("#nig-prompt-container");

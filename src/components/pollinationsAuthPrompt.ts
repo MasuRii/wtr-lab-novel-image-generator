@@ -61,7 +61,7 @@ export function show(errorMessage, failedPrompt, onRetry) {
         .value.trim();
       if (token) {
         await setConfigValue("pollinationsToken", token);
-        promptElement.remove();
+        close();
         showToast("Token saved. Retrying generation...", "success");
         onRetry(failedPrompt, "Pollinations");
       } else {

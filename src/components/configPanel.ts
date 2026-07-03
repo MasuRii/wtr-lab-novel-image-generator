@@ -124,7 +124,13 @@ export async function show() {
     );
   }
 
-  // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+  // Set up modal accessibility (focus trap, Escape, scroll lock, focus management).
+  // Guard against the user closing the panel while async population was running:
+  // if the panel is no longer visible, skip a11y setup so we don't lock scroll
+  // with no visible modal to close.
+  if (panelElement.style.display === "none") {
+    return;
+  }
   if (panelA11yCleanup) {
     panelA11yCleanup();
   }
