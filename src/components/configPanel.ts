@@ -7,6 +7,7 @@ import {
   saveProviderConfigs,
   populateProviderForms,
 } from "../api/models";
+import * as logger from "../utils/logger";
 import * as storage from "../utils/storage";
 import { showToast, setupModalA11y } from "../utils/uiUtils";
 import {
@@ -93,19 +94,35 @@ export async function show() {
   panelElement.querySelector("#nig-config-tab").classList.add("active");
   panelElement.querySelector("#nig-save-btn").style.display = "block";
 
-  // Populate all form sections
-  const config = await storage.getConfig();
-
-  // Populate basic configuration
-  await populateConfigForm();
-
-  // Populate provider-specific forms
-  await populateProviderForms(config);
-
-  // Populate enhancement settings
-  await populateEnhancementSettings(config);
-
+  // Reveal the modal immediately so it stays visible even if form population
+  // below throws (e.g. a provider model fetch failure). Previously the panel
+  // was only displayed after all async population completed, so any thrown
+  // error left the modal permanently hidden.
   panelElement.style.display = "flex";
+
+  // Populate all form sections. Wrapped so a failure in any section does not
+  // hide the modal — the user still gets a visible (possibly partially
+  // populated) panel instead of a silently broken open action.
+  try {
+    const config = await storage.getConfig();
+
+    // Populate basic configuration
+    await populateConfigForm();
+
+    // Populate provider-specific forms
+    await populateProviderForms(config);
+
+    // Populate enhancement settings
+    await populateEnhancementSettings(config);
+  } catch (error) {
+    logger.logError("CONFIG_PANEL", "Failed to populate configuration panel", {
+      error: error.message,
+    });
+    showToast(
+      "Some settings could not be loaded. Check the console for details.",
+      "error",
+    );
+  }
 
   // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
   if (panelA11yCleanup) {
