@@ -1,6 +1,6 @@
 # WTR LAB Novel Image Generator
 
-[![Version](https://img.shields.io/badge/version-6.3.0-blue.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-6.3.1-blue.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/MasuRii/wtr-lab-novel-image-generator/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178c6?logo=typescript&logoColor=white&style=for-the-badge)](https://www.typescriptlang.org/)
 [![Built with Webpack](https://img.shields.io/badge/Built%20with-Webpack-8DD6F9?logo=webpack&logoColor=white&style=for-the-badge)](https://webpack.js.org/)

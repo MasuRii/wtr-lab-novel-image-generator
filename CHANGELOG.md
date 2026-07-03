@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [6.3.1] - 2026-07-03
+
+### 🐞 Fixed
+- **Scroll Lock After Closing Image Viewer**: Closing the image viewer modal via the × button permanently locked page scroll (`body { overflow: hidden }`) because the close handler referenced a local variable (`viewerA11yCleanup`) that was always `null` instead of the DOM property (`imageViewer._nigA11yCleanup`) that `show()` actually stored the scroll-unlock cleanup on. The close button now reads the correct property, ensuring `unlockScroll()` runs and the shared `modalOpenCount` returns to zero. The same shared counter meant the leaked lock also prevented the config panel from restoring scroll.
+- **Scroll Lock After Saving Pollinations Token**: The "Save Token & Retry" button in the Pollinations auth prompt removed the modal element directly without calling the accessibility cleanup function, leaking the scroll lock. It now calls `close()` which properly invokes `unlockScroll()`.
+- **Scroll Lock on Config Panel Race Condition**: The config panel's `show()` function called `setupModalA11y` (which locks scroll) after several `await` calls. If the user closed the panel before async population finished, `lockScroll` fired on an already-hidden modal with no visible close path, permanently locking scroll. A guard now skips a11y setup if the panel is no longer visible.
+
 ## [6.3.0] - 2026-07-03
 
 ### ✨ Added

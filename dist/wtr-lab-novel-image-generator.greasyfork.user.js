@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name WTR LAB Novel Image Generator
 // @description A powerful userscript to enhance web novel reading on WTR-LAB.COM. Select text to generate AI-powered images using multiple providers (Pollinations, AI Horde, OpenAI). Features AI prompt enhancement via OpenAI-compatible endpoints, 100+ art styles, a modern UI, history, and robust configuration options. Built with Webpack for modularity and maintainability.
-// @version 6.3.0
+// @version 6.3.1
 // @author MasuRii
 // @supportURL https://github.com/MasuRii/wtr-lab-novel-image-generator/issues
 // @match https://wtr-lab.com/en/novel/*/*/*
@@ -3509,12 +3509,11 @@ function create() {
 			<div id="nig-image-gallery" class="nig-image-gallery"></div>
 		</div>`;
     document.body.appendChild(imageViewer);
-    let viewerA11yCleanup = null;
     imageViewer.querySelector(".nig-close-btn").addEventListener("click", () => {
         imageViewer.style.display = "none";
-        if (viewerA11yCleanup) {
-            viewerA11yCleanup();
-            viewerA11yCleanup = null;
+        if (imageViewer._nigA11yCleanup) {
+            imageViewer._nigA11yCleanup();
+            imageViewer._nigA11yCleanup = null;
         }
     });
     const promptContainer = imageViewer.querySelector("#nig-prompt-container");
@@ -7264,7 +7263,7 @@ function pollinationsAuthPrompt_show(errorMessage, failedPrompt, onRetry) {
             .value.trim();
         if (token) {
             await (0,storage/* setConfigValue */.yJ)("pollinationsToken", token);
-            promptElement.remove();
+            close();
             (0,uiUtils/* showToast */.P0)("Token saved. Retrying generation...", "success");
             onRetry(failedPrompt, "Pollinations");
         }
@@ -9733,14 +9732,14 @@ function setupProviderEnhancementListener(panelElement) {
 // Runtime version information for the userscript UI.
 // Auto-synced by scripts/update-versions.js — do not edit manually.
 const VERSION_INFO = {
-    SEMANTIC: "6.3.0",
-    DISPLAY: "v6.3.0",
+    SEMANTIC: "6.3.1",
+    DISPLAY: "v6.3.1",
     BUILD_ENV: "production",
     BUILD_DATE: "2026-07-03",
-    GREASYFORK: "6.3.0",
-    NPM: "6.3.0",
-    BADGE: "6.3.0",
-    CHANGELOG: "6.3.0",
+    GREASYFORK: "6.3.1",
+    NPM: "6.3.1",
+    BADGE: "6.3.1",
+    CHANGELOG: "6.3.1",
 };
 const VERSION = VERSION_INFO.SEMANTIC;
 if (typeof window !== "undefined") {
@@ -10322,7 +10321,13 @@ async function configPanel_show() {
         });
         (0,uiUtils/* showToast */.P0)("Some settings could not be loaded. Check the console for details.", "error");
     }
-    // Set up modal accessibility (focus trap, Escape, scroll lock, focus management)
+    // Set up modal accessibility (focus trap, Escape, scroll lock, focus management).
+    // Guard against the user closing the panel while async population was running:
+    // if the panel is no longer visible, skip a11y setup so we don't lock scroll
+    // with no visible modal to close.
+    if (panelElement.style.display === "none") {
+        return;
+    }
     if (panelA11yCleanup) {
         panelA11yCleanup();
     }
